@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circular Orbital Testimonial Animation</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome for Stars & Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Component Stylesheet -->
+  <link rel="stylesheet" href="circular-testimonial.css">
+
+  <style>
+    /* Demo Page Container Styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #07070a;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .demo-scroll-spacer {
+      height: 60vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .demo-scroll-spacer h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      color: #9ca3af;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .scroll-arrow {
+      margin-top: 15px;
+      animation: bounce 2s infinite;
+      color: #a855f7;
+      font-size: 20px;
+    }
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(8px); }
+      60% { transform: translateY(4px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Scroll Section to Demo ScrollTrigger -->
+  <section class="demo-scroll-spacer">
+    <h3>Scroll Down To See Orbit Rotation In Action</h3>
+    <p>The avatar wheel rotates smoothly based on scroll speed &amp; position</p>
+    <div class="scroll-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- CIRCULAR TESTIMONIAL COMPONENT START                                      -->
+  <!-- ========================================================================= -->
+  <section class="orbital-testimonial-section" id="testimonial-section">
+    <!-- Background Grid & Glow -->
+    <div class="orbital-grid-bg"></div>
+    <div class="orbital-center-glow"></div>
+
+    <!-- Section Header -->
+    <div class="orbital-header">
+      <div class="orbital-badge">
+        <span class="orbital-badge-dot"></span>
+        <span>{06} Testimonials</span>
+      </div>
+      <h2 class="orbital-title">Real Feedback. Real Results.</h2>
+      <p class="orbital-subtitle">
+        Authentic client experiences that reflect the impact of our work. Every review is a testament to the quality, precision, and results we deliver.
+      </p>
+    </div>
+
+    <!-- Main Animation Stage -->
+    <div class="orbital-stage">
+      
+      <!-- Rotating Wheel Orbit Container -->
+      <div class="orbital-carousel-wrap">
+        <div class="orbital-wheel" id="orbital-wheel">
+          
+          <!-- Avatar Slide 1 -->
+          <button class="orbital-slide-item" 
+                  data-index="0"
+                  data-comment="Talwart transformed our brand identity beyond expectations. Their attention to detail and creativity helped us stand out in a crowded market. Truly exceptional work."
+                  data-author="1. Aisha Verma — Founder, LuxeAura">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-1.webp" alt="Aisha Verma" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 2 -->
+          <button class="orbital-slide-item" 
+                  data-index="1"
+                  data-comment="The team delivered our website with stunning design and flawless functionality. The entire process felt smooth, collaborative, and incredibly professional."
+                  data-author="2. Rohan Mehta — CEO, Digitronix Solutions">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-2.webp" alt="Rohan Mehta" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 3 -->
+          <button class="orbital-slide-item" 
+                  data-index="2"
+                  data-comment="The digital strategy crafted by Talwart delivered real growth. Their campaigns improved our engagement and conversions faster than expected."
+                  data-author="3. Sneha Kapoor — Marketing Head, Bloom & Co.">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-3.webp" alt="Sneha Kapoor" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 4 -->
+          <button class="orbital-slide-item" 
+                  data-index="3"
+                  data-comment="The UI/UX design exceeded our expectations. Talwart brought clarity, elegance, and usability to our platform in a way that transformed the entire user journey."
+                  data-author="4. Daniel Rodrigues — Product Manager, NovaTech">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-4.webp" alt="Daniel Rodrigues" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 5 -->
+          <button class="orbital-slide-item" 
+                  data-index="4"
+                  data-comment="Talwart doesn’t just design—they understand brand storytelling at its core. Our brand now feels cohesive, premium, and truly connected to our audience."
+                  data-author="5. Meera Shah — Creative Director, Aristo Living">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-5.webp" alt="Meera Shah" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 6 -->
+          <button class="orbital-slide-item" 
+                  data-index="5"
+                  data-comment="Exceptional quality delivered at impressive speed. Talwart’s team supported us at every step with clear communication and a strong sense of commitment."
+                  data-author="6. Karan Malhotra — Co-Founder, UrbanCart">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-6.webp" alt="Karan Malhotra" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 7 -->
+          <button class="orbital-slide-item" 
+                  data-index="6"
+                  data-comment="From start to finish, the communication was seamless and the design blew us away. They really know how to bring a brand to life!"
+                  data-author="7. James R. — Startup Founder">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-7.webp" alt="James R." />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 8 -->
+          <button class="orbital-slide-item" 
+                  data-index="7"
+                  data-comment="Their innovative approach to web animations and UX flow helped our conversion rates skyrocket within weeks of launch."
+                  data-author="8. Elena Rostova — VP Growth, Apex Media">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-8.webp" alt="Elena Rostova" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 9 -->
+          <button class="orbital-slide-item" 
+                  data-index="8"
+                  data-comment="Working with this team was a breath of fresh air. They turned our vague vision into a breathtaking reality."
+                  data-author="9. Marcus Vance — CTO, Hyperion Labs">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-9.webp" alt="Marcus Vance" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 10 -->
+          <button class="orbital-slide-item" 
+                  data-index="9"
+                  data-comment="Masterful craft and flawless execution. The micro-interactions and smooth design blew our investors away."
+                  data-author="10. Sarah Jenkins — Founder, Studio Craft">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-10.webp" alt="Sarah Jenkins" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 11 -->
+          <button class="orbital-slide-item" 
+                  data-index="10"
+                  data-comment="They delivered our redesign ahead of schedule without cutting any corners. Unmatched quality."
+                  data-author="11. Vikram Singhania — Lead Architect, Solis">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-11.webp" alt="Vikram Singhania" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 12 -->
+          <button class="orbital-slide-item" 
+                  data-index="11"
+                  data-comment="The attention to typography, spacing, and micro-details set a new benchmark for all our future digital products."
+                  data-author="12. Clara Dupont — Design Lead, Veloce">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-12.webp" alt="Clara Dupont" />
+            </div>
+          </button>
+
+          <!-- Avatar Slide 13 -->
+          <button class="orbital-slide-item" 
+                  data-index="12"
+                  data-comment="World-class expertise and relentless pursuit of perfection. Highly recommended for any ambitious team."
+                  data-author="13. David Miller — Managing Partner, Zenith Group">
+            <div class="orbital-avatar-box">
+              <img src="assets/avatar-13.webp" alt="David Miller" />
+            </div>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Center Testimonial Card -->
+      <div class="orbital-center-card">
+        <!-- SVG Quote Icon -->
+        <div class="orbital-quote-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+          </svg>
+        </div>
+
+        <p class="orbital-comment">“Talwart transformed our brand identity beyond expectations. Their attention to detail and creativity helped us stand out in a crowded market. Truly exceptional work.”</p>
+        
+        <div class="orbital-divider"></div>
+        
+        <div class="orbital-rating">
+          <i class="fa-solid fa-star orbital-star"></i>
+          <i class="fa-solid fa-star orbital-star"></i>
+          <i class="fa-solid fa-star orbital-star"></i>
+          <i class="fa-solid fa-star orbital-star"></i>
+          <i class="fa-solid fa-star orbital-star"></i>
+        </div>
+        
+        <p class="orbital-author">1. Aisha Verma — Founder, LuxeAura</p>
+      </div>
+
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="orbital-nav-controls">
+      <button class="orbital-nav-btn orbital-prev-btn" aria-label="Previous Testimonial">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <button class="orbital-nav-btn orbital-next-btn" aria-label="Next Testimonial">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- Bottom Blur Layer -->
+    <div class="orbital-bottom-blur"></div>
+  </section>
+  <!-- ========================================================================= -->
+  <!-- CIRCULAR TESTIMONIAL COMPONENT END                                        -->
+  <!-- ========================================================================= -->
+
+  <!-- Bottom Scroll Spacer -->
+  <section class="demo-scroll-spacer">
+    <h3>Scroll Up / Down to Trigger Scroll Scrubbing</h3>
+    <p>You can also click any avatar directly or use the arrow controls</p>
+  </section>
+
+  <!-- GSAP & ScrollTrigger CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+  <!-- Component Script -->
+  <script src="circular-testimonial.js"></script>
+
+  <script>
+    // Initialize the Circular Testimonial Carousel
+    document.addEventListener('DOMContentLoaded', () => {
+      const carousel = new CircularTestimonialCarousel({
+        container: '#testimonial-section',
+        radius: 440,              // Radius in pixels
+        rotationRange: 75,         // Degrees of rotation scrubbed along scroll
+        autoplay: true,           // Auto rotate active testimonials
+        autoplayInterval: 4500,   // Milliseconds
+        enableScrollTrigger: true // GSAP scroll-triggered rotation
+      });
+    });
+  </script>
+
+</body>
+</html>

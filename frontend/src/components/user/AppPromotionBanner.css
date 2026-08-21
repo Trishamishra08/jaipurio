@@ -1,0 +1,268 @@
+.app-promo-section {
+  padding: 4rem 1rem;
+  background-color: #FDF7F7;
+}
+
+.app-promo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 2rem;
+  background: linear-gradient(135deg, #2A1416 0%, #4A2226 100%);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 25px 50px -12px rgba(42, 20, 22, 0.4);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .app-promo-container {
+    flex-direction: row;
+    text-align: left;
+    height: 450px;
+    padding-left: 5rem;
+  }
+}
+
+.app-promo-content {
+  padding: 3rem 2rem;
+  color: white;
+  z-index: 2;
+  flex: 1;
+}
+
+@media (min-width: 768px) {
+  .app-promo-content {
+    padding: 0;
+  }
+}
+
+.app-promo-tag {
+  background: rgba(212, 175, 55, 0.2);
+  color: #D4AF37;
+  padding: 0.5rem 1.25rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.app-promo-title {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .app-promo-title {
+    font-size: 3.5rem;
+  }
+}
+
+.app-promo-description {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 768px) {
+  .app-promo-description {
+    margin-left: 0;
+  }
+}
+
+.app-download-buttons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .app-download-buttons {
+    justify-content: flex-start;
+  }
+}
+
+.store-button {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.store-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.store-button svg {
+  height: 48px;
+  width: auto;
+}
+
+/* Smartphone Mockup Styles */
+.app-mockup-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  position: relative;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .app-mockup-wrapper {
+    height: 100%;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 5rem;
+  }
+}
+
+.smartphone {
+  position: relative;
+  width: 240px;
+  height: 480px;
+  margin: 0 auto;
+  border: 10px solid #1a1a1a;
+  border-radius: 32px;
+  background-color: #1a1a1a;
+  box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.5);
+  transform: translateY(40px);
+  transition: transform 0.5s ease-out;
+  animation: float 6s ease-in-out infinite;
+}
+
+@media (min-width: 768px) {
+  .smartphone {
+    width: 260px;
+    height: 520px;
+    border-width: 12px;
+    border-radius: 36px;
+  }
+}
+
+@keyframes float {
+  0% { transform: translateY(40px) rotate(-10deg); }
+  50% { transform: translateY(20px) rotate(-8deg); }
+  100% { transform: translateY(40px) rotate(-10deg); }
+}
+
+@media (min-width: 768px) {
+  .smartphone {
+    transform: rotate(-10deg) translateY(60px);
+  }
+  
+  .app-promo-container:hover .smartphone {
+    transform: rotate(0deg) translateY(40px);
+    animation: none;
+  }
+}
+
+.smartphone::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 25px;
+  background-color: #1a1a1a;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+  z-index: 10;
+}
+
+.smartphone-screen {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 24px;
+  position: relative;
+}
+
+.mockup-app-ui {
+  width: 100%;
+  height: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.mockup-header {
+  height: 60px;
+  background: #D29498;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.mockup-content {
+  padding: 15px;
+  flex: 1;
+  background: #FDF7F7;
+}
+
+.mockup-item {
+  height: 140px;
+  background: #fff;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.mockup-loader {
+  height: 10px;
+  background: #eee;
+  border-radius: 5px;
+  margin-bottom: 8px;
+  width: 70%;
+}
+
+.mockup-loader.short {
+  width: 40%;
+}
+
+.mockup-loader.gold {
+  background: #D4AF37;
+  opacity: 0.3;
+}
+
+/* Background elements for depth */
+.promo-blob {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.blob-1 {
+  top: -100px;
+  right: -100px;
+}
+
+.blob-2 {
+  bottom: -100px;
+  left: -100px;
+}
