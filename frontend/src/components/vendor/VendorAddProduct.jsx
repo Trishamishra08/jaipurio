@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Upload, X, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
@@ -159,7 +159,7 @@ const VendorAddProduct = () => {
           <button onClick={handleSaveDraft} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-medium rounded-lg text-[12px] shadow-sm hover:bg-gray-50 transition-colors">
             Save Draft
           </button>
-          <button onClick={handleSubmit} className="px-4 py-2 bg-[#054425] text-white font-medium rounded-lg text-[12px] shadow-sm hover:bg-[#04331c] transition-colors">
+          <button onClick={handleSubmit} className="px-4 py-2 bg-[#6F241D] text-white font-medium rounded-lg text-[12px] shadow-sm hover:bg-[#4E271D] transition-colors">
             {editProduct ? 'Update Product' : 'Submit Product'}
           </button>
         </div>
@@ -178,7 +178,7 @@ const VendorAddProduct = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Organic Neem Tulsi Face Wash"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800"
                 />
               </div>
               <div>
@@ -188,7 +188,7 @@ const VendorAddProduct = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Write a detailed product description..."
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 resize-none"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800 resize-none"
                 ></textarea>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -199,7 +199,7 @@ const VendorAddProduct = () => {
                     value={ingredients}
                     onChange={(e) => setIngredients(e.target.value)}
                     placeholder="e.g. Bhringraj, Amla, Coconut Oil, Brahmi"
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 resize-none"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800 resize-none"
                   ></textarea>
                 </div>
                 <div>
@@ -209,7 +209,7 @@ const VendorAddProduct = () => {
                     value={benefits}
                     onChange={(e) => setBenefits(e.target.value)}
                     placeholder="e.g. Clears acne, Purifies skin..."
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 resize-none"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800 resize-none"
                   ></textarea>
                 </div>
               </div>
@@ -223,7 +223,7 @@ const VendorAddProduct = () => {
                     value={dosage}
                     onChange={(e) => setDosage(e.target.value)}
                     placeholder="e.g. Take 1 capsule twice daily with warm milk/water after meals or as directed by the physician."
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 resize-none"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800 resize-none"
                   ></textarea>
                 </div>
                 <div>
@@ -233,7 +233,7 @@ const VendorAddProduct = () => {
                     value={disclaimer}
                     onChange={(e) => setDisclaimer(e.target.value)}
                     placeholder="e.g. Keep out of reach of children. Store in a cool dry place. Consult a doctor before use if pregnant."
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 resize-none"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800 resize-none"
                   ></textarea>
                 </div>
               </div>
@@ -248,7 +248,7 @@ const VendorAddProduct = () => {
                 id="hasVariants"
                 checked={hasVariants}
                 onChange={(e) => setHasVariants(e.target.checked)}
-                className="w-3.5 h-3.5 text-[#054425] rounded focus:ring-[#054425] accent-[#054425] cursor-pointer"
+                className="w-3.5 h-3.5 text-[#6F241D] rounded focus:ring-[#6F241D] accent-[#6F241D] cursor-pointer"
               />
               <label htmlFor="hasVariants" className="text-[11px] font-bold text-[#1B5E20] cursor-pointer select-none">
                 This product has variants (e.g. sizes, weights, counts)
@@ -262,7 +262,7 @@ const VendorAddProduct = () => {
                   <button
                     type="button"
                     onClick={handleAddVariant}
-                    className="px-2.5 py-1.5 bg-[#054425]/10 text-[#054425] hover:bg-[#054425]/20 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                    className="px-2.5 py-1.5 bg-[#6F241D]/10 text-[#6F241D] hover:bg-[#6F241D]/20 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
                   >
                     + Add Variant Row
                   </button>
@@ -288,7 +288,7 @@ const VendorAddProduct = () => {
                               placeholder="e.g. 200 ml"
                               value={v.size}
                               onChange={(e) => handleVariantChange(index, 'size', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#054425]"
+                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#6F241D]"
                             />
                           </td>
                           <td className="p-1">
@@ -297,7 +297,7 @@ const VendorAddProduct = () => {
                               placeholder="349"
                               value={v.price}
                               onChange={(e) => handleVariantChange(index, 'price', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#054425]"
+                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#6F241D]"
                             />
                           </td>
                           <td className="p-1">
@@ -306,7 +306,7 @@ const VendorAddProduct = () => {
                               placeholder="499"
                               value={v.oldPrice}
                               onChange={(e) => handleVariantChange(index, 'oldPrice', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#054425]"
+                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#6F241D]"
                             />
                           </td>
                           <td className="p-1">
@@ -315,7 +315,7 @@ const VendorAddProduct = () => {
                               placeholder="50"
                               value={v.stock}
                               onChange={(e) => handleVariantChange(index, 'stock', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#054425]"
+                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#6F241D]"
                             />
                           </td>
                           <td className="p-1">
@@ -324,7 +324,7 @@ const VendorAddProduct = () => {
                               placeholder="SKU"
                               value={v.sku}
                               onChange={(e) => handleVariantChange(index, 'sku', e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#054425] uppercase"
+                              className="w-full px-2 py-1 border border-gray-200 rounded-md text-[11px] outline-none focus:border-[#6F241D] uppercase"
                             />
                           </td>
                           <td className="p-1 text-center">
@@ -353,7 +353,7 @@ const VendorAddProduct = () => {
 
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative">
               <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileChange} multiple accept="image/*" />
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-[#054425]">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-[#6F241D]">
                 <Upload size={20} />
               </div>
               <p className="text-[12px] font-bold text-gray-900 mb-0.5">Click to upload or drag & drop</p>
@@ -369,7 +369,7 @@ const VendorAddProduct = () => {
                       <X size={12} />
                     </button>
                     {idx === 0 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-[#054425]/80 text-white text-[8px] font-bold text-center py-0.5">MAIN</div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-[#6F241D]/80 text-white text-[8px] font-bold text-center py-0.5">MAIN</div>
                     )}
                   </div>
                 ))}
@@ -391,7 +391,7 @@ const VendorAddProduct = () => {
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                     placeholder="299"
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800"
                   />
                 </div>
                 <div>
@@ -401,7 +401,7 @@ const VendorAddProduct = () => {
                     value={oldPrice}
                     onChange={(e) => setOldPrice(e.target.value)}
                     placeholder="399"
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800"
                   />
                 </div>
                 <div>
@@ -411,7 +411,7 @@ const VendorAddProduct = () => {
                     value={stock}
                     onChange={(e) => setStock(e.target.value)}
                     placeholder="100"
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800"
                   />
                 </div>
                 <div>
@@ -421,7 +421,7 @@ const VendorAddProduct = () => {
                     value={sku}
                     onChange={(e) => setSku(e.target.value)}
                     placeholder="SB-NTFW-100"
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 uppercase"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800 uppercase"
                   />
                 </div>
               </div>
@@ -437,11 +437,11 @@ const VendorAddProduct = () => {
                   type="checkbox"
                   checked={prescriptionRequired}
                   onChange={(e) => setPrescriptionRequired(e.target.checked)}
-                  className="mt-0.5 w-3.5 h-3.5 text-[#054425] rounded focus:ring-[#054425] accent-[#054425] cursor-pointer"
+                  className="mt-0.5 w-3.5 h-3.5 text-[#6F241D] rounded focus:ring-[#6F241D] accent-[#6F241D] cursor-pointer"
                 />
                 <div className="flex flex-col">
                   <span className="text-[11px] text-gray-750 font-bold leading-none">Prescription Required</span>
-                  <span className="text-[9px] text-gray-400 font-semibold mt-0.5">Check if this is a prescription-only ayurvedic medicine</span>
+                  <span className="text-[9px] text-gray-400 font-semibold mt-0.5">Check if this is a prescription-only HANDCRAFTED medicine</span>
                 </div>
               </label>
 
@@ -450,7 +450,7 @@ const VendorAddProduct = () => {
                   type="checkbox"
                   checked={noRefund}
                   onChange={(e) => setNoRefund(e.target.checked)}
-                  className="mt-0.5 w-3.5 h-3.5 text-[#054425] rounded focus:ring-[#054425] accent-[#054425] cursor-pointer"
+                  className="mt-0.5 w-3.5 h-3.5 text-[#6F241D] rounded focus:ring-[#6F241D] accent-[#6F241D] cursor-pointer"
                 />
                 <div className="flex flex-col">
                   <span className="text-[11px] text-gray-750 font-bold leading-none">No Refund Details</span>
@@ -463,7 +463,7 @@ const VendorAddProduct = () => {
                   type="checkbox"
                   checked={codAvailable}
                   onChange={(e) => setCodAvailable(e.target.checked)}
-                  className="mt-0.5 w-3.5 h-3.5 text-[#054425] rounded focus:ring-[#054425] accent-[#054425] cursor-pointer"
+                  className="mt-0.5 w-3.5 h-3.5 text-[#6F241D] rounded focus:ring-[#6F241D] accent-[#6F241D] cursor-pointer"
                 />
                 <div className="flex flex-col">
                   <span className="text-[11px] text-gray-750 font-bold leading-none">Cash on Delivery (COD)</span>
@@ -481,7 +481,7 @@ const VendorAddProduct = () => {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-700 cursor-pointer"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-700 cursor-pointer"
                 >
                   <option>Select Category</option>
                   {categories.map((c) => (
@@ -496,7 +496,7 @@ const VendorAddProduct = () => {
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                   placeholder="e.g. acne, organic, vegan"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium text-gray-800"
                 />
               </div>
             </div>

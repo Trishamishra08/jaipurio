@@ -19,7 +19,25 @@ import BottomNavigation from './components/user/BottomNavigation';
 import Auth from './components/user/Auth';
 import Register from './components/user/Register';
 
-import VendorDashboard from './components/vendor/VendorDashboard';
+import VendorLayout from './components/vendor/VendorLayout';
+import VendorAuthGuard from './components/vendor/VendorAuthGuard';
+import VendorLogin from './components/vendor/VendorLogin';
+import VendorRegister from './components/vendor/VendorRegister';
+import VendorHome from './components/vendor/VendorHome';
+import VendorProducts from './components/vendor/VendorProducts';
+import VendorAddProduct from './components/vendor/VendorAddProduct';
+import VendorInventory from './components/vendor/VendorInventory';
+import VendorOrders from './components/vendor/VendorOrders';
+import VendorReturns from './components/vendor/VendorReturns';
+import VendorLogistics from './components/vendor/VendorLogistics';
+import VendorEarnings from './components/vendor/VendorEarnings';
+import VendorPayouts from './components/vendor/VendorPayouts';
+import VendorCoupons from './components/vendor/VendorCoupons';
+import VendorReviews from './components/vendor/VendorReviews';
+import VendorNotifications from './components/vendor/VendorNotifications';
+import VendorAnalytics from './components/vendor/VendorAnalytics';
+import VendorSupport from './components/vendor/VendorSupport';
+import VendorSettings from './components/vendor/VendorSettings';
 import AdminDashboard from './components/admin/AdminDashboard';
 
 const PublicLayout = () => {
@@ -145,10 +163,28 @@ function App() {
             />
           </Route>
 
-          <Route path="/vendor" element={<VendorDashboard />} />
-          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
-          <Route path="/vendor/register" element={<VendorDashboard />} />
-          <Route path="/vendor/login" element={<VendorDashboard />} />
+          <Route path="/vendor/login" element={<VendorLogin />} />
+          <Route path="/vendor/register" element={<VendorRegister />} />
+          <Route element={<VendorAuthGuard />}>
+            <Route path="/vendor" element={<VendorLayout />}>
+              <Route index element={<VendorHome />} />
+              <Route path="dashboard" element={<VendorHome />} />
+              <Route path="products" element={<VendorProducts />} />
+              <Route path="add-product" element={<VendorAddProduct />} />
+              <Route path="inventory" element={<VendorInventory />} />
+              <Route path="orders" element={<VendorOrders />} />
+              <Route path="returns" element={<VendorReturns />} />
+              <Route path="logistics" element={<VendorLogistics />} />
+              <Route path="earnings" element={<VendorEarnings />} />
+              <Route path="payouts" element={<VendorPayouts />} />
+              <Route path="coupons" element={<VendorCoupons />} />
+              <Route path="reviews" element={<VendorReviews />} />
+              <Route path="notifications" element={<VendorNotifications />} />
+              <Route path="analytics" element={<VendorAnalytics />} />
+              <Route path="support" element={<VendorSupport />} />
+              <Route path="settings" element={<VendorSettings />} />
+            </Route>
+          </Route>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/*" element={<AdminDashboard />} />
 

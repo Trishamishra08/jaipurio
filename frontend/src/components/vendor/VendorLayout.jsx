@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -129,11 +129,13 @@ const VendorLayout = () => {
   ];
 
   return (
-    <div className="h-screen flex bg-[#FDFBF7] font-vendor-panel font-poppins">
+    <div className="h-screen flex bg-white font-dm">
       {/* Fixed Sidebar */}
       <aside 
         ref={sidebarRef}
-        className={`fixed inset-y-0 left-0 z-50 bg-[#054425] text-white flex flex-col transition-all duration-300 ${ sidebarOpen ? 'w-64' : 'w-[72px]' } overflow-hidden`}
+        className={`fixed inset-y-0 left-0 z-50 bg-[#6F241D] text-white flex flex-col transition-all duration-300 ${
+          sidebarOpen ? 'w-64 translate-x-0' : 'w-[72px] -translate-x-full lg:translate-x-0'
+        } overflow-hidden`}
       >
         <div className={`h-14 flex items-center border-b border-white/10 shrink-0 ${
           sidebarOpen ? 'justify-between px-4' : 'justify-center px-0'
@@ -143,8 +145,8 @@ const VendorLayout = () => {
               <img src="/logo.png" alt="Logo" className="w-full h-full object-contain rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/40"; }} />
             </div>
             <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${sidebarOpen ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 hidden'}`}>
-              <h1 className="font-normal text-lg tracking-wide leading-tight">SADA BHARAT</h1>
-              <p className="text-[9px] uppercase tracking-[0.2em] text-white/70">Ayurvedic</p>
+              <h1 className="font-playfair font-semibold text-lg tracking-wide leading-tight">jaipurio</h1>
+              <p className="text-[9px] uppercase tracking-[0.18em] text-white/70">Artisan Panel</p>
             </div>
           </div>
           <button className={`lg:hidden text-white/70 hover:text-white ${sidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)}><X size={20} /></button>
@@ -217,9 +219,9 @@ const VendorLayout = () => {
           <div className={`px-4 pb-4 pt-2 transition-all overflow-hidden ${sidebarOpen ? 'opacity-100 max-h-48' : 'opacity-0 max-h-0 p-0'}`}>
             <div className="bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-xl p-3.5 text-center backdrop-blur-md relative overflow-hidden">
                <div className="absolute top-0 right-0 w-16 h-16 bg-brand-gold/20 rounded-full blur-xl -translate-y-1/2 translate-x-1/2"></div>
-               <h4 className="text-[13px] font-bold text-white mb-1">Grow Your Business</h4>
-               <p className="text-[11px] text-white/70 mb-3 leading-relaxed">Increase your visibility and boost sales with Sada Bharat.</p>
-               <button onClick={() => window.showVendorToast?.("Opening growth portal...", "success")} className="w-full bg-white text-[#054425] text-[11px] font-bold py-1.5 rounded-lg hover:bg-gray-100 transition-colors shadow-sm">
+               <h4 className="text-[13px] font-bold text-white mb-1">Grow Your Workshop</h4>
+               <p className="text-[11px] text-white/70 mb-3 leading-relaxed">Reach more craft lovers across India with jaipurio.</p>
+               <button onClick={() => window.showVendorToast?.("Opening growth tips...", "success")} className="w-full bg-white text-[#6F241D] text-[11px] font-bold py-1.5 rounded-lg hover:bg-gray-100 transition-colors shadow-sm">
                  Learn More
                </button>
             </div>
@@ -229,9 +231,11 @@ const VendorLayout = () => {
 
       {/* Main Content */}
       <main 
-        className={`flex-1 overflow-y-auto overflow-x-hidden h-screen bg-[#FDFBF7] overscroll-contain touch-pan-y transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-[72px]'}`}
+        className={`flex-1 overflow-y-auto overflow-x-hidden h-screen bg-white overscroll-contain touch-pan-y transition-all duration-300 ${
+          sidebarOpen ? 'ml-0 lg:ml-64' : 'ml-0 lg:ml-[72px]'
+        }`}
         onWheel={(e) => e.stopPropagation()}
-        style={{ backgroundColor: '#FDFBF7', WebkitOverflowScrolling: 'touch' }} 
+        style={{ WebkitOverflowScrolling: 'touch' }} 
       >
         {/* Sticky Header */}
         <header className="sticky top-0 h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 z-40 shadow-sm shrink-0">
@@ -246,7 +250,7 @@ const VendorLayout = () => {
                 <input 
                   type="text" 
                   placeholder="Search products, orders..." 
-                  className="w-full pl-8 pr-4 py-1.5 bg-white border border-gray-200 rounded-full text-[12px] focus:outline-none focus:ring-1 focus:ring-[#054425]/50 focus:border-[#054425] transition-all font-sans font-medium text-gray-800 shadow-sm"
+                  className="w-full pl-8 pr-4 py-1.5 bg-white border border-gray-200 rounded-full text-[12px] focus:outline-none focus:ring-1 focus:ring-[#6F241D]/50 focus:border-[#6F241D] transition-all font-sans font-medium text-gray-800 shadow-sm"
                 />
               </div>
             </div>
@@ -255,7 +259,7 @@ const VendorLayout = () => {
             {/* Mobile Search */}
             <button 
               onClick={() => window.showVendorToast?.('Search overlay coming soon...', 'info')} 
-              className="block md:hidden text-gray-500 hover:text-[#054425] transition-colors"
+              className="block md:hidden text-gray-500 hover:text-[#6F241D] transition-colors"
             >
               <Search size={20} />
             </button>
@@ -264,7 +268,7 @@ const VendorLayout = () => {
             <div ref={notificationRef} className="relative">
               <button 
                 onClick={() => { setShowNotifications(!showNotifications); setShowMessages(false); }} 
-                className="relative text-gray-500 hover:text-[#054425] transition-colors"
+                className="relative text-gray-500 hover:text-[#6F241D] transition-colors"
               >
                 <Bell size={20} />
                 {unreadCount > 0 && (
@@ -278,7 +282,7 @@ const VendorLayout = () => {
                   <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <h3 className="text-[12px] font-bold text-gray-900">Notifications {unreadCount > 0 && <span className="text-red-500">({unreadCount})</span>}</h3>
                     {unreadCount > 0 && (
-                      <button onClick={handleMarkAllReadHeader} className="text-[10px] text-[#054425] font-semibold hover:underline">Mark all read</button>
+                      <button onClick={handleMarkAllReadHeader} className="text-[10px] text-[#6F241D] font-semibold hover:underline">Mark all read</button>
                     )}
                   </div>
                   <div className="max-h-[300px] overflow-y-auto">
@@ -309,7 +313,7 @@ const VendorLayout = () => {
                     ))}
                   </div>
                   <div className="p-2 text-center border-t border-gray-100 bg-gray-50/50">
-                     <button onClick={() => { navigate('/vendor/notifications'); setShowNotifications(false); }} className="text-[11px] font-bold text-[#054425] hover:underline">View All Notifications</button>
+                     <button onClick={() => { navigate('/vendor/notifications'); setShowNotifications(false); }} className="text-[11px] font-bold text-[#6F241D] hover:underline">View All Notifications</button>
                   </div>
                 </div>
               )}
@@ -319,7 +323,7 @@ const VendorLayout = () => {
             <div ref={messageRef} className="relative hidden sm:block">
               <button 
                 onClick={() => { setShowMessages(!showMessages); setShowNotifications(false); }} 
-                className="relative text-gray-500 hover:text-[#054425] transition-colors"
+                className="relative text-gray-500 hover:text-[#6F241D] transition-colors"
               >
                 <MessageSquare size={20} />
                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full text-[7px] font-bold text-white flex items-center justify-center">2</span>
@@ -336,7 +340,7 @@ const VendorLayout = () => {
                     ].map((m, i) => (
                       <div key={i} className="p-3 border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors last:border-0 flex gap-3 items-start">
                         <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                          <span className="text-[#054425] font-bold text-[10px]">{m.name.charAt(0)}</span>
+                          <span className="text-[#6F241D] font-bold text-[10px]">{m.name.charAt(0)}</span>
                         </div>
                         <div>
                           <div className="flex justify-between items-baseline gap-2">
@@ -349,7 +353,7 @@ const VendorLayout = () => {
                     ))}
                   </div>
                   <div className="p-2 text-center border-t border-gray-100 bg-gray-50/50">
-                     <button className="text-[11px] font-bold text-[#054425] hover:underline">Open Inbox</button>
+                     <button className="text-[11px] font-bold text-[#6F241D] hover:underline">Open Inbox</button>
                   </div>
                 </div>
               )}
@@ -358,10 +362,10 @@ const VendorLayout = () => {
             <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/vendor/settings')}>
               <div className="text-right hidden sm:block">
-                <p className="text-[12px] font-bold text-gray-900 font-sans leading-tight">Herbal Essence</p>
+                <p className="text-[12px] font-bold text-gray-900 font-sans leading-tight">Shyam Pottery</p>
                 <p className="text-[10px] font-medium text-gray-500 font-poppins">Vendor</p>
               </div>
-              <img src="https://ui-avatars.com/api/?name=Herbal+Essence&background=054425&color=fff" alt="Vendor" className="w-8 h-8 rounded-full border border-gray-100 shadow-sm" />
+              <img src="https://ui-avatars.com/api/?name=Herbal+Essence&background=6F241D&color=fff" alt="Vendor" className="w-8 h-8 rounded-full border border-gray-100 shadow-sm" />
             </div>
           </div>
         </header>

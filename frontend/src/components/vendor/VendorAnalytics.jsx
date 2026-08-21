@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { BarChart3, PieChart } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import api from '../../utils/api';
 
-const COLORS = ['#054425', '#4ade80', '#22c55e', '#16a34a', '#15803d'];
+const COLORS = ['#6F241D', '#4ade80', '#22c55e', '#16a34a', '#15803d'];
 
 const VendorAnalytics = () => {
   const [trafficData, setTrafficData] = useState([]);
@@ -51,7 +51,7 @@ const VendorAnalytics = () => {
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#054425]"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#6F241D]"></div>
       </div>
     );
   }
@@ -79,7 +79,7 @@ const VendorAnalytics = () => {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#888' }} dx={-10} />
                   <RechartsTooltip cursor={{ fill: '#f9fafb' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="sales" fill="#054425" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sales" fill="#6F241D" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

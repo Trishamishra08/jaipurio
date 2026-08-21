@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle2, ChevronRight, ChevronLeft, ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -299,7 +299,7 @@ const VendorRegister = () => {
             Your application is under review. Verification may take <strong className="text-gray-900 font-bold">24-48 Hours</strong>. You will receive an email once approved.
           </p>
           
-          <button onClick={() => navigate('/')} className="w-full bg-[#054425] hover:bg-[#04331c] text-white text-xs font-bold py-3.5 rounded-xl transition-colors shadow-sm active:scale-95">
+          <button onClick={() => navigate('/')} className="w-full bg-[#6F241D] hover:bg-[#4E271D] text-white text-xs font-bold py-3.5 rounded-xl transition-colors shadow-sm active:scale-95">
             Back to Home
           </button>
         </div>
@@ -333,12 +333,13 @@ const VendorRegister = () => {
         {/* LEFT PANEL (Image & Wave) - Distinct Image and Wave curves for Register */}
         <div className="relative w-full md:w-[50%] lg:w-[55%] h-[32vh] sm:h-[40vh] md:h-full shrink-0">
           <img 
-            src="/ayurvedic_background.png" 
-            alt="Ayurvedic Background" 
-            className="absolute inset-0 w-full h-full object-cover" 
+            src="/jaipurio_banner_clean.png" 
+            alt="jaipurio artisan background" 
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => { e.target.onerror = null; e.target.src = '/matka.png'; }}
           />
-          {/* Greenish overlay for wellness theme */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#054425]/90 via-[#054425]/45 to-transparent z-10" />
+          {/* Maroon overlay for jaipurio theme */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#6F241D]/90 via-[#6F241D]/45 to-transparent z-10" />
 
           {/* SVG Wave separator for Desktop - Distinct asymmetric curve */}
           <div className="hidden md:block absolute top-0 -right-[2px] h-full w-[250px] z-20">
@@ -372,11 +373,11 @@ const VendorRegister = () => {
           <div className="absolute inset-0 p-4 pt-4 md:p-12 flex flex-col z-30 text-white">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="w-9 h-9 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center p-1 shrink-0 shadow-md">
-                <img src="/logo.png" alt="Sada Bharat" className="w-full h-full object-contain rounded-full" />
+                <img src="/logo.png" alt="jaipurio" className="w-full h-full object-contain rounded-full" />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-base md:text-2xl font-bold tracking-wider leading-none text-white">SADA BHARAT</h1>
-                <p className="text-[10px] md:text-xs font-semibold tracking-widest text-white/90 mt-1">AYURVEDIC</p>
+                <h1 className="text-base md:text-2xl font-bold tracking-wider leading-none text-white">jaipurio</h1>
+                <p className="text-[10px] md:text-xs font-semibold tracking-widest text-white/90 mt-1">ARTISAN SELLER</p>
               </div>
             </div>
 
@@ -392,10 +393,10 @@ const VendorRegister = () => {
           
           <div className="w-full max-w-md md:-translate-x-8 lg:-translate-x-16 relative z-10 pt-2 md:pt-4 flex flex-col h-full max-h-[620px] justify-between">
             <div className="text-center mb-4">
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#054425]">Sign Up</h2>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#6F241D]">Sign Up</h2>
               <div className="flex items-center justify-center gap-3 mt-3">
                 <div className="w-16 h-[1.5px] bg-gradient-to-l from-[#CFA767] to-transparent"></div>
-                <svg className="w-6 h-6 text-[#054425]" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-6 h-6 text-[#6F241D]" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2C10 4.5 8.5 7.5 8.5 10.5C8.5 13 10.5 15 12 15C13.5 15 15.5 13 15.5 10.5C15.5 7.5 14 4.5 12 2Z"/>
                   <path d="M10.5 13.5C7.5 13.5 4 11 2.5 8.5C2.5 11.5 4 15 7 16C8.5 16.5 9.5 16 10.5 15V13.5Z"/>
                   <path d="M13.5 13.5C16.5 13.5 20 11 21.5 8.5C21.5 11.5 20 15 17 16C15.5 16.5 14.5 16 13.5 15V13.5Z"/>
@@ -414,8 +415,8 @@ const VendorRegister = () => {
                   return (
                     <div key={step.id} className="flex flex-col items-center gap-1 relative">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] transition-all duration-300 ${
-                        isCompleted ? 'bg-[#054425] text-white' : 
-                        isCurrent ? 'bg-white border-2 border-[#054425] text-[#054425] scale-110 shadow-sm' : 
+                        isCompleted ? 'bg-[#6F241D] text-white' : 
+                        isCurrent ? 'bg-white border-2 border-[#6F241D] text-[#6F241D] scale-110 shadow-sm' : 
                         'bg-white border border-gray-250 text-gray-400'
                       }`}>
                         {isCompleted ? <CheckCircle2 size={12} strokeWidth={2.5} /> : step.id}
@@ -427,15 +428,15 @@ const VendorRegister = () => {
               {/* Progress Line Backdrop */}
               <div className="absolute top-3 left-0 w-full h-0.5 bg-gray-200/80 -z-0 translate-y-[-50%] px-4">
                 <div 
-                  className="h-full bg-[#054425] transition-all duration-500 ease-in-out" 
+                  className="h-full bg-[#6F241D] transition-all duration-500 ease-in-out" 
                   style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
                 ></div>
               </div>
             </div>
 
             {/* Current Step Title Banner */}
-            <div className="bg-white border border-[#054425]/10 rounded-xl px-3 py-1.5 mb-4 text-center shrink-0 shadow-sm">
-              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-[#054425] font-sans">
+            <div className="bg-white border border-[#6F241D]/10 rounded-xl px-3 py-1.5 mb-4 text-center shrink-0 shadow-sm">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-[#6F241D] font-sans">
                 Step {currentStep} of 5: {steps[currentStep - 1].title}
               </span>
             </div>
@@ -471,7 +472,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.fullName}
                             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div>
@@ -482,7 +483,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div>
@@ -493,7 +494,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.mobile}
                             onChange={(e) => setFormData({ ...formData, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -505,7 +506,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.password}
                               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                             />
                           </div>
                           <div>
@@ -516,7 +517,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.confirmPassword}
                               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                             />
                           </div>
                         </div>
@@ -530,11 +531,11 @@ const VendorRegister = () => {
                           <label className="block text-[10px] font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Business Name *</label>
                           <input 
                             type="text" 
-                            placeholder="e.g. Herbal Essence Store" 
+                            placeholder="e.g. Shyam Pottery Store" 
                             required 
                             value={formData.businessName}
                             onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -546,7 +547,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.gstNumber}
                               onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15) })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400 uppercase" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400 uppercase" 
                             />
                           </div>
                           <div>
@@ -555,7 +556,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.businessType}
                               onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-650 cursor-pointer"
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-650 cursor-pointer"
                             >
                               <option value="">Select Type</option>
                               <option value="Proprietorship">Proprietorship</option>
@@ -572,7 +573,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.businessAddress}
                             onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -584,7 +585,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.city}
                               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                             />
                           </div>
                           <div>
@@ -595,7 +596,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.state}
                               onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                             />
                           </div>
                         </div>
@@ -613,7 +614,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.accountHolderName}
                             onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div>
@@ -624,7 +625,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.bankName}
                             onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -636,7 +637,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.accountNumber}
                               onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value.replace(/\D/g, '').slice(0, 18) })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                             />
                           </div>
                           <div>
@@ -647,7 +648,7 @@ const VendorRegister = () => {
                               required 
                               value={formData.ifscCode}
                               onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11) })}
-                              className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400 uppercase" 
+                              className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400 uppercase" 
                             />
                           </div>
                         </div>
@@ -658,7 +659,7 @@ const VendorRegister = () => {
                             placeholder="e.g. owner@okaxis" 
                             value={formData.upiId}
                             onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                       </div>
@@ -675,7 +676,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.storeName}
                             onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400" 
                           />
                         </div>
                         <div>
@@ -686,7 +687,7 @@ const VendorRegister = () => {
                             required 
                             value={formData.storeDescription}
                             onChange={(e) => setFormData({ ...formData, storeDescription: e.target.value })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400 resize-none"
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-805 placeholder:text-gray-400 resize-none"
                           ></textarea>
                         </div>
                         <div>
@@ -695,7 +696,7 @@ const VendorRegister = () => {
                             required
                             value={formData.categories[0] || ""}
                             onChange={(e) => setFormData({ ...formData, categories: e.target.value ? [e.target.value] : [] })}
-                            className="w-full bg-white border border-gray-250 focus:border-[#054425] focus:ring-[#054425] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-750 cursor-pointer"
+                            className="w-full bg-white border border-gray-250 focus:border-[#6F241D] focus:ring-[#6F241D] px-4 py-2.5 rounded-xl text-xs font-semibold outline-none transition-all text-gray-750 cursor-pointer"
                           >
                             <option value="">Select Category</option>
                             {availableCategories.map((cat) => (
@@ -723,7 +724,7 @@ const VendorRegister = () => {
                                }
                              }}
                            />
-                           <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm text-[#054425]">
+                           <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm text-[#6F241D]">
                              <Upload size={16} />
                            </div>
                            <p className="text-[11px] font-bold text-gray-900 mb-0.5">Click to upload business documents</p>
@@ -760,9 +761,9 @@ const VendorRegister = () => {
                               required 
                               checked={formData.termsAccepted}
                               onChange={(e) => setFormData({ ...formData, termsAccepted: e.target.checked })}
-                              className="mt-0.5 w-3.5 h-3.5 text-[#054425] rounded focus:ring-[#054425] accent-[#054425]" 
+                              className="mt-0.5 w-3.5 h-3.5 text-[#6F241D] rounded focus:ring-[#6F241D] accent-[#6F241D]" 
                             />
-                            <span className="text-[11px] text-gray-600 leading-snug font-semibold">I agree to the <a href="#" className="text-[#054425] font-bold hover:underline">Seller Terms & Conditions</a></span>
+                            <span className="text-[11px] text-gray-600 leading-snug font-semibold">I agree to the <a href="#" className="text-[#6F241D] font-bold hover:underline">Seller Terms & Conditions</a></span>
                           </label>
                           <label className="flex items-start gap-2.5 cursor-pointer select-none">
                             <input 
@@ -770,9 +771,9 @@ const VendorRegister = () => {
                               required 
                               checked={formData.policiesAccepted}
                               onChange={(e) => setFormData({ ...formData, policiesAccepted: e.target.checked })}
-                              className="mt-0.5 w-3.5 h-3.5 text-[#054425] rounded focus:ring-[#054425] accent-[#054425]" 
+                              className="mt-0.5 w-3.5 h-3.5 text-[#6F241D] rounded focus:ring-[#6F241D] accent-[#6F241D]" 
                             />
-                            <span className="text-[11px] text-gray-600 leading-snug font-semibold">I agree to the <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#054425] font-bold hover:underline">Marketplace Policies</a></span>
+                            <span className="text-[11px] text-gray-600 leading-snug font-semibold">I agree to the <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[#6F241D] font-bold hover:underline">Marketplace Policies</a></span>
                           </label>
                         </div>
                       </div>
@@ -799,7 +800,7 @@ const VendorRegister = () => {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-md transition-all active:scale-95 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#054425] hover:bg-[#04331c]'}`}
+                  className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-md transition-all active:scale-95 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#6F241D] hover:bg-[#4E271D]'}`}
                 >
                   {currentStep === steps.length ? (isSubmitting ? 'Submitting...' : 'Submit Application') : 'Continue'} 
                   {currentStep !== steps.length && <ChevronRight size={14} />}
@@ -810,7 +811,7 @@ const VendorRegister = () => {
             <div className="mt-6 text-center shrink-0">
               <p className="text-xs sm:text-sm font-semibold text-gray-600">
                 Already have a seller account?{' '}
-                <Link to="/vendor/login" className="font-bold text-[#054425] hover:underline">Sign In</Link>
+                <Link to="/vendor/login" className="font-bold text-[#6F241D] hover:underline">Sign In</Link>
               </p>
             </div>
           </div>

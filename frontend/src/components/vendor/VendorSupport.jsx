@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMessageSquare, FiMessageCircle, FiInbox, FiCheckCircle, FiSearch, FiPackage } from 'react-icons/fi';
 import api from '../../utils/api';
@@ -31,7 +31,7 @@ const VendorSupport = () => {
   if (loading || !vendorInfo) {
     return (
       <div className="flex items-center justify-center h-[70vh]">
-        <div className="w-8 h-8 border-2 border-[#054425] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-[#6F241D] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -62,7 +62,7 @@ const VendorSupport = () => {
         <button
           onClick={() => { setActiveTab('inbox'); setSelectedConversation(null); }}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
-            activeTab === 'inbox' ? 'bg-[#054425] text-white shadow-sm' : 'text-gray-500 hover:text-[#054425]'
+            activeTab === 'inbox' ? 'bg-[#6F241D] text-white shadow-sm' : 'text-gray-500 hover:text-[#6F241D]'
           }`}
         >
           <FiInbox size={14} /> Customer Inbox
@@ -70,7 +70,7 @@ const VendorSupport = () => {
         <button
           onClick={() => { setActiveTab('admin-chat'); setSelectedConversation(null); }}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
-            activeTab === 'admin-chat' ? 'bg-[#054425] text-white shadow-sm' : 'text-gray-500 hover:text-[#054425]'
+            activeTab === 'admin-chat' ? 'bg-[#6F241D] text-white shadow-sm' : 'text-gray-500 hover:text-[#6F241D]'
           }`}
         >
           <FiMessageSquare size={14} /> Admin Support
@@ -120,12 +120,12 @@ const VendorSupport = () => {
           /* Admin Chat Channel */
           <div className="flex h-full">
              <div className="hidden md:flex w-64 shrink-0 border-r border-gray-100 flex-col bg-gray-50 p-6 items-center justify-center text-center">
-                <div className="w-16 h-16 bg-[#054425]/10 text-[#054425] rounded-full flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-[#6F241D]/10 text-[#6F241D] rounded-full flex items-center justify-center mb-4">
                   <FiMessageSquare size={24} />
                 </div>
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Platform Support</h3>
                 <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
-                  Chat directly with the Sada Bharat admin team for any account, payment, or platform issues.
+                  Chat directly with the jaipurio admin team for any account, payment, or platform issues.
                 </p>
              </div>
              <div className="flex-1 flex flex-col relative">

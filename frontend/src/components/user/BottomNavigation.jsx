@@ -22,10 +22,10 @@ const BottomNavigation = () => {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E8E2D9] md:hidden shadow-[0_-1px_8px_rgba(0,0,0,0.05)]"
-      style={{ paddingBottom: 'max(2px, env(safe-area-inset-bottom))' }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E8E2D9] md:hidden shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
     >
-      <div className="h-10 flex items-center justify-around px-1">
+      <div className="h-[58px] flex items-center justify-around px-1">
         {navItems.map((item) => {
           const isActive =
             item.path === '/home'
@@ -40,19 +40,23 @@ const BottomNavigation = () => {
             <Link
               key={item.label}
               to={item.path}
-              className={`flex flex-col items-center justify-center relative flex-1 h-full ${
+              className={`flex flex-col items-center justify-center relative flex-1 h-full gap-0.5 ${
                 isActive ? 'text-[#6F241D]' : 'text-[#8A7A6A]'
               }`}
             >
               <div className="relative inline-flex">
-                <Icon size={15} strokeWidth={2.2} />
+                <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
                 {item.label === 'Shop' && cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1.5 bg-[#A94E2C] text-white text-[7px] font-bold min-w-[11px] h-[11px] px-0.5 rounded-full flex items-center justify-center">
-                    {cartCount}
+                  <span className="absolute -top-1.5 -right-2 bg-[#A94E2C] text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white">
+                    {cartCount > 9 ? '9+' : cartCount}
                   </span>
                 )}
               </div>
-              <span className="font-dm text-[7.5px] mt-0.5 font-medium leading-none">
+              <span
+                className={`font-dm text-[10px] leading-none tracking-tight ${
+                  isActive ? 'font-semibold' : 'font-medium'
+                }`}
+              >
                 {item.label}
               </span>
             </Link>

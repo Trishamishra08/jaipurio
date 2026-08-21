@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle, Info, AlertTriangle, AlertCircle, Check } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -81,7 +81,7 @@ const VendorNotifications = () => {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="flex items-center gap-1.5 text-xs text-[#054425] font-medium hover:underline"
+            className="flex items-center gap-1.5 text-xs text-[#6F241D] font-medium hover:underline"
           >
             <Check size={12} /> Mark all read
           </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FiTruck, FiMapPin, FiSave, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 
 // MOCK API for Frontend-Only mode
@@ -11,7 +11,7 @@ const api = {
 
 const VendorLogistics = () => {
     const [settings, setSettings] = useState({
-        pickupAddress: '123 Ayurvedic Market, Wellness Street, New Delhi, 110001',
+        pickupAddress: '123 HANDCRAFTED Market, Wellness Street, New Delhi, 110001',
         preferredPartner: 'Delhivery',
         processingDays: '1-2 Days',
     });
@@ -107,7 +107,7 @@ const VendorLogistics = () => {
                                 <option value="Bluedart">Bluedart</option>
                                 <option value="Ecom Express">Ecom Express</option>
                                 <option value="Shadowfax">Shadowfax</option>
-                                <option value="Sada Bharat Fulfillment">Sada Bharat Fulfillment (Platform)</option>
+                                <option value="jaipurio Fulfillment">jaipurio Fulfillment (Platform)</option>
                             </select>
                         </div>
                         <div className="space-y-1.5">

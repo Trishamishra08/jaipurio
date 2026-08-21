@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Eye, MoreHorizontal, PackageOpen, Truck, CheckCircle2, RefreshCw } from 'lucide-react';
 import { FiArrowLeft, FiDownload, FiUsers, FiTruck } from 'react-icons/fi';
 import html2pdf from 'html2pdf.js';
@@ -97,7 +97,7 @@ const VendorOrders = () => {
         <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
           <button
             onClick={() => { setSelectedOrder(null); }}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#054425] transition-colors"
+            className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#6F241D] transition-colors"
           >
             <FiArrowLeft size={16} /> Back to Orders
           </button>
@@ -139,7 +139,7 @@ const VendorOrders = () => {
                             value={item.status}
                             onChange={(e) => handleUpdateStatus(selectedOrder._id, item._id, e.target.value, item.trackingNumber)}
                             disabled={isUpdating}
-                            className="bg-white border border-gray-300 text-xs font-semibold px-2 py-1.5 rounded outline-none focus:border-[#054425]"
+                            className="bg-white border border-gray-300 text-xs font-semibold px-2 py-1.5 rounded outline-none focus:border-[#6F241D]"
                           >
                             <option value="Processing">Processing</option>
                             <option value="Packed">Packed</option>
@@ -158,7 +158,7 @@ const VendorOrders = () => {
                                 }
                               }}
                               disabled={isUpdating}
-                              className="w-32 px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-[#054425]" 
+                              className="w-32 px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:border-[#6F241D]" 
                             />
                           )}
                         </div>
@@ -181,7 +181,7 @@ const VendorOrders = () => {
                 <div className="pt-4 mt-2 border-t border-gray-100">
                   <div className="flex justify-between items-center py-2 text-base font-bold text-gray-900 mt-2">
                     <span>Total Amount for Your Items ({selectedOrder.paymentMethod || 'COD'})</span>
-                    <span className="text-[#054425]">₹{orderTotal + shipping}</span>
+                    <span className="text-[#6F241D]">₹{orderTotal + shipping}</span>
                   </div>
                 </div>
               </div>
@@ -194,7 +194,7 @@ const VendorOrders = () => {
               <div className="space-y-5">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2 mb-3">
-                    <FiUsers className="text-[#054425]" /> Customer Details
+                    <FiUsers className="text-[#6F241D]" /> Customer Details
                   </h3>
                   <div className="space-y-1 text-sm text-gray-600">
                     <p className="font-semibold text-gray-900">{selectedOrder.user?.name || selectedOrder.shippingAddress?.name || 'Unknown'}</p>
@@ -205,7 +205,7 @@ const VendorOrders = () => {
                 
                 <div>
                   <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2 mb-3">
-                    <FiTruck className="text-[#054425]" /> Shipping Address
+                    <FiTruck className="text-[#6F241D]" /> Shipping Address
                   </h3>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     {selectedOrder.shippingAddress?.address || 'No Address Provided'}<br />
@@ -242,7 +242,7 @@ const VendorOrders = () => {
               placeholder="Search Order ID, Customer, Product..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium"
+              className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium"
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
@@ -320,7 +320,7 @@ const VendorOrders = () => {
                               }
                             }}
                             disabled={isUpdating}
-                            className="w-24 px-2 py-1 border border-gray-200 rounded text-[11px] outline-none focus:border-[#054425]" 
+                            className="w-24 px-2 py-1 border border-gray-200 rounded text-[11px] outline-none focus:border-[#6F241D]" 
                           />
                         </div>
                       )}

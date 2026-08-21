@@ -171,11 +171,14 @@ const Register = () => {
 
             <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 via-black/10 to-transparent" />
 
-            <div className="absolute top-3 sm:top-4 left-0 right-0 z-10 text-center px-4 md:top-6">
-              <p className="font-brand text-[26px] sm:text-3xl md:text-4xl font-bold tracking-[0.05em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)]">
-                jaipurio
-              </p>
-              <p className="font-brand text-[10px] sm:text-xs md:text-sm italic text-white/95 mt-0.5 drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+            <div className="absolute top-2.5 sm:top-3 left-0 right-0 z-10 flex flex-col items-center px-4 md:top-5">
+              <img
+                src="/jaipurio_logo_bg.png"
+                alt="jaipurio"
+                className="h-11 sm:h-12 md:h-14 w-auto object-contain rounded-md shadow-[0_4px_14px_rgba(0,0,0,0.35)]"
+                draggable={false}
+              />
+              <p className="font-brand text-[10px] sm:text-xs md:text-sm italic text-white/95 mt-1.5 drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
                 Mitti ki khushboo, Rajasthan ki pehchaan
               </p>
             </div>

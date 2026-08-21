@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { CreditCard, History, ArrowRightCircle } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -38,7 +38,7 @@ const VendorPayouts = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 bg-[#054425] text-white p-5 rounded-xl shadow-md relative overflow-hidden flex flex-col justify-between h-48">
+        <div className="lg:col-span-1 bg-[#6F241D] text-white p-5 rounded-xl shadow-md relative overflow-hidden flex flex-col justify-between h-48">
            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
            <div>
              <p className="text-white/70 text-[11px] font-bold mb-1 uppercase tracking-wide">Pending Balance</p>

@@ -95,20 +95,23 @@ const SplashPage = () => {
 
   return (
     <div
-      className={`splash-screen fixed inset-0 z-[9999] flex items-center justify-center bg-[#F8F1E3] ${
+      className={`splash-screen fixed inset-0 z-[9999] flex items-center justify-center bg-black ${
         exiting ? 'is-exiting' : ''
       }`}
       role="dialog"
       aria-label="jaipurio splash"
       aria-busy={!exiting}
     >
-      <div className="relative w-full h-full max-w-md mx-auto sm:max-w-lg overflow-hidden bg-[#F8F1E3]">
+      <div className="relative w-full h-full max-w-md mx-auto sm:max-w-lg overflow-hidden bg-black">
         {!ready && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 bg-[#F8F1E3]">
-            <p className="font-brand text-4xl font-bold tracking-[0.06em] text-[#6F241D]">
-              jaipurio
-            </p>
-            <p className="font-brand text-sm italic text-[#4A3A2F] mt-2 text-center">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-8 bg-black">
+            <img
+              src="/jaipurio_logo_bg.png"
+              alt="jaipurio"
+              className="w-[72%] max-w-[280px] h-auto object-contain select-none"
+              draggable={false}
+            />
+            <p className="font-brand text-sm italic text-white/70 mt-4 text-center">
               Mitti ki khushboo, Rajasthan ki pehchaan
             </p>
           </div>
@@ -129,6 +132,17 @@ const SplashPage = () => {
           disablePictureInPicture
           aria-label="jaipurio camel splash"
         />
+
+        {ready && (
+          <div className="absolute top-5 left-0 right-0 z-20 flex justify-center px-6 pointer-events-none">
+            <img
+              src="/jaipurio_logo_bg.png"
+              alt="jaipurio"
+              className="w-[46%] max-w-[180px] h-auto object-contain drop-shadow-lg rounded-lg"
+              draggable={false}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

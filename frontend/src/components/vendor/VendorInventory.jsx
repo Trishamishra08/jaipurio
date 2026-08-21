@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, AlertTriangle, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../utils/api';
@@ -120,7 +120,7 @@ const VendorInventory = () => {
               placeholder="Search SKU or Product..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium"
+              className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium"
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
@@ -188,12 +188,12 @@ const VendorInventory = () => {
                             value={editStockValue} 
                             onChange={(e) => setEditStockValue(e.target.value)}
                             disabled={isUpdating}
-                            className="w-14 px-2 py-1 border border-[#054425] rounded-md text-[11px] text-center outline-none ring-1 ring-[#054425]/20" 
+                            className="w-14 px-2 py-1 border border-[#6F241D] rounded-md text-[11px] text-center outline-none ring-1 ring-[#6F241D]/20" 
                           />
                           <button 
                             onClick={() => handleUpdateStock(item.id)} 
                             disabled={isUpdating}
-                            className="px-2 py-1 bg-[#054425] text-white font-medium rounded-md hover:bg-black transition-colors text-[11px] disabled:opacity-50"
+                            className="px-2 py-1 bg-[#6F241D] text-white font-medium rounded-md hover:bg-black transition-colors text-[11px] disabled:opacity-50"
                           >
                             Save
                           </button>

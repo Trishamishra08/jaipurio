@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
@@ -57,7 +57,7 @@ const VendorProducts = () => {
           <h1 className="text-2xl font-serif font-bold text-gray-900 leading-tight">Products</h1>
           <p className="text-[12px] text-gray-500 mt-0.5 font-sans">Manage your product listings and inventory.</p>
         </div>
-        <Link to="/vendor/add-product" className="bg-[#054425] text-white px-4 py-2 rounded-lg text-[12px] font-bold shadow-sm hover:bg-[#04331c] transition-colors flex items-center gap-1.5">
+        <Link to="/vendor/add-product" className="bg-[#6F241D] text-white px-4 py-2 rounded-lg text-[12px] font-bold shadow-sm hover:bg-[#4E271D] transition-colors flex items-center gap-1.5">
           <Plus size={16} /> Add New Product
         </Link>
       </div>
@@ -70,7 +70,7 @@ const VendorProducts = () => {
             <input 
               type="text" 
               placeholder="Search products..." 
-              className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium"
+              className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D] font-sans font-medium"
             />
           </div>
         </div>
@@ -122,7 +122,7 @@ const VendorProducts = () => {
                       <td className="px-4 py-2.5">
                         <div className="flex justify-center items-center gap-2.5">
                           <button className="text-gray-400 hover:text-blue-600 transition-colors" title="View"><Eye size={14} /></button>
-                          <button onClick={() => navigate(`/vendor/edit-product/${product._id}`, { state: { product } })} className="text-gray-400 hover:text-[#054425] transition-colors" title="Edit"><Edit2 size={14} /></button>
+                          <button onClick={() => navigate(`/vendor/edit-product/${product._id}`, { state: { product } })} className="text-gray-400 hover:text-[#6F241D] transition-colors" title="Edit"><Edit2 size={14} /></button>
                           <button onClick={() => handleDelete(product._id)} className="text-gray-400 hover:text-red-600 transition-colors" title="Delete"><Trash2 size={14} /></button>
                         </div>
                       </td>
@@ -159,7 +159,7 @@ const VendorProducts = () => {
                     {/* Actions row for mobile */}
                     <div className="flex justify-end gap-3 mt-3 pt-2 border-t border-gray-50">
                       <button className="text-[11px] font-semibold text-gray-500 hover:text-blue-600 flex items-center gap-1"><Eye size={12}/> View</button>
-                      <button onClick={() => navigate(`/vendor/edit-product/${product._id}`, { state: { product } })} className="text-[11px] font-semibold text-gray-500 hover:text-[#054425] flex items-center gap-1"><Edit2 size={12}/> Edit</button>
+                      <button onClick={() => navigate(`/vendor/edit-product/${product._id}`, { state: { product } })} className="text-[11px] font-semibold text-gray-500 hover:text-[#6F241D] flex items-center gap-1"><Edit2 size={12}/> Edit</button>
                       <button onClick={() => handleDelete(product._id)} className="text-[11px] font-semibold text-gray-500 hover:text-red-600 flex items-center gap-1"><Trash2 size={12}/> Delete</button>
                     </div>
                   </div>
@@ -172,7 +172,7 @@ const VendorProducts = () => {
               <p>Showing 1 to {products.length} of {products.length} entries</p>
               <div className="flex gap-1">
                 <button className="px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors">Prev</button>
-                <button className="px-2.5 py-1.5 bg-[#054425] text-white rounded-md font-bold shadow-sm">1</button>
+                <button className="px-2.5 py-1.5 bg-[#6F241D] text-white rounded-md font-bold shadow-sm">1</button>
                 <button className="px-2.5 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">Next</button>
               </div>
             </div>
