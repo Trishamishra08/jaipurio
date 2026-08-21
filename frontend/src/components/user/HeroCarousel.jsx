@@ -9,10 +9,12 @@ const SLIDES = [
 
 /**
  * Full-bleed hero — banner art + looping video slides.
+ * Text/CTA only on image slide (hidden on video).
  */
 const HeroCarousel = () => {
   const [active, setActive] = useState(0);
   const videoRef = useRef(null);
+  const isVideo = SLIDES[active]?.type === 'video';
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -24,13 +26,13 @@ const HeroCarousel = () => {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (SLIDES[active]?.type === 'video') {
+    if (isVideo) {
       video.currentTime = 0;
       video.play().catch(() => {});
     } else {
       video.pause();
     }
-  }, [active]);
+  }, [active, isVideo]);
 
   return (
     <section className="relative w-full m-0 p-0 -mt-0 leading-none bg-[#EFE0C9]">
@@ -72,26 +74,30 @@ const HeroCarousel = () => {
           })}
         </div>
 
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-[#F8F1E3]/80 via-[#F8F1E3]/25 to-transparent"
-          aria-hidden="true"
-        />
+        {!isVideo && (
+          <>
+            <div
+              className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-[#F8F1E3]/80 via-[#F8F1E3]/25 to-transparent"
+              aria-hidden="true"
+            />
 
-        <div className="absolute left-3 right-[26%] sm:left-5 sm:right-auto sm:max-w-[280px] md:left-8 md:max-w-[340px] top-[32%] sm:top-[34%] md:top-[36%] z-[3]">
-          <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[34px] font-bold text-[#6F241D] leading-[1.15]">
-            Authentic Mitti. Pure Rajasthan.
-          </h1>
-          <p className="font-body text-[10px] sm:text-xs md:text-sm text-[#4A3A2F] mt-1.5 sm:mt-2 leading-snug max-w-[220px] sm:max-w-none">
-            Traditional Matkas &amp; Mitti Products direct from Jaipur
-          </p>
-          <Link
-            to="/shop"
-            className="mt-2.5 sm:mt-3 inline-flex items-center gap-1.5 bg-[#6F241D] hover:bg-[#873A24] text-white font-body text-[11px] sm:text-xs font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-md active:scale-[0.98] transition-all"
-          >
-            Shop Now
-            <ArrowRight size={14} strokeWidth={2.4} />
-          </Link>
-        </div>
+            <div className="absolute left-3 right-[26%] sm:left-5 sm:right-auto sm:max-w-[280px] md:left-8 md:max-w-[340px] top-[32%] sm:top-[34%] md:top-[36%] z-[3]">
+              <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[34px] font-bold text-[#6F241D] leading-[1.15]">
+                Authentic Mitti. Pure Rajasthan.
+              </h1>
+              <p className="font-body text-[10px] sm:text-xs md:text-sm text-[#4A3A2F] mt-1.5 sm:mt-2 leading-snug max-w-[220px] sm:max-w-none">
+                Traditional Matkas &amp; Mitti Products direct from Jaipur
+              </p>
+              <Link
+                to="/shop"
+                className="mt-2.5 sm:mt-3 inline-flex items-center gap-1.5 bg-[#6F241D] hover:bg-[#873A24] text-white font-body text-[11px] sm:text-xs font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-md active:scale-[0.98] transition-all"
+              >
+                Shop Now
+                <ArrowRight size={14} strokeWidth={2.4} />
+              </Link>
+            </div>
+          </>
+        )}
 
         <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-[3] flex items-center gap-1.5">
           {SLIDES.map((_, i) => (

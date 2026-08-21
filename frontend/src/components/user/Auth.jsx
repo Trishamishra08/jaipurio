@@ -249,15 +249,25 @@ const Auth = () => {
             </div>
           </div>
 
+          {/* Logo between banner and form card (mobile) */}
+          <div className="relative z-30 flex justify-center -mt-11 md:hidden">
+            <img
+              src="/jaipurio_logo_bg.png"
+              alt="jaipurio"
+              className="h-[5.75rem] sm:h-24 w-auto object-contain select-none rounded-2xl shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-2 ring-white/90"
+              draggable={false}
+            />
+          </div>
+
           {/* ===== FORM SHEET ===== */}
-          <div className="flex-1 relative z-20 -mt-4 md:mt-0 rounded-t-[24px] md:rounded-none bg-[#F8F1E3] shadow-[0_-6px_20px_rgba(111,36,29,0.1)] md:shadow-none overflow-y-auto">
-            <div className="px-5 pt-4 pb-8 sm:px-8 md:px-10 md:pt-12 lg:pt-16 max-w-md mx-auto w-full">
+          <div className="flex-1 relative z-20 -mt-8 md:mt-0 rounded-t-[28px] md:rounded-none bg-[#F8F1E3] shadow-[0_-8px_24px_rgba(111,36,29,0.12)] md:shadow-none overflow-y-auto">
+            <div className="px-5 pt-14 pb-8 sm:px-8 md:px-10 md:pt-12 lg:pt-16 max-w-md mx-auto w-full">
 
               <div className="text-center mb-4 md:mb-8 md:text-left">
                 <img
                   src="/jaipurio_logo_bg.png"
                   alt="jaipurio"
-                  className="h-14 sm:h-16 md:h-[4.25rem] w-auto mx-auto md:mx-0 object-contain select-none mb-3 rounded-lg"
+                  className="hidden md:block h-24 lg:h-28 w-auto mx-auto md:mx-0 object-contain select-none mb-4 rounded-2xl shadow-md"
                   draggable={false}
                 />
                 <h1 className="font-heading text-xl sm:text-2xl md:text-4xl font-bold text-[#6F241D]">
