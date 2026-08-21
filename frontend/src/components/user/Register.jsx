@@ -171,18 +171,6 @@ const Register = () => {
 
             <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 via-black/10 to-transparent" />
 
-            <div className="absolute top-2.5 sm:top-3 left-0 right-0 z-10 flex flex-col items-center px-4 md:top-5">
-              <img
-                src="/jaipurio_logo_bg.png"
-                alt="jaipurio"
-                className="h-11 sm:h-12 md:h-14 w-auto object-contain rounded-md shadow-[0_4px_14px_rgba(0,0,0,0.35)]"
-                draggable={false}
-              />
-              <p className="font-brand text-[10px] sm:text-xs md:text-sm italic text-white/95 mt-1.5 drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
-                Mitti ki khushboo, Rajasthan ki pehchaan
-              </p>
-            </div>
-
             <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 md:bottom-8">
               {CAROUSEL.map((_, i) => (
                 <button
@@ -203,6 +191,12 @@ const Register = () => {
             <div className="px-5 pt-4 pb-8 sm:px-8 md:px-10 md:pt-12 lg:pt-14 max-w-md mx-auto w-full">
 
               <div className="text-center mb-4 md:mb-6 md:text-left">
+                <img
+                  src="/jaipurio_logo_bg.png"
+                  alt="jaipurio"
+                  className="h-14 sm:h-16 md:h-[4.25rem] w-auto mx-auto md:mx-0 object-contain select-none mb-3 rounded-lg"
+                  draggable={false}
+                />
                 <h1 className="font-heading text-xl sm:text-2xl md:text-4xl font-bold text-[#6F241D]">
                   Create Account
                 </h1>

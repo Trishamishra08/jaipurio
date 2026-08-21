@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -138,14 +138,16 @@ const VendorLayout = () => {
         } overflow-hidden`}
       >
         <div className={`h-14 flex items-center border-b border-white/10 shrink-0 ${
-          sidebarOpen ? 'justify-between px-4' : 'justify-center px-0'
+          sidebarOpen ? 'justify-between px-3' : 'justify-center px-0'
         }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1 shrink-0">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = "https://via.placeholder.com/40"; }} />
-            </div>
-            <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${sidebarOpen ? 'opacity-100 max-w-[200px]' : 'opacity-0 max-w-0 hidden'}`}>
-              <h1 className="font-playfair font-semibold text-lg tracking-wide leading-tight">jaipurio</h1>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <img
+              src="/jaipurio_logo_bg.png"
+              alt="jaipurio"
+              className={`object-contain rounded-md shrink-0 ${sidebarOpen ? 'h-10 w-auto' : 'h-9 w-9'}`}
+              style={{ mixBlendMode: 'screen' }}
+            />
+            <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${sidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 hidden'}`}>
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/70">Artisan Panel</p>
             </div>
           </div>

@@ -1,34 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
+const SLIDES = [
+  { type: 'image', src: '/jaipurio_banner_art.png' },
+  { type: 'video', src: '/generate_a_simple_video_for_th.mp4' },
+];
+
 /**
- * Full-bleed under announcement — nav overlays top (no cream gap).
+ * Full-bleed hero — banner art + looping video slides.
  */
 const HeroCarousel = () => {
   const [active, setActive] = useState(0);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActive((prev) => (prev + 1) % SLIDES.length);
+    }, 6500);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (SLIDES[active]?.type === 'video') {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [active]);
 
   return (
     <section className="relative w-full m-0 p-0 -mt-0 leading-none bg-[#EFE0C9]">
       <div className="relative w-full overflow-hidden">
-        {/* Starts under announcement; location+nav float on top */}
         <div className="relative w-full aspect-[5/4] sm:aspect-[16/10] md:aspect-[2/1] max-h-[580px]">
-          <img
-            src="/jaipurio_banner_art.png"
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover object-[58%_38%] md:object-center select-none"
-            draggable={false}
-          />
+          {SLIDES.map((slide, i) => {
+            const isActive = i === active;
+            if (slide.type === 'image') {
+              return (
+                <img
+                  key={slide.src}
+                  src={slide.src}
+                  alt=""
+                  className={`absolute inset-0 w-full h-full object-cover object-[58%_38%] md:object-center select-none transition-opacity duration-700 ${
+                    isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
+                  }`}
+                  draggable={false}
+                />
+              );
+            }
+            return (
+              <video
+                key={slide.src}
+                ref={videoRef}
+                className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-opacity duration-700 ${
+                  isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
+                }`}
+                src={slide.src}
+                muted
+                playsInline
+                loop
+                autoPlay
+                preload="metadata"
+                controls={false}
+                disablePictureInPicture
+                aria-label="jaipurio banner video"
+              />
+            );
+          })}
         </div>
 
-        {/* Soft left wash for text only — no top fade / no cream gap */}
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-[#F8F1E3]/80 via-[#F8F1E3]/25 to-transparent"
+          className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-[#F8F1E3]/80 via-[#F8F1E3]/25 to-transparent"
           aria-hidden="true"
         />
 
-        {/* Headline sits below overlay nav */}
-        <div className="absolute left-3 right-[26%] sm:left-5 sm:right-auto sm:max-w-[280px] md:left-8 md:max-w-[340px] top-[32%] sm:top-[34%] md:top-[36%] z-[2]">
+        <div className="absolute left-3 right-[26%] sm:left-5 sm:right-auto sm:max-w-[280px] md:left-8 md:max-w-[340px] top-[32%] sm:top-[34%] md:top-[36%] z-[3]">
           <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[34px] font-bold text-[#6F241D] leading-[1.15]">
             Authentic Mitti. Pure Rajasthan.
           </h1>
@@ -44,8 +93,8 @@ const HeroCarousel = () => {
           </Link>
         </div>
 
-        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-[2] flex items-center gap-1.5">
-          {[0, 1, 2].map((i) => (
+        <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-[3] flex items-center gap-1.5">
+          {SLIDES.map((_, i) => (
             <button
               key={i}
               type="button"

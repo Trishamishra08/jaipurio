@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle2, ChevronRight, ChevronLeft, ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -372,18 +372,20 @@ const VendorRegister = () => {
           {/* Logo & Welcome Text */}
           <div className="absolute inset-0 p-4 pt-4 md:p-12 flex flex-col z-30 text-white">
             <div className="flex items-center gap-3 md:gap-4">
-              <div className="w-9 h-9 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center p-1 shrink-0 shadow-md">
-                <img src="/logo.png" alt="jaipurio" className="w-full h-full object-contain rounded-full" />
-              </div>
+              <img
+                src="/jaipurio_logo_bg.png"
+                alt="jaipurio"
+                className="h-12 md:h-16 w-auto object-contain rounded-md shrink-0"
+                style={{ mixBlendMode: 'screen' }}
+              />
               <div className="flex flex-col">
-                <h1 className="text-base md:text-2xl font-bold tracking-wider leading-none text-white">jaipurio</h1>
                 <p className="text-[10px] md:text-xs font-semibold tracking-widest text-white/90 mt-1">ARTISAN SELLER</p>
               </div>
             </div>
 
             <div className="mt-4 md:mt-32">
               <h2 className="text-2xl md:text-5xl font-serif font-bold text-white mb-2 md:mb-4">Join Our Seller Community!</h2>
-              <p className="text-xs md:text-lg text-white/95 font-medium max-w-[200px] md:max-w-sm leading-tight md:leading-normal">Register and reach thousands of customers searching for organic health.</p>
+              <p className="text-xs md:text-lg text-white/95 font-medium max-w-[200px] md:max-w-sm leading-tight md:leading-normal">Register and sell authentic Rajasthani mitti crafts on jaipurio.</p>
             </div>
           </div>
         </div>
@@ -393,6 +395,12 @@ const VendorRegister = () => {
           
           <div className="w-full max-w-md md:-translate-x-8 lg:-translate-x-16 relative z-10 pt-2 md:pt-4 flex flex-col h-full max-h-[620px] justify-between">
             <div className="text-center mb-4">
+              <img
+                src="/jaipurio_logo_bg.png"
+                alt="jaipurio"
+                className="h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
+                draggable={false}
+              />
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#6F241D]">Sign Up</h2>
               <div className="flex items-center justify-center gap-3 mt-3">
                 <div className="w-16 h-[1.5px] bg-gradient-to-l from-[#CFA767] to-transparent"></div>

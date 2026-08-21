@@ -104,14 +104,14 @@ const SplashPage = () => {
     >
       <div className="relative w-full h-full max-w-md mx-auto sm:max-w-lg overflow-hidden bg-black">
         {!ready && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-8 bg-black">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 bg-black">
             <img
               src="/jaipurio_logo_bg.png"
               alt="jaipurio"
-              className="w-[72%] max-w-[280px] h-auto object-contain select-none"
+              className="w-[80%] max-w-[320px] h-auto object-contain select-none"
               draggable={false}
             />
-            <p className="font-brand text-sm italic text-white/70 mt-4 text-center">
+            <p className="font-brand text-sm italic text-white/70 mt-5 text-center">
               Mitti ki khushboo, Rajasthan ki pehchaan
             </p>
           </div>
@@ -134,11 +134,12 @@ const SplashPage = () => {
         />
 
         {ready && (
-          <div className="absolute top-5 left-0 right-0 z-20 flex justify-center px-6 pointer-events-none">
+          <div className="absolute top-4 left-0 right-0 z-20 flex justify-center px-5 pointer-events-none">
             <img
               src="/jaipurio_logo_bg.png"
               alt="jaipurio"
-              className="w-[46%] max-w-[180px] h-auto object-contain drop-shadow-lg rounded-lg"
+              className="w-[58%] max-w-[220px] h-auto object-contain select-none"
+              style={{ mixBlendMode: 'screen' }}
               draggable={false}
             />
           </div>

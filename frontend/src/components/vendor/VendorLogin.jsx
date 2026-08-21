@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -90,21 +90,14 @@ const VendorLogin = () => {
 
           <div className="absolute inset-0 p-4 pt-4 md:p-12 flex flex-col z-30 text-white">
             <div className="flex items-center gap-3 md:gap-4">
-              <div className="w-9 h-9 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center p-1 shrink-0 shadow-md">
-                <img
-                  src="/logo.png"
-                  alt="jaipurio"
-                  className="w-full h-full object-contain rounded-full"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              </div>
+              <img
+                src="/jaipurio_logo_bg.png"
+                alt="jaipurio"
+                className="h-12 md:h-16 w-auto object-contain rounded-md shrink-0"
+                style={{ mixBlendMode: 'screen' }}
+              />
               <div className="flex flex-col">
-                <h1 className="font-playfair text-xl md:text-3xl font-semibold tracking-wide leading-none text-white">
-                  jaipurio
-                </h1>
-                <p className="text-[10px] md:text-xs font-medium tracking-widest text-white/90 mt-1 uppercase">
+                <p className="text-[10px] md:text-xs font-medium tracking-widest text-white/90 uppercase">
                   Artisan Seller
                 </p>
               </div>
@@ -124,6 +117,12 @@ const VendorLogin = () => {
         <div className="flex-1 flex flex-col justify-center items-center px-6 py-4 md:px-12 md:py-8 relative z-20 bg-white overflow-y-auto">
           <div className="w-full max-w-md md:-translate-x-6 lg:-translate-x-10 relative z-10 pt-2">
             <div className="text-center mb-5">
+              <img
+                src="/jaipurio_logo_bg.png"
+                alt="jaipurio"
+                className="h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
+                draggable={false}
+              />
               <h2 className="text-3xl md:text-4xl font-playfair font-semibold text-[#6F241D]">Sign In</h2>
               <p className="text-[11px] text-[#806653] mt-2">Demo: {DEMO_EMAIL} / {DEMO_PASSWORD}</p>
             </div>
