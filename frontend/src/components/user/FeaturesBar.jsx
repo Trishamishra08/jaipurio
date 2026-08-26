@@ -93,7 +93,7 @@ const FeaturesBar = () => {
   return (
     <section className="w-full bg-white py-1.5 px-3 sm:px-5">
       <div className="w-full max-w-7xl mx-auto">
-        <div className="bg-[#FAF8F2] border border-[#D5C19E]/90 rounded-xl px-0.5 py-1.5 sm:px-2 sm:py-2 shadow-sm">
+        <div className="bg-white border border-[#E8E2D9] rounded-xl px-0.5 py-1.5 sm:px-2 sm:py-2 shadow-sm">
           <div className="grid grid-cols-5 divide-x divide-dotted divide-[#C9B89A]">
             {features.map((item) => (
               <div

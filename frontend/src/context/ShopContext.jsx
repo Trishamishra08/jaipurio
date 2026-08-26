@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { initialProducts, initialCategories, initialOffers, initialVendors, initialReviews } from '../data/products';
+import { PHOTOS } from '../data/photos';
 
 const ShopContext = createContext();
+
+const imageByProductId = Object.fromEntries(initialProducts.map((p) => [p._id, p.image]));
+const withFreshImages = (items) =>
+  (items || []).map((item) =>
+    imageByProductId[item._id] ? { ...item, image: imageByProductId[item._id] } : item
+  );
 
 export const useShop = () => useContext(ShopContext);
 
@@ -9,7 +16,10 @@ export const ShopProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem('jaipurio_products');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((p) => (imageByProductId[p._id] ? { ...p, image: imageByProductId[p._id] } : p));
+      }
     } catch (e) {}
     return initialProducts;
   });
@@ -22,7 +32,7 @@ export const ShopProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('jaipurio_cart');
-      if (saved) return JSON.parse(saved);
+      if (saved) return withFreshImages(JSON.parse(saved));
     } catch (e) {}
     return [
       {
@@ -31,7 +41,7 @@ export const ShopProvider = ({ children }) => {
         price: 399,
         oldPrice: 599,
         quantity: 1,
-        image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80',
+        image: PHOTOS.matka,
         vendor: 'Shyam Pottery, Jaipur'
       },
       {
@@ -40,7 +50,7 @@ export const ShopProvider = ({ children }) => {
         price: 249,
         oldPrice: 349,
         quantity: 2,
-        image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=800&q=80',
+        image: PHOTOS.kulhad,
         vendor: 'Shyam Pottery, Jaipur'
       }
     ];
@@ -113,14 +123,14 @@ export const ShopProvider = ({ children }) => {
           name: 'Rajasthani Design Matka (5L)',
           price: 399,
           quantity: 1,
-          image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80',
+          image: PHOTOS.matka,
           vendor: 'Shyam Pottery'
         },
         {
           name: 'Kulhad (Pack of 6)',
           price: 249,
           quantity: 2,
-          image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=800&q=80',
+          image: PHOTOS.kulhad,
           vendor: 'Shyam Pottery'
         }
       ],

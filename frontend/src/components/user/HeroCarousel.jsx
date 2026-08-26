@@ -77,12 +77,12 @@ const HeroCarousel = () => {
         {!isVideo && (
           <>
             <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-[#F8F1E3]/80 via-[#F8F1E3]/25 to-transparent"
+              className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-white/80 via-white/25 to-transparent"
               aria-hidden="true"
             />
 
             <div className="absolute left-3 right-[26%] sm:left-5 sm:right-auto sm:max-w-[280px] md:left-8 md:max-w-[340px] top-[32%] sm:top-[34%] md:top-[36%] z-[3]">
-              <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[34px] font-bold text-[#6F241D] leading-[1.15]">
+              <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[34px] font-bold text-[#8B2E3A] leading-[1.15]">
                 Authentic Mitti. Pure Rajasthan.
               </h1>
               <p className="font-body text-[10px] sm:text-xs md:text-sm text-[#4A3A2F] mt-1.5 sm:mt-2 leading-snug max-w-[220px] sm:max-w-none">
@@ -90,7 +90,7 @@ const HeroCarousel = () => {
               </p>
               <Link
                 to="/shop"
-                className="mt-2.5 sm:mt-3 inline-flex items-center gap-1.5 bg-[#6F241D] hover:bg-[#873A24] text-white font-body text-[11px] sm:text-xs font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-md active:scale-[0.98] transition-all"
+                className="mt-2.5 sm:mt-3 inline-flex items-center gap-1.5 bg-[#C45C6A] hover:bg-[#8B2E3A] text-white font-body text-[11px] sm:text-xs font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-md active:scale-[0.98] transition-all"
               >
                 Shop Now
                 <ArrowRight size={14} strokeWidth={2.4} />
@@ -107,8 +107,8 @@ const HeroCarousel = () => {
               onClick={() => setActive(i)}
               className={`rounded-full transition-all ${
                 active === i
-                  ? 'w-2 h-2 bg-[#6F241D]'
-                  : 'w-1.5 h-1.5 bg-white/90 border border-[#6F241D]/35'
+                  ? 'w-2 h-2 bg-[#C45C6A]'
+                  : 'w-1.5 h-1.5 bg-white/90 border border-[#C45C6A]/35'
               }`}
               aria-label={`Slide ${i + 1}`}
             />

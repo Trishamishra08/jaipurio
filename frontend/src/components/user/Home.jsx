@@ -2,8 +2,10 @@ import React from 'react';
 import HeroCarousel from './HeroCarousel';
 import FeaturesBar from './FeaturesBar';
 import Categories from './Categories';
-import TrendingOffers from './TrendingOffers';
+import HomeAfterCategory from './HomeAfterCategory';
+import NewArrivalBanner from './NewArrivalBanner';
 import BestSellers from './BestSellers';
+import CouponOffers from './CouponOffers';
 import TrustFooterStrip from './TrustFooterStrip';
 import WhyChooseJaipurio from './WhyChooseJaipurio';
 import Testimonials from './Testimonials';
@@ -16,8 +18,10 @@ const Home = () => {
       <div className="relative z-10 pt-1">
         <FeaturesBar />
         <Categories />
-        <TrendingOffers />
+        <HomeAfterCategory />
+        <NewArrivalBanner />
         <BestSellers />
+        <CouponOffers />
         <TrustFooterStrip />
         <WhyChooseJaipurio />
         <Testimonials />

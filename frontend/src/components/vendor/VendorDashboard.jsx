@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useShop } from '../../context/ShopContext';
+import { PHOTOS } from '../../data/photos';
 import { 
   LayoutDashboard, 
   Package, 
@@ -31,7 +32,7 @@ const VendorDashboard = () => {
     size: 'Standard',
     weight: '1.2 kg',
     description: '',
-    image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.matka,
     vendor: 'Shyam Pottery, Jaipur',
     location: 'Jaipur, Rajasthan',
     stock: 20

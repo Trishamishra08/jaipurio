@@ -1,12 +1,12 @@
 import React from 'react';
-import { Lock, RotateCcw, Package, Users } from 'lucide-react';
+import { Lock, RotateCcw, Package, Truck } from 'lucide-react';
 
 const TrustFooterStrip = () => {
   const items = [
     { id: 1, title: 'Secure', subtitle: 'Payments', Icon: Lock },
     { id: 2, title: 'Easy', subtitle: 'Returns', Icon: RotateCcw },
     { id: 3, title: 'Premium', subtitle: 'Packaging', Icon: Package },
-    { id: 4, title: 'Trusted by', subtitle: '10K+ Customers', Icon: Users },
+    { id: 4, title: 'Pan India', subtitle: 'Delivery', Icon: Truck },
   ];
 
   return (

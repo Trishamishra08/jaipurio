@@ -1,4 +1,5 @@
 // Complete Mock Products for Jaipur Mitti E-Commerce
+import { PHOTOS } from './photos';
 
 export const initialProducts = [
   {
@@ -8,7 +9,7 @@ export const initialProducts = [
     oldPrice: 599,
     rating: 4.7,
     reviews: 96,
-    image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.matka,
     category: 'Matkas',
     subcategory: 'Water Pots',
     vendor: 'Shyam Pottery, Jaipur',
@@ -32,7 +33,7 @@ export const initialProducts = [
     oldPrice: 349,
     rating: 4.6,
     reviews: 74,
-    image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.kulhad,
     category: 'Kulhads',
     subcategory: 'Chai Cups',
     vendor: 'Shyam Pottery, Jaipur',
@@ -56,7 +57,7 @@ export const initialProducts = [
     oldPrice: 499,
     rating: 4.7,
     reviews: 58,
-    image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.planter,
     category: 'Planters',
     subcategory: 'Garden Pots',
     vendor: 'Meera Terracotta, Jaipur',
@@ -80,7 +81,7 @@ export const initialProducts = [
     oldPrice: 450,
     rating: 4.8,
     reviews: 41,
-    image: 'https://images.unsplash.com/photo-1605651202774-7d573fd3f12d?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.diya,
     category: 'Puja Essentials',
     subcategory: 'Diyas',
     vendor: 'Pushkar Clay Arts',
@@ -104,7 +105,7 @@ export const initialProducts = [
     oldPrice: 999,
     rating: 4.9,
     reviews: 82,
-    image: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.elephantCraft,
     category: 'Home Decor',
     subcategory: 'Folk Figurines',
     vendor: 'Rajputana Mitti Crafts, Jodhpur',
@@ -128,7 +129,7 @@ export const initialProducts = [
     oldPrice: 550,
     rating: 4.7,
     reviews: 63,
-    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.kitchen,
     category: 'Home & Kitchen',
     subcategory: 'Cooking Pots',
     vendor: 'Shyam Pottery, Jaipur',
@@ -152,7 +153,7 @@ export const initialProducts = [
     oldPrice: 699,
     rating: 4.8,
     reviews: 112,
-    image: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.pottery,
     category: 'Home & Kitchen',
     subcategory: 'Cooking Pots',
     vendor: 'Bikaner Clay Studio',
@@ -176,7 +177,7 @@ export const initialProducts = [
     oldPrice: 650,
     rating: 4.6,
     reviews: 39,
-    image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80',
+    image: PHOTOS.hanging,
     category: 'Home Decor',
     subcategory: 'Wall Decor',
     vendor: 'Meera Terracotta, Jaipur',
@@ -201,7 +202,7 @@ export const initialCategories = [
     name: 'Matkas',
     slug: 'matkas',
     subtitle: 'Water Pots & Ghadas',
-    image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=400&q=80',
+    image: PHOTOS.matka,
     itemCount: 18
   },
   {
@@ -209,7 +210,7 @@ export const initialCategories = [
     name: 'Kulhads',
     slug: 'kulhads',
     subtitle: 'Chai Cups & Glasses',
-    image: 'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=400&q=80',
+    image: PHOTOS.kulhad,
     itemCount: 24
   },
   {
@@ -217,7 +218,7 @@ export const initialCategories = [
     name: 'Planters',
     slug: 'planters',
     subtitle: 'Garden & Balcony Pots',
-    image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=400&q=80',
+    image: PHOTOS.succulent,
     itemCount: 16
   },
   {
@@ -225,7 +226,7 @@ export const initialCategories = [
     name: 'Home Decor',
     slug: 'home-decor',
     subtitle: 'Figurines & Vases',
-    image: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=400&q=80',
+    image: PHOTOS.elephantCraft,
     itemCount: 32
   },
   {
@@ -233,7 +234,7 @@ export const initialCategories = [
     name: 'Puja Essentials',
     slug: 'puja-essentials',
     subtitle: 'Diyas & Kalash',
-    image: 'https://images.unsplash.com/photo-1605651202774-7d573fd3f12d?auto=format&fit=crop&w=400&q=80',
+    image: PHOTOS.diya,
     itemCount: 20
   },
   {
@@ -241,7 +242,7 @@ export const initialCategories = [
     name: 'More',
     slug: 'all',
     subtitle: 'Explore Handicrafts',
-    image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80',
+    image: PHOTOS.jaipur,
     itemCount: 50
   }
 ];
@@ -256,7 +257,7 @@ export const initialVendors = [
     reviewsCount: 340,
     experience: '35+ Years',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&w=1200&q=80',
+    coverImage: PHOTOS.matka,
     about: 'Master craftsman Shyam Lal has been throwing pure mitti pots on manual wheels for over 3 decades. Our workshop in Amer keeps the historic terracotta traditions alive.',
     totalProducts: 24,
     totalSales: 1840,
@@ -271,7 +272,7 @@ export const initialVendors = [
     reviewsCount: 215,
     experience: '18 Years',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80',
+    coverImage: PHOTOS.hanging,
     about: 'Led by artisan Meera Devi, our women-led collective specializes in intricate folk-art brushwork, gold leaf accents, and modern indoor planters.',
     totalProducts: 19,
     totalSales: 1250,
@@ -286,7 +287,7 @@ export const initialVendors = [
     reviewsCount: 180,
     experience: '22 Years',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1605651202774-7d573fd3f12d?auto=format&fit=crop&w=1200&q=80',
+    coverImage: PHOTOS.diya,
     about: 'Creating holy clay essentials inspired by the sacred ghats of Pushkar. 100% natural clay baked with traditional wood kilns.',
     totalProducts: 15,
     totalSales: 960,
@@ -301,7 +302,7 @@ export const initialVendors = [
     reviewsCount: 290,
     experience: '28 Years',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
-    coverImage: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=1200&q=80',
+    coverImage: PHOTOS.jaipur,
     about: 'Celebrated for blue-city terracotta craftsmanship, crafting regal camels, royal war elephants, and miniature Rajasthani village scenes.',
     totalProducts: 31,
     totalSales: 2100,
@@ -360,7 +361,7 @@ export const initialReviews = [
     rating: 5,
     comment: 'Beautiful handmade matka! The clay aroma and natural cooling are magical. Quality is exactly like the pictures.',
     productName: 'Rajasthani Design Matka (5L)',
-    productImage: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&w=200&q=80',
+    productImage: PHOTOS.matka,
     date: '2 days ago'
   },
   {
@@ -370,7 +371,7 @@ export const initialReviews = [
     rating: 5,
     comment: 'Authentic saunda aroma from the chai kulhads. It brings back childhood memories of railway stations and Jaipur bazaars.',
     productName: 'Kulhad (Pack of 6)',
-    productImage: 'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=200&q=80',
+    productImage: PHOTOS.kulhad,
     date: '1 week ago'
   },
   {
@@ -380,8 +381,38 @@ export const initialReviews = [
     rating: 5,
     comment: 'The packaging was rock-solid and safe. Received all 8 diyas in perfect condition without a single chip. Outstanding work!',
     productName: 'Decorative Diya Set (8 Pcs)',
-    productImage: 'https://images.unsplash.com/photo-1605651202774-7d573fd3f12d?auto=format&fit=crop&w=200&q=80',
+    productImage: PHOTOS.diya,
     date: '3 weeks ago'
+  },
+  {
+    id: 4,
+    name: 'Rohit Meena',
+    location: 'Jaipur',
+    rating: 5,
+    comment: 'The terracotta planter breathes so well — my money plant doubled in a month. Looks handmade, not factory-made.',
+    productName: 'Handmade Mitti Planter',
+    productImage: PHOTOS.planter,
+    date: '4 days ago'
+  },
+  {
+    id: 5,
+    name: 'Kavya Iyer',
+    location: 'Bengaluru',
+    rating: 5,
+    comment: 'Cooked dal in the mitti handi and the flavour was completely different — slow, earthy, restaurant-like. Will order the tawa next.',
+    productName: 'Mitti Handi with Lid (2L)',
+    productImage: PHOTOS.pottery,
+    date: '5 days ago'
+  },
+  {
+    id: 6,
+    name: 'Arjun Singh',
+    location: 'Jodhpur',
+    rating: 5,
+    comment: 'The elephant figurine is a showpiece. Guests keep asking where we got it. Fine brushwork, no cheap paint smell.',
+    productName: 'Jaipuri Handpainted Royal Elephant Figurine',
+    productImage: PHOTOS.elephantCraft,
+    date: '2 weeks ago'
   }
 ];
 

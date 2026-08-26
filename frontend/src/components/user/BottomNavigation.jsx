@@ -41,13 +41,13 @@ const BottomNavigation = () => {
               key={item.label}
               to={item.path}
               className={`flex flex-col items-center justify-center relative flex-1 h-full gap-0.5 ${
-                isActive ? 'text-[#6F241D]' : 'text-[#8A7A6A]'
+                isActive ? 'text-[#C45C6A]' : 'text-[#8A7A6A]'
               }`}
             >
               <div className="relative inline-flex">
                 <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
                 {item.label === 'Shop' && cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-[#A94E2C] text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white">
+                  <span className="absolute -top-1.5 -right-2 bg-[#C45C6A] text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
                 )}

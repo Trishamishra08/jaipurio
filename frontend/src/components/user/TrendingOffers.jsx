@@ -84,8 +84,30 @@ const TrendingOffers = () => {
   };
 
   return (
-    <section className="w-full bg-white pt-1 pb-2.5 px-3 sm:px-5">
+    <section className="w-full bg-white pt-2.5 pb-2.5 px-3 sm:px-5">
       <div className="w-full max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[#A94E2C] text-sm shrink-0" aria-hidden="true">
+              ❀
+            </span>
+            <h2 className="font-heading text-[18px] sm:text-xl font-bold text-[#6F241D] tracking-tight truncate">
+              Trending Offers &amp; Highlights
+            </h2>
+            <span className="text-[#A94E2C] text-sm shrink-0 hidden xs:inline" aria-hidden="true">
+              ❀
+            </span>
+          </div>
+
+          <Link
+            to="/shop"
+            className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-[#70452F] hover:text-[#6F241D] transition-colors shrink-0 ml-2 font-body"
+          >
+            View All
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+
         <div
           className="relative"
           onMouseEnter={() => setPaused(true)}

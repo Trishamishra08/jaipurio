@@ -9,9 +9,9 @@
   --color-ivory: #F8F1E3;
   --color-page: #FFFFFF;
   --color-beige: #E8D4B5;
-  --color-terracotta: #A94E2C;
-  --color-deep-terracotta: #873A24;
-  --color-maroon: #6F241D;
+  --color-terracotta: #C45C6A;
+  --color-deep-terracotta: #8B2E3A;
+  --color-maroon: #C45C6A;
   --color-sage: #82977A;
   --color-forest: #354B35;
   --color-gold: #C69A45;
@@ -130,6 +130,70 @@ html {
   animation: float 4s ease-in-out infinite;
 }
 
+@keyframes offer-card-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.offer-card-in {
+  animation: offer-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes offer-shine {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
+.offer-card:hover .offer-shine {
+  animation: offer-shine 0.75s ease-out;
+}
+
+@keyframes flash-tick {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.flash-tick {
+  animation: flash-tick 1s ease-in-out infinite;
+}
+
+.house-card-in {
+  animation: offer-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes testimonial-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.testimonial-track {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+.testimonial-marquee {
+  display: flex;
+  width: max-content;
+  gap: 12px;
+  padding-inline: 16px;
+  animation: testimonial-scroll 36s linear infinite;
+}
+
+.testimonial-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-track {
+    overflow-x: auto;
+    mask-image: none;
+  }
+
+  .testimonial-marquee {
+    animation: none;
+  }
+}
+
 @keyframes splash-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -224,4 +288,23 @@ html {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+.footer-pichwai {
+  height: 10px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #C45C26 0 10px,
+      #E8B86D 10px 20px,
+      #6F241D 20px 28px,
+      #D4A574 28px 38px,
+      #8B3A1A 38px 46px
+    );
+}
+
+@media (min-width: 768px) {
+  .footer-pichwai {
+    height: 14px;
+  }
 }

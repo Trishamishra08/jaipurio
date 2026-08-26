@@ -52,7 +52,7 @@ const Navbar = () => {
         scrolled ? 'shadow-sm' : ''
       }`}
     >
-      <div className="relative z-[60] bg-[#6F241D] text-[#E8D4B5] py-1 px-3 text-center text-[10px] sm:text-xs tracking-wider font-dm">
+      <div className="relative z-[60] bg-[#C45C6A] text-[#FFF0EE] py-1 px-3 text-center text-[10px] sm:text-xs tracking-wider font-dm">
         <span className="font-medium">Free Shipping on Orders Above ₹499 | 100% Pure Mitti</span>
       </div>
 
@@ -104,7 +104,7 @@ const Navbar = () => {
                     <span className="text-[#A94E2C] text-sm sm:text-base font-brand leading-none" aria-hidden="true">
                       ✦
                     </span>
-                    <span className="font-brand text-[26px] sm:text-[32px] md:text-[38px] font-bold tracking-[0.05em] text-[#6F241D] truncate leading-none">
+                    <span className="font-brand text-[26px] sm:text-[32px] md:text-[38px] font-bold tracking-[0.05em] text-[#C45C6A] truncate leading-none">
                       jaipurio
                     </span>
                     <span className="text-[#A94E2C] text-sm sm:text-base font-brand leading-none" aria-hidden="true">
