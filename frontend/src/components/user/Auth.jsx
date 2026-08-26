@@ -6,15 +6,10 @@ import { useShop } from '../../context/ShopContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { registerFCMToken } from '../../services/pushNotificationService';
 import api from '../../utils/api';
+import AuthFrame from './AuthFrame';
 
 const DEMO_MOBILE = '8839044030';
 const DEMO_OTP = '123456';
-
-const CAROUSEL = [
-  '/login_hero_1.png',
-  '/login_hero_2.png',
-  '/jaipurio_banner_clean.png',
-];
 
 const resolveRedirect = (from, fallback = '/home') => {
   if (!from) return fallback;
@@ -33,7 +28,6 @@ const Auth = () => {
   const location = useLocation();
   const isAdminPath = location.pathname.includes('/admin');
 
-  const [slide, setSlide] = useState(0);
   const [form, setForm] = useState({ mobile: '', email: '', password: '', otp: '' });
   const [errors, setErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
@@ -47,14 +41,6 @@ const Auth = () => {
       navigate(resolveRedirect(location.state?.from, '/home'), { replace: true });
     }
   }, [isAuthenticated, isAdminPath, navigate, location.state]);
-
-  /* Auto carousel 2.5s */
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSlide((s) => (s + 1) % CAROUSEL.length);
-    }, 2500);
-    return () => clearInterval(id);
-  }, []);
 
   useEffect(() => {
     if (timer <= 0) return undefined;
@@ -213,67 +199,12 @@ const Auth = () => {
 
   return (
     <>
-      <div className="fixed inset-0 z-[999] w-full h-[100dvh] bg-[#F8F1E3] font-body overflow-hidden">
-        <div className="flex flex-col h-full w-full max-w-lg mx-auto md:max-w-none md:flex-row relative">
-
-          {/* ===== HERO / CAROUSEL ===== */}
-          <div className="relative w-full md:w-[48%] lg:w-[52%] h-[26vh] sm:h-[28vh] md:h-full shrink-0 overflow-hidden bg-[#EFE0C9]">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={CAROUSEL[slide]}
-                src={CAROUSEL[slide]}
-                alt="jaipurio heritage"
-                initial={{ opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
-                className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
-                draggable={false}
-              />
-            </AnimatePresence>
-
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 via-black/10 to-transparent" />
-
-            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 md:bottom-8">
-              {CAROUSEL.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSlide(i)}
-                  className={`rounded-full transition-all ${
-                    slide === i ? 'w-5 h-2 bg-[#6F241D]' : 'w-2 h-2 bg-[#E8D4B5] border border-[#6F241D]/40'
-                  }`}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Logo between banner and form card (mobile) */}
-          <div className="relative z-30 flex justify-center -mt-11 md:hidden">
-            <img
-              src="/jaipurio_logo_bg.png"
-              alt="jaipurio"
-              className="h-[5.75rem] sm:h-24 w-auto object-contain select-none rounded-2xl shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-2 ring-white/90"
-              draggable={false}
-            />
-          </div>
-
-          {/* ===== FORM SHEET ===== */}
-          <div className="flex-1 relative z-20 -mt-8 md:mt-0 rounded-t-[28px] md:rounded-none bg-[#F8F1E3] shadow-[0_-8px_24px_rgba(111,36,29,0.12)] md:shadow-none overflow-y-auto">
-            <div className="px-5 pt-14 pb-8 sm:px-8 md:px-10 md:pt-12 lg:pt-16 max-w-md mx-auto w-full">
-
-              <div className="text-center mb-4 md:mb-8 md:text-left">
-                <img
-                  src="/jaipurio_logo_bg.png"
-                  alt="jaipurio"
-                  className="hidden md:block h-24 lg:h-28 w-auto mx-auto md:mx-0 object-contain select-none mb-4 rounded-2xl shadow-md"
-                  draggable={false}
-                />
-                <h1 className="font-heading text-xl sm:text-2xl md:text-4xl font-bold text-[#6F241D]">
+      <AuthFrame>
+            <div className="text-center mb-5 md:mb-8 md:text-left">
+                <h1 className="font-playfair text-[22px] sm:text-2xl md:text-4xl font-semibold text-[#6F241D]">
                   Welcome Back!
                 </h1>
-                <p className="font-body text-[12px] sm:text-sm text-[#4A3A2F]/85 mt-1 leading-snug max-w-sm mx-auto md:mx-0">
+                <p className="font-body text-[12px] sm:text-sm text-[#6B5348] mt-1.5 leading-snug max-w-sm mx-auto md:mx-0">
                   Login to continue shopping authentic Rajasthani products.
                 </p>
               </div>
@@ -281,13 +212,13 @@ const Auth = () => {
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 {/* Mobile */}
                 <div>
-                  <label className="font-body text-[11px] font-semibold text-[#4A3A2F] mb-1.5 block">
+                  <label className="font-body text-[12px] font-medium text-[#3F261B] mb-1.5 block">
                     Mobile Number
                   </label>
                   <div className="relative">
                     <Smartphone
                       size={18}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C]"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A]"
                     />
                     <input
                       type="tel"
@@ -297,15 +228,15 @@ const Auth = () => {
                       placeholder="Enter your mobile number"
                       maxLength={10}
                       inputMode="numeric"
-                      className={`w-full bg-[#FFFbf5] border ${
-                        errors.mobile ? 'border-red-400' : 'border-[#E0D0B5]'
-                      } rounded-xl pl-11 pr-[5.5rem] py-3 text-sm font-body text-[#2B1E1A] placeholder:text-gray-400 outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D]/30 transition-all`}
+                      className={`w-full bg-white border ${
+                        errors.mobile ? 'border-red-400' : 'border-[#E8C9C4]'
+                      } rounded-xl pl-11 pr-[5.5rem] py-3 text-sm font-body text-[#2B1E1A] placeholder:text-[#B8A39A] outline-none focus:border-[#C45C6A] focus:ring-1 focus:ring-[#C45C6A]/25 transition-all`}
                     />
                     <button
                       type="button"
                       onClick={handleSendOtp}
                       disabled={otpSent && timer > 0}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#6F241D] text-white hover:bg-[#873A24] disabled:bg-[#C9B89A] disabled:cursor-not-allowed transition-all"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#6F241D] text-white hover:bg-[#8B2E3A] disabled:bg-[#E0C4BE] disabled:cursor-not-allowed transition-all"
                     >
                       {otpSent && timer > 0 ? `${timer}s` : 'Send OTP'}
                     </button>
@@ -318,12 +249,12 @@ const Auth = () => {
                 {/* OTP */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="font-body text-[11px] font-semibold text-[#4A3A2F]">
+                    <label className="font-body text-[12px] font-medium text-[#3F261B]">
                       OTP
                     </label>
                     <button
                       type="button"
-                      className="font-body text-[10px] font-semibold text-[#A94E2C] hover:underline"
+                      className="font-body text-[11px] font-semibold text-[#C45C6A] hover:underline"
                       onClick={() => {
                         showNotification(`Demo: ${DEMO_MOBILE} / OTP ${DEMO_OTP}`);
                       }}
@@ -332,7 +263,7 @@ const Auth = () => {
                     </button>
                   </div>
                   <div className="relative">
-                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C] text-lg" />
+                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A] text-lg" />
                     <input
                       type={showOtp ? 'text' : 'password'}
                       name="otp"
@@ -341,14 +272,14 @@ const Auth = () => {
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
                       inputMode="numeric"
-                      className={`w-full bg-[#FFFbf5] border ${
-                        errors.otp ? 'border-red-400' : 'border-[#E0D0B5]'
-                      } rounded-xl pl-11 pr-11 py-3 text-sm font-body text-[#2B1E1A] placeholder:text-gray-400 outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D]/30 transition-all tracking-widest`}
+                      className={`w-full bg-white border ${
+                        errors.otp ? 'border-red-400' : 'border-[#E8C9C4]'
+                      } rounded-xl pl-11 pr-11 py-3 text-sm font-body text-[#2B1E1A] placeholder:text-[#B8A39A] outline-none focus:border-[#C45C6A] focus:ring-1 focus:ring-[#C45C6A]/25 transition-all tracking-widest`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowOtp(!showOtp)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#6F241D]"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#B8A39A] hover:text-[#6F241D]"
                     >
                       {showOtp ? <FiEyeOff /> : <FiEye />}
                     </button>
@@ -356,7 +287,7 @@ const Auth = () => {
                   {errors.otp && (
                     <p className="text-red-500 text-[11px] mt-1 font-body">{errors.otp}</p>
                   )}
-                  <p className="mt-1.5 text-[10px] text-[#70452F]/70 font-body">
+                  <p className="mt-1.5 text-[10px] text-[#8A6A68] font-body">
                     Demo login: <span className="font-semibold">{DEMO_MOBILE}</span> · OTP{' '}
                     <span className="font-semibold">{DEMO_OTP}</span>
                   </p>
@@ -365,31 +296,28 @@ const Auth = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 bg-[#6F241D] hover:bg-[#873A24] text-white py-3.5 rounded-xl text-sm font-semibold tracking-wide shadow-md active:scale-[0.98] disabled:opacity-60 transition-all font-body"
+                  className="w-full mt-2 bg-[#6F241D] hover:bg-[#8B2E3A] text-white py-3.5 rounded-xl text-sm font-semibold tracking-wide shadow-[0_6px_16px_rgba(111,36,29,0.28)] active:scale-[0.98] disabled:opacity-60 transition-all font-body"
                 >
                   {loading ? 'Logging in…' : 'Login'}
                 </button>
               </form>
 
-              <p className="mt-6 text-center font-body text-sm text-[#4A3A2F]">
+              <p className="mt-6 text-center font-body text-sm text-[#6B5348]">
                 Don&apos;t have an account?{' '}
                 <Link to="/register" className="font-bold text-[#6F241D] hover:underline">
-                  Sign Up →
+                  Sign Up
                 </Link>
               </p>
 
               <p className="mt-3 text-center">
                 <Link
                   to="/home"
-                  className="font-body text-xs font-semibold text-[#A94E2C] hover:underline"
+                  className="font-body text-xs font-semibold text-[#C45C6A] hover:underline"
                 >
                   Continue as Guest
                 </Link>
               </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </AuthFrame>
 
       <AnimatePresence>
         {notification && (

@@ -60,7 +60,7 @@ const PublicLayout = () => {
 
 const AuthLayout = () => {
   return (
-    <div className="min-h-screen font-body bg-[#F8F1E3]">
+    <div className="min-h-screen font-body bg-[#F8E6E4]">
       <Outlet />
     </div>
   );

@@ -4,12 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import api from '../../utils/api';
-
-const CAROUSEL = [
-  '/login_hero_1.png',
-  '/login_hero_2.png',
-  '/jaipurio_banner_clean.png',
-];
+import AuthFrame from './AuthFrame';
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -20,7 +15,6 @@ const Register = () => {
     otp: '',
     agreed: false,
   });
-  const [slide, setSlide] = useState(0);
   const [otpSent, setOtpSent] = useState(false);
   const [timer, setTimer] = useState(0);
   const [isGenderDropdownOpen, setIsGenderDropdownOpen] = useState(false);
@@ -33,13 +27,6 @@ const Register = () => {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3500);
   };
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSlide((s) => (s + 1) % CAROUSEL.length);
-    }, 2500);
-    return () => clearInterval(id);
-  }, []);
 
   useEffect(() => {
     if (timer <= 0) return undefined;
@@ -146,79 +133,24 @@ const Register = () => {
   };
 
   const inputClass =
-    'w-full bg-[#FFFbf5] border border-[#E0D0B5] rounded-xl pl-11 pr-4 py-2.5 text-sm font-body text-[#2B1E1A] placeholder:text-gray-400 outline-none focus:border-[#6F241D] focus:ring-1 focus:ring-[#6F241D]/30 transition-all';
+    'w-full bg-white border border-[#E8C9C4] rounded-xl pl-11 pr-4 py-2.5 text-sm font-body text-[#2B1E1A] placeholder:text-[#B8A39A] outline-none focus:border-[#C45C6A] focus:ring-1 focus:ring-[#C45C6A]/25 transition-all';
 
   return (
     <>
-      <div className="fixed inset-0 z-[999] w-full h-[100dvh] bg-[#F8F1E3] font-body overflow-hidden">
-        <div className="flex flex-col h-full w-full max-w-lg mx-auto md:max-w-none md:flex-row relative">
-
-          {/* ===== HERO / CAROUSEL ===== */}
-          <div className="relative w-full md:w-[48%] lg:w-[52%] h-[26vh] sm:h-[28vh] md:h-full shrink-0 overflow-hidden bg-[#EFE0C9]">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={CAROUSEL[slide]}
-                src={CAROUSEL[slide]}
-                alt="jaipurio heritage"
-                initial={{ opacity: 0, scale: 1.05 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.7, ease: 'easeOut' }}
-                className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
-                draggable={false}
-              />
-            </AnimatePresence>
-
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 via-black/10 to-transparent" />
-
-            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 md:bottom-8">
-              {CAROUSEL.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSlide(i)}
-                  className={`rounded-full transition-all ${
-                    slide === i ? 'w-5 h-2 bg-[#6F241D]' : 'w-2 h-2 bg-[#E8D4B5] border border-[#6F241D]/40'
-                  }`}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Logo between banner and form card (mobile) */}
-          <div className="relative z-30 flex justify-center -mt-11 md:hidden">
-            <img
-              src="/jaipurio_logo_bg.png"
-              alt="jaipurio"
-              className="h-[5.75rem] sm:h-24 w-auto object-contain select-none rounded-2xl shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-2 ring-white/90"
-              draggable={false}
-            />
-          </div>
-
-          {/* ===== FORM SHEET ===== */}
-          <div className="flex-1 relative z-20 -mt-8 md:mt-0 rounded-t-[28px] md:rounded-none bg-[#F8F1E3] shadow-[0_-8px_24px_rgba(111,36,29,0.12)] md:shadow-none overflow-y-auto">
-            <div className="px-5 pt-14 pb-8 sm:px-8 md:px-10 md:pt-12 lg:pt-14 max-w-md mx-auto w-full">
-
+      <AuthFrame>
               <div className="text-center mb-4 md:mb-6 md:text-left">
-                <img
-                  src="/jaipurio_logo_bg.png"
-                  alt="jaipurio"
-                  className="hidden md:block h-24 lg:h-28 w-auto mx-auto md:mx-0 object-contain select-none mb-4 rounded-2xl shadow-md"
-                  draggable={false}
-                />
-                <h1 className="font-heading text-xl sm:text-2xl md:text-4xl font-bold text-[#6F241D]">
+                <h1 className="font-playfair text-[22px] sm:text-2xl md:text-4xl font-semibold text-[#6F241D]">
                   Create Account
                 </h1>
-                <p className="font-body text-[12px] sm:text-sm text-[#4A3A2F]/85 mt-1 leading-snug max-w-sm mx-auto md:mx-0">
-                  Join jaipurio and shop authentic Rajasthani crafts.
+                <p className="font-body text-[12px] sm:text-sm text-[#6B5348] mt-1.5 leading-snug max-w-sm mx-auto md:mx-0">
+                  Join Jaipurio and shop authentic Rajasthani crafts.
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-2.5">
                 {/* Name */}
                 <div className="relative">
-                  <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C] text-lg" />
+                  <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A] text-lg" />
                   <input
                     type="text"
                     name="name"
@@ -232,12 +164,12 @@ const Register = () => {
 
                 {/* Gender */}
                 <div className="relative">
-                  <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C] text-lg z-10 pointer-events-none" />
+                  <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A] text-lg z-10 pointer-events-none" />
                   <button
                     type="button"
                     onClick={() => setIsGenderDropdownOpen(!isGenderDropdownOpen)}
                     className={`${inputClass} text-left flex items-center justify-between pr-3 ${
-                      form.gender ? 'text-[#2B1E1A]' : 'text-gray-400'
+                      form.gender ? 'text-[#2B1E1A]' : 'text-[#B8A39A]'
                     }`}
                   >
                     <span>
@@ -246,7 +178,7 @@ const Register = () => {
                         : 'Select Gender'}
                     </span>
                     <svg
-                      className={`w-4 h-4 text-[#A94E2C] transition-transform ${
+                      className={`w-4 h-4 text-[#C45C6A] transition-transform ${
                         isGenderDropdownOpen ? 'rotate-180' : ''
                       }`}
                       fill="none"
@@ -264,7 +196,7 @@ const Register = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-0 right-0 mt-1.5 bg-white border border-[#E0D0B5] rounded-xl shadow-lg z-50 overflow-hidden"
+                        className="absolute left-0 right-0 mt-1.5 bg-white border border-[#E8C9C4] rounded-xl shadow-lg z-50 overflow-hidden"
                       >
                         {['female', 'male', 'other'].map((g) => (
                           <button
@@ -274,7 +206,7 @@ const Register = () => {
                               setForm({ ...form, gender: g });
                               setIsGenderDropdownOpen(false);
                             }}
-                            className="w-full px-4 py-2.5 text-left text-sm font-body text-[#4A3A2F] hover:bg-[#F8F1E3] hover:text-[#6F241D] transition-colors"
+                            className="w-full px-4 py-2.5 text-left text-sm font-body text-[#4A3A2F] hover:bg-[#FFF0EE] hover:text-[#6F241D] transition-colors"
                           >
                             {g.charAt(0).toUpperCase() + g.slice(1)}
                           </button>
@@ -286,7 +218,7 @@ const Register = () => {
 
                 {/* Email */}
                 <div className="relative">
-                  <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C] text-lg" />
+                  <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A] text-lg" />
                   <input
                     type="email"
                     name="email"
@@ -300,7 +232,7 @@ const Register = () => {
 
                 {/* Mobile */}
                 <div className="relative">
-                  <FiPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C] text-lg" />
+                  <FiPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A] text-lg" />
                   <input
                     type="tel"
                     name="mobile"
@@ -316,7 +248,7 @@ const Register = () => {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={otpSent && timer > 0}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#6F241D] text-white hover:bg-[#873A24] disabled:bg-[#C9B89A] disabled:cursor-not-allowed transition-all"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2.5 py-1.5 rounded-lg bg-[#6F241D] text-white hover:bg-[#8B2E3A] disabled:bg-[#E0C4BE] disabled:cursor-not-allowed transition-all"
                   >
                     {otpSent && timer > 0 ? `${timer}s` : 'Send OTP'}
                   </button>
@@ -325,7 +257,7 @@ const Register = () => {
                 {/* OTP */}
                 <div>
                   <div className="relative">
-                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A94E2C] text-lg" />
+                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C45C6A] text-lg" />
                     <input
                       type="text"
                       name="otp"
@@ -335,7 +267,7 @@ const Register = () => {
                       maxLength={6}
                       inputMode="numeric"
                       disabled={!otpSent}
-                      className={`${inputClass} tracking-widest disabled:bg-[#F0E6D4] disabled:cursor-not-allowed`}
+                      className={`${inputClass} tracking-widest disabled:bg-[#F8E6E4] disabled:cursor-not-allowed`}
                     />
                   </div>
                   <AnimatePresence>
@@ -352,7 +284,7 @@ const Register = () => {
                           className={`font-body text-[10px] font-semibold ${
                             timer > 0
                               ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-[#A94E2C] hover:underline'
+                              : 'text-[#C45C6A] hover:underline'
                           }`}
                         >
                           {timer > 0
@@ -374,7 +306,7 @@ const Register = () => {
                     onChange={handleInputChange}
                     className="mt-0.5 shrink-0 accent-[#6F241D] rounded"
                   />
-                  <label htmlFor="agreed" className="font-body text-[10px] sm:text-xs text-[#4A3A2F] leading-tight">
+                  <label htmlFor="agreed" className="font-body text-[10px] sm:text-xs text-[#6B5348] leading-tight">
                     I agree to the{' '}
                     <span className="font-semibold text-[#6F241D]">Terms & Conditions</span> and{' '}
                     <span className="font-semibold text-[#6F241D]">Privacy Policy</span>
@@ -384,31 +316,28 @@ const Register = () => {
                 <button
                   type="submit"
                   disabled={!isFormComplete || loading}
-                  className="w-full mt-1 bg-[#6F241D] hover:bg-[#873A24] text-white py-3 rounded-xl text-sm font-semibold tracking-wide shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-body"
+                  className="w-full mt-1 bg-[#6F241D] hover:bg-[#8B2E3A] text-white py-3 rounded-xl text-sm font-semibold tracking-wide shadow-[0_6px_16px_rgba(111,36,29,0.28)] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all font-body"
                 >
                   {loading ? 'Creating account…' : 'Sign Up'}
                 </button>
               </form>
 
-              <p className="mt-5 text-center font-body text-sm text-[#4A3A2F]">
+              <p className="mt-5 text-center font-body text-sm text-[#6B5348]">
                 Already have an account?{' '}
                 <Link to="/login" className="font-bold text-[#6F241D] hover:underline">
-                  Sign In →
+                  Sign In
                 </Link>
               </p>
 
               <p className="mt-2.5 text-center">
                 <Link
                   to="/home"
-                  className="font-body text-xs font-semibold text-[#A94E2C] hover:underline"
+                  className="font-body text-xs font-semibold text-[#C45C6A] hover:underline"
                 >
                   Continue as Guest
                 </Link>
               </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      </AuthFrame>
 
       <AnimatePresence>
         {notification && (

@@ -22,7 +22,7 @@ const BottomNavigation = () => {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E8E2D9] md:hidden shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFF8F5] border-t border-[#F3D5D0] md:hidden shadow-[0_-4px_16px_rgba(196,92,106,0.12)]"
       style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
     >
       <div className="h-[58px] flex items-center justify-around px-1">
@@ -41,19 +41,23 @@ const BottomNavigation = () => {
               key={item.label}
               to={item.path}
               className={`flex flex-col items-center justify-center relative flex-1 h-full gap-0.5 ${
-                isActive ? 'text-[#C45C6A]' : 'text-[#8A7A6A]'
+                isActive ? 'text-[#6F241D]' : 'text-[#B08980]'
               }`}
             >
-              <div className="relative inline-flex">
-                <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
+              <div
+                className={`relative inline-flex items-center justify-center w-8 h-8 rounded-full ${
+                  isActive ? 'bg-[#F8D0C8]' : ''
+                }`}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 {item.label === 'Shop' && cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-[#C45C6A] text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white">
+                  <span className="absolute -top-0.5 -right-1 bg-[#6F241D] text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
                 )}
               </div>
               <span
-                className={`font-dm text-[10px] leading-none tracking-tight ${
+                className={`font-body text-[10px] leading-none tracking-tight ${
                   isActive ? 'font-semibold' : 'font-medium'
                 }`}
               >
