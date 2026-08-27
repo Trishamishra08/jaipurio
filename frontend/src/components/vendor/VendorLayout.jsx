@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Package, PlusCircle, Archive, 
   ShoppingCart, RotateCcw, IndianRupee, CreditCard, 
-  Tag, Star, Bell, TrendingUp, HelpCircle, Settings,
-  Search, MessageSquare, Menu, X, LogOut, Truck
+  Star, Bell, Settings,
+  Search, MessageSquare, Menu, X, LogOut, Truck, PackageOpen
 } from 'lucide-react';
+import '../admin/admin.css';
 import vendorLogo from '../../assets/images/WhatsApp Image 2026-05-26 at 1.34.49 PM.jpeg';
 import api from '../../utils/api';
 
@@ -116,15 +117,14 @@ const VendorLayout = () => {
     { name: 'Add Product', path: '/vendor/add-product', icon: PlusCircle },
     { name: 'Inventory', path: '/vendor/inventory', icon: Archive },
     { name: 'Orders', path: '/vendor/orders', icon: ShoppingCart },
+    { name: 'Incomplete Orders', path: '/vendor/incomplete-orders', icon: PackageOpen },
+    { name: 'Shipments', path: '/vendor/shipments', icon: Truck },
     { name: 'Returns', path: '/vendor/returns', icon: RotateCcw },
-    { name: 'Logistics', path: '/vendor/logistics', icon: Truck },
     { name: 'Earnings', path: '/vendor/earnings', icon: IndianRupee },
     { name: 'Payouts', path: '/vendor/payouts', icon: CreditCard },
-    { name: 'Coupons', path: '/vendor/coupons', icon: Tag },
     { name: 'Reviews', path: '/vendor/reviews', icon: Star },
     { name: 'Notifications', path: '/vendor/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : null },
-    { name: 'Analytics', path: '/vendor/analytics', icon: TrendingUp },
-    { name: 'Support', path: '/vendor/support', icon: HelpCircle },
+    { name: 'Storefront', path: '/vendor/storefront', icon: Settings },
     { name: 'Settings', path: '/vendor/settings', icon: Settings },
   ];
 

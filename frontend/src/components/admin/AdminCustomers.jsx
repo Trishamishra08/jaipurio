@@ -1,6 +1,5 @@
 import React from 'react';
-import AdminLayout from './AdminLayout';
-import { FiSearch, FiFilter, FiExternalLink, FiTruck, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { FiSearch, FiExternalLink, FiTruck, FiCheckCircle, FiClock } from 'react-icons/fi';
 
 const AdminCustomers = () => {
   const dummyCustomers = [
@@ -71,7 +70,6 @@ const AdminCustomers = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-end">
           <div>
@@ -139,7 +137,6 @@ const AdminCustomers = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FiUsers, FiCheckCircle, FiXCircle, FiEye, FiShoppingBag, FiStar, FiRefreshCw, FiShieldOff } from 'react-icons/fi';
 import { useLocation } from 'react-router-dom';
+import { useShop } from '../../context/ShopContext';
 
 import api from '../../utils/api';
 
 const AdminVendors = () => {
     const location = useLocation();
+    const { vendors: shopVendors } = useShop();
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedVendor, setSelectedVendor] = useState(null); // For details modal
@@ -24,12 +26,29 @@ const AdminVendors = () => {
             if (currentTab === 'blocked') endpoint = '/vendors/blocked';
             
             const res = await api.get(endpoint);
-            setVendors(res.data.data || []);
+            if (res.data.data?.length) {
+                setVendors(res.data.data);
+                return;
+            }
         } catch (err) {
             console.error('Failed to fetch vendors', err);
         } finally {
             setLoading(false);
         }
+        if (currentTab === 'approved') {
+            setVendors((shopVendors || []).map((vendor) => ({
+                ...vendor,
+                fullName: vendor.name,
+                storeName: vendor.name,
+                email: `${(vendor.name || 'store').toLowerCase().replace(/\s+/g, '.')}@jaipurio.com`,
+                createdAt: '2025-05-06',
+                productsCount: vendor.totalProducts || 0,
+                status: 'approved',
+            })));
+        } else {
+            setVendors([]);
+        }
+        setLoading(false);
     };
 
     useEffect(() => {

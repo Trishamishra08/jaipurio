@@ -38,7 +38,10 @@ import VendorNotifications from './components/vendor/VendorNotifications';
 import VendorAnalytics from './components/vendor/VendorAnalytics';
 import VendorSupport from './components/vendor/VendorSupport';
 import VendorSettings from './components/vendor/VendorSettings';
-import AdminDashboard from './components/admin/AdminDashboard';
+import VendorIncompleteOrders from './components/vendor/VendorIncompleteOrders';
+import VendorShipments from './components/vendor/VendorShipments';
+import VendorStorefront from './components/vendor/VendorStorefront';
+import AdminRoutes from './components/admin/AdminRoutes';
 
 const PublicLayout = () => {
   const { pathname } = useLocation();
@@ -173,6 +176,8 @@ function App() {
               <Route path="add-product" element={<VendorAddProduct />} />
               <Route path="inventory" element={<VendorInventory />} />
               <Route path="orders" element={<VendorOrders />} />
+              <Route path="incomplete-orders" element={<VendorIncompleteOrders />} />
+              <Route path="shipments" element={<VendorShipments />} />
               <Route path="returns" element={<VendorReturns />} />
               <Route path="logistics" element={<VendorLogistics />} />
               <Route path="earnings" element={<VendorEarnings />} />
@@ -182,11 +187,11 @@ function App() {
               <Route path="notifications" element={<VendorNotifications />} />
               <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="support" element={<VendorSupport />} />
+              <Route path="storefront" element={<VendorStorefront />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
           </Route>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="/admin/*" element={<AdminRoutes />} />
 
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

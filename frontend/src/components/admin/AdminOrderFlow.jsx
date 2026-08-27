@@ -1,32 +1,35 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import AdminPageHeader from './AdminPageHeader';
 import OrderDualTrack from '../shared/OrderDualTrack';
 import { platformStore } from '../../data/platformStore';
 
-const VendorOrders = () => {
+const AdminOrderFlow = () => {
   const [orders] = useState(platformStore.orders());
   const [selected, setSelected] = useState(null);
 
   if (selected) {
     return (
-      <div className="admin-app p-4 md:p-6 space-y-3">
+      <div className="space-y-3">
         <button type="button" className="admin-btn-light" onClick={() => setSelected(null)}>Back to orders</button>
-        <OrderDualTrack orderId={selected} role="vendor" />
+        <OrderDualTrack orderId={selected} role="admin" />
       </div>
     );
   }
 
   return (
-    <div className="admin-app p-4 md:p-6">
-      <h1 className="admin-page-title mb-4">Orders</h1>
+    <div>
+      <AdminPageHeader title="Orders" hideAction extra={<Link className="admin-btn-light" to="/admin/ecommerce/incomplete-orders">Incomplete Orders</Link>} />
       <div className="admin-card overflow-hidden">
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Order</th>
+              <th>Order ID</th>
               <th>Customer</th>
-              <th>Order status</th>
-              <th>Shipment</th>
               <th>Payment</th>
+              <th>Order status</th>
+              <th>Shipment status</th>
+              <th>Total</th>
               <th></th>
             </tr>
           </thead>
@@ -34,10 +37,11 @@ const VendorOrders = () => {
             {orders.map((order) => (
               <tr key={order.id}>
                 <td>#{order.id}</td>
-                <td>{order.customer}</td>
+                <td>{order.customer}{order.guest ? ' (guest)' : ''}</td>
+                <td><span className="admin-badge admin-badge-success">{order.paymentStatus}</span></td>
                 <td>{order.orderStatus}</td>
                 <td>{order.shipment?.status || 'Not created'}</td>
-                <td>{order.paymentStatus}</td>
+                <td>₹{order.total}</td>
                 <td className="text-right"><button type="button" className="admin-btn-light" onClick={() => setSelected(order.id)}>Open</button></td>
               </tr>
             ))}
@@ -48,4 +52,4 @@ const VendorOrders = () => {
   );
 };
 
-export default VendorOrders;
+export default AdminOrderFlow;

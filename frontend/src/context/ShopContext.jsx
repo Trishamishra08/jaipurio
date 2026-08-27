@@ -268,6 +268,13 @@ export const ShopProvider = ({ children }) => {
         addProduct,
         deleteProduct,
         updateProduct,
+        logout: () => {
+          localStorage.removeItem('jaipurio_auth');
+          localStorage.removeItem('jaipurio_user');
+          setIsAuthenticated(false);
+        },
+        fetchData: () => {},
+        setCategories,
         loading: false
       }}
     >

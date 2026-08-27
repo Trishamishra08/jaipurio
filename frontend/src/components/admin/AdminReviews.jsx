@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiStar, FiTrash2, FiCheckCircle, FiXCircle, FiRefreshCw } from 'react-icons/fi';
 import api from '../../utils/api';
+import { useShop } from '../../context/ShopContext';
 
 const AdminReviews = () => {
+    const { reviews: shopReviews } = useShop();
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -10,13 +12,25 @@ const AdminReviews = () => {
         try {
             setLoading(true);
             const res = await api.get('/admins/reviews');
-            setReviews(res.data.data.reviews || []);
+            if (res.data.data.reviews?.length) {
+                setReviews(res.data.data.reviews);
+                return;
+            }
         } catch (err) {
             console.error('Failed to fetch product reviews:', err);
         } finally {
             setLoading(false);
         }
-    }, []);
+        setReviews((shopReviews || []).map((review) => ({
+            _id: review.id,
+            product: { name: review.productName, image: review.productImage },
+            user: { name: review.name },
+            rating: review.rating,
+            comment: review.comment,
+            isApproved: true,
+        })));
+        setLoading(false);
+    }, [shopReviews]);
 
     useEffect(() => { fetchReviews(); }, [fetchReviews]);
 

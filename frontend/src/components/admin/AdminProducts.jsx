@@ -28,19 +28,21 @@ const BRA_SIZES = ['32B', '34B', '36B', '38B', '40B', '32C', '34C', '36C', '38C'
 const GENERAL_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL'];
 
 const AdminProducts = () => {
-  const { categories } = useShop();
+  const { categories, products } = useShop();
   const [adminProducts, setAdminProducts] = useState([]);
   
   const fetchAdminProducts = useCallback(async () => {
     try {
       const res = await api.get('/products/admin');
-      if (res.data.success) {
+      if (res.data.success && res.data.data?.length) {
         setAdminProducts(res.data.data);
+        return;
       }
     } catch (err) {
       console.error('Failed to fetch admin products:', err);
     }
-  }, []);
+    setAdminProducts(products || []);
+  }, [products]);
 
   useEffect(() => {
     fetchAdminProducts();

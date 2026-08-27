@@ -6,6 +6,7 @@ import { useShop } from '../../context/ShopContext';
 import html2pdf from 'html2pdf.js';
 
 const AdminOrders = () => {
+  const { orders: shopOrders } = useShop();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
@@ -15,19 +16,42 @@ const AdminOrders = () => {
   const [shipmentModal, setShipmentModal] = useState({ isOpen: false, orderId: null });
   const [isShipping, setIsShipping] = useState(false);
 
+  const mapShopOrders = useCallback(() => (
+    (shopOrders || []).map((order) => ({
+      _id: order.id || order._id,
+      createdAt: order.date || new Date().toISOString(),
+      paymentMethod: order.paymentMethod || 'UPI',
+      totalPrice: order.total,
+      user: { name: 'Demo User', email: 'demo@jaipurio.com' },
+      shippingAddress: { name: 'Demo User', address: order.shippingAddress },
+      orderItems: (order.items || []).map((item, index) => ({
+        _id: `${order.id || order._id}-${index}`,
+        name: item.name,
+        qty: item.quantity || item.qty || 1,
+        price: item.price,
+        status: order.status || 'Processing',
+        trackingNumber: order.trackingNumber || '',
+        vendor: { storeName: item.vendor },
+      })),
+    }))
+  ), [shopOrders]);
+
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/orders/admin');
-      if (res.data.success) {
+      if (res.data.success && res.data.data?.length) {
         setOrders(res.data.data);
+        return;
       }
     } catch (err) {
       console.error("Failed to fetch admin orders:", err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+    setOrders(mapShopOrders());
+    setLoading(false);
+  }, [mapShopOrders]);
 
   useEffect(() => {
     fetchOrders();
