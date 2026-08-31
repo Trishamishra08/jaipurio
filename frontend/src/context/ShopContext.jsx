@@ -62,22 +62,6 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
     refreshProducts();
   }, [loadCatalog, refreshProducts]);
 
-  /* Upgrade legacy demo-token sessions to real API JWT */
-  useEffect(() => {
-    if (!isAuthenticated && !isDemoToken()) return;
-    if (isDemoToken() || (isAuthenticated && !localStorage.getItem('customer_token'))) {
-      ensureCustomerAuth().then((token) => {
-        if (!token) return;
-        try {
-          const saved = localStorage.getItem('jaipurio_user');
-          if (saved) setUser(JSON.parse(saved));
-        } catch {
-          /* ignore */
-        }
-      });
-    }
-  }, [isAuthenticated]);
-
   const [categories, setCategories] = useState(initialCategories);
   const [offers, setOffers] = useState(initialOffers);
   const [vendors, setVendors] = useState(initialVendors);
@@ -123,6 +107,22 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
       address: 'Johari Bazaar, Jaipur, Rajasthan 302003',
     };
   });
+
+  /* Upgrade legacy demo-token sessions to real API JWT */
+  useEffect(() => {
+    if (!isAuthenticated && !isDemoToken()) return;
+    if (isDemoToken() || (isAuthenticated && !localStorage.getItem('customer_token'))) {
+      ensureCustomerAuth().then((token) => {
+        if (!token) return;
+        try {
+          const saved = localStorage.getItem('jaipurio_user');
+          if (saved) setUser(JSON.parse(saved));
+        } catch {
+          /* ignore */
+        }
+      });
+    }
+  }, [isAuthenticated]);
 
   const [deliveryLocation, setDeliveryLocation] = useState(() => {
     try {
