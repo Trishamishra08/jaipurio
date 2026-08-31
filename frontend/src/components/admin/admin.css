@@ -166,11 +166,30 @@
 }
 
 .admin-subnav-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 12px;
   font-size: 13px;
   color: #9aa6b8;
   border-radius: 6px;
+}
+
+.admin-subnav-badge {
+  font-style: normal;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .admin-subnav-link:hover,
@@ -812,6 +831,7 @@
 }
 
 .admin-login-page {
+  --admin-accent: #9a6b4a;
   min-height: 100vh;
   background: #f6f3ef;
   display: flex;
@@ -877,6 +897,20 @@
   text-align: center;
   font-size: 12px;
   color: #94a3b8;
+}
+
+.admin-login-submit {
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.admin-login-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .admin-login-footer {

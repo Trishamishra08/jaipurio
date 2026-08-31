@@ -59,7 +59,7 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen bg-white pb-14">
-      <div className="max-w-7xl mx-auto px-3 sm:px-5 pt-3 pb-4">
+      <div className="site-container pt-3 pb-4">
         <div className="mb-3">
           <div className="flex items-center gap-1.5 font-dm text-[10px] text-[#806653] mb-1">
             <Link to="/home" className="hover:text-[#6F241D]">

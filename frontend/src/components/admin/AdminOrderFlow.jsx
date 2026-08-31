@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminPageHeader from './AdminPageHeader';
 import OrderDualTrack from '../shared/OrderDualTrack';
-import { platformStore } from '../../data/platformStore';
+import { fetchOrders } from '../../utils/marketplaceApi';
 
 const AdminOrderFlow = () => {
-  const [orders] = useState(platformStore.orders());
+  const [orders, setOrders] = useState([]);
   const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    fetchOrders('admin').then((rows) => setOrders(Array.isArray(rows) ? rows : []));
+  }, [selected]);
 
   if (selected) {
     return (
       <div className="space-y-3">
         <button type="button" className="admin-btn-light" onClick={() => setSelected(null)}>Back to orders</button>
-        <OrderDualTrack orderId={selected} role="admin" />
+        <OrderDualTrack orderId={selected} role="admin" orders={orders} />
       </div>
     );
   }
@@ -42,7 +46,7 @@ const AdminOrderFlow = () => {
                 <td>{order.orderStatus}</td>
                 <td>{order.shipment?.status || 'Not created'}</td>
                 <td>₹{order.total}</td>
-                <td className="text-right"><button type="button" className="admin-btn-light" onClick={() => setSelected(order.id)}>Open</button></td>
+                <td className="text-right"><button type="button" className="admin-btn-light" onClick={() => setSelected(order._id || order.id)}>Open</button></td>
               </tr>
             ))}
           </tbody>

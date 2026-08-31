@@ -16,8 +16,8 @@ const ITEMS = [
  */
 const WhyChooseJaipurio = () => {
   return (
-    <section className="w-full bg-white py-4 px-3 sm:px-5">
-      <div className="w-full max-w-7xl mx-auto">
+    <section className="w-full bg-white py-4">
+      <div className="site-container">
         <div className="rounded-xl border border-[#E8E2D9] bg-white px-3 py-4 sm:px-6 sm:py-5 shadow-[0_2px_12px_rgba(63,38,27,0.04)]">
           <SectionHeading title="Why Choose Jaipurio?" />
 

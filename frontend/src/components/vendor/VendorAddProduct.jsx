@@ -1,15 +1,20 @@
-﻿import React from 'react';
+import React from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import ProductEditorForm from '../shared/ProductEditorForm';
-import { Link } from 'react-router-dom';
+import VendorPage from './VendorPage';
 
-const VendorAddProduct = () => (
-  <div className="admin-app p-4 md:p-6">
-    <div className="flex items-center justify-between mb-4">
-      <h1 className="admin-page-title">Add / Edit Product</h1>
-      <Link to="/vendor/products" className="admin-btn-light">Back to products</Link>
-    </div>
-    <ProductEditorForm role="vendor" />
-  </div>
-);
+const VendorAddProduct = () => {
+  const [params] = useSearchParams();
+  const id = params.get('id') || undefined;
+  return (
+    <VendorPage
+      title={id ? 'Edit product' : 'Add product'}
+      hint="Required: Title, SKU, Category, Price, Stock, and at least one image. Save draft or submit for admin review."
+      extra={<Link to="/vendor/products" className="admin-btn-light">Back to products</Link>}
+    >
+      <ProductEditorForm role="vendor" productId={id} />
+    </VendorPage>
+  );
+};
 
 export default VendorAddProduct;

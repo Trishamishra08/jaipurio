@@ -114,6 +114,7 @@ const DIRECTORY = [
     title: 'Company',
     links: [
       ['About Us', '/about'],
+      ['Journal', '/blog'],
       ['Our Story', '/about'],
       ['Privacy Policy', '/privacy-policy'],
       ['Terms & Conditions', '/terms-conditions'],
@@ -215,7 +216,7 @@ const Footer = () => {
           <div className="footer-pichwai" aria-hidden />
 
           {/* Layer 1 — Heritage + brand + app */}
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 pb-3 sm:pt-8 sm:pb-6 text-center">
+          <div className="site-container pt-4 pb-3 sm:pt-8 sm:pb-6 text-center">
             <p className="font-body text-[8px] sm:text-[10px] font-semibold tracking-[0.22em] uppercase text-[#E8C4A0]">
               — Rajasthani Heritage —
             </p>
@@ -227,7 +228,7 @@ const Footer = () => {
             </p>
           </div>
 
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-3 sm:pb-5">
+          <div className="site-container pb-3 sm:pb-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <img src="/jaipurio_logo.png" alt="Jaipurio" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
@@ -265,7 +266,7 @@ const Footer = () => {
 
           {/* Layer 2 — Stats + actions + directory */}
           <div className="bg-[#F6EFE4] text-[#2B1E1A]">
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3">
+            <div className="site-container py-2.5 sm:py-3">
               <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto scrollbar-none snap-x">
                 {STATS.map(([n, l]) => (
                   <div key={l} className="snap-start shrink-0 min-w-[118px] md:min-w-0 text-center">
@@ -277,7 +278,7 @@ const Footer = () => {
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
+          <div className="site-container py-3 sm:py-5">
             <div className="flex lg:grid lg:grid-cols-3 gap-2 overflow-x-auto scrollbar-none snap-x">
               {ACTIONS.map((a) => (
                 <Link
@@ -347,7 +348,7 @@ const Footer = () => {
 
           {/* Layer 3 — Shipping + office */}
           <div className="border-t border-white/10">
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
+            <div className="site-container py-3 sm:py-5">
               <p className="font-body text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E8C4A0] mb-1.5">
                 Ships across India
               </p>

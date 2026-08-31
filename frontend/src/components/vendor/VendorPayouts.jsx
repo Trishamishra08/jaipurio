@@ -1,22 +1,25 @@
-﻿import React, { useState } from 'react';
-import { platformStore } from '../../data/platformStore';
+import React, { useEffect, useState } from 'react';
+import VendorPage from './VendorPage';
+import { fetchPayouts, requestPayout } from '../../utils/marketplaceApi';
 
 const VendorPayouts = () => {
-  const [items, setItems] = useState(platformStore.payouts());
+  const [items, setItems] = useState([]);
 
-  const request = () => {
-    const next = [{ id: `PO-${Date.now()}`, vendor: 'Shyam Pottery', amount: 2400, status: 'Pending approval', createdAt: new Date().toISOString().slice(0, 10) }, ...items];
-    setItems(next);
-    platformStore.savePayouts(next);
+  useEffect(() => {
+    fetchPayouts().then((rows) => setItems(Array.isArray(rows) ? rows : []));
+  }, []);
+
+  const request = async () => {
+    const row = await requestPayout();
+    setItems((prev) => [row, ...prev.filter((item) => (item.id || item._id) !== (row.id || row._id))]);
   };
 
   return (
-    <div className="admin-app p-4 md:p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="admin-page-title">Payouts</h1>
-        <button type="button" className="admin-btn-primary" onClick={request}>Request payout</button>
-      </div>
-      <p className="text-xs text-slate-500 mb-3">Available balance moves here after Completed + return window. Admin approval optional.</p>
+    <VendorPage
+      title="Payouts"
+      hint="Request payout from Available balance. Admin may approve. Then payment sent to verified bank, then settlement statement."
+      extra={<button type="button" className="admin-btn-primary" onClick={request}>Request payout</button>}
+    >
       <div className="admin-card overflow-hidden">
         <table className="admin-table">
           <thead>
@@ -29,7 +32,7 @@ const VendorPayouts = () => {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id || item._id}>
                 <td>{item.id}</td>
                 <td>₹{item.amount}</td>
                 <td><span className="admin-badge admin-badge-warning">{item.status}</span></td>
@@ -39,7 +42,7 @@ const VendorPayouts = () => {
           </tbody>
         </table>
       </div>
-    </div>
+    </VendorPage>
   );
 };
 

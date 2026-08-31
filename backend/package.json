@@ -1,0 +1,36 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node scripts/predev.js && node index.js",
+    "dev:watch": "node scripts/predev.js && nodemon index.js",
+    "dev:once": "node scripts/predev.js && node index.js",
+    "seed:flow": "node seedMarketplaceFlow.js",
+    "redis:start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-redis.ps1",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.18.1",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "firebase-admin": "^14.0.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.6.3",
+    "multer": "^2.1.1",
+    "razorpay": "^2.9.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

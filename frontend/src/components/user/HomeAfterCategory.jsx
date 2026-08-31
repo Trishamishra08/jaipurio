@@ -94,8 +94,8 @@ const CATALOG = [
   { name: 'Divya Marble Mandir', brand: 'Vinayak Art & Marble', price: 26500, oldPrice: 43000, rating: 4.5, reviews: 33, image: PHOTOS.diya, tag: 'Hot' },
 ];
 
-const SectionHead = ({ title, copy, to = '/shop', link = 'View All →' }) => (
-  <SectionHeading title={title} copy={copy} to={to} link={link} />
+const SectionHead = ({ title, copy, to = '/shop', link = 'View All →', compact = false }) => (
+  <SectionHeading title={title} copy={copy} to={to} link={link} compact={compact} />
 );
 
 const Tag = ({ label }) => {
@@ -166,9 +166,9 @@ const CatalogCard = ({ item, compact }) => {
   );
 };
 
-const Wrap = ({ children, alt, className = '' }) => (
-  <section className={`w-full px-3 sm:px-5 py-4 bg-white ${className}`}>
-    <div className="w-full max-w-7xl mx-auto">{children}</div>
+const Wrap = ({ children, alt, className = '', compact = false }) => (
+  <section className={`w-full ${compact ? 'py-1.5 sm:py-2' : 'py-4'} bg-white ${className}`}>
+    <div className="site-container">{children}</div>
   </section>
 );
 
@@ -229,53 +229,54 @@ const HomeAfterCategory = () => {
   return (
     <>
       {/* 1. Deal tiles */}
-      <Wrap>
+      <Wrap compact>
         <SectionHead
           title="Today's Offers"
           copy="Handmade mitti deals — matkas, kulhads, planters and puja sets."
           to="/shop"
           link="View All →"
+          compact
         />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
           {OFFER_TILES.map((d, i) => (
             <Link
               key={d.title}
               to={d.to}
-              className="offer-card offer-card-in group relative bg-white rounded-xl sm:rounded-2xl border border-[#E8E2D9] p-1.5 sm:p-3 overflow-hidden shadow-[0_2px_8px_rgba(63,38,27,0.05)] hover:shadow-[0_10px_22px_rgba(111,36,29,0.1)] hover:-translate-y-0.5 transition-all duration-300"
+              className="offer-card offer-card-in group relative bg-white rounded-lg sm:rounded-xl border border-[#E8E2D9] p-2 sm:p-2.5 overflow-hidden shadow-[0_1px_6px_rgba(63,38,27,0.04)] hover:shadow-[0_6px_16px_rgba(111,36,29,0.08)] hover:-translate-y-0.5 transition-all duration-300"
               style={{ animationDelay: `${i * 90}ms` }}
             >
               <span className="offer-shine pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover:opacity-100" />
-              <div className="flex items-start justify-between gap-1 mb-1.5">
-                <h4 className="font-playfair font-semibold text-[12px] sm:text-[16px] md:text-[18px] text-[#3F261B] leading-tight">
+              <div className="flex items-start justify-between gap-1 mb-1">
+                <h4 className="font-playfair font-semibold text-[11px] sm:text-[13px] lg:text-[14px] text-[#3F261B] leading-snug line-clamp-2">
                   {d.title}
                 </h4>
-                <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-[#6F241D] text-white font-body text-[8px] sm:text-[9px] font-semibold uppercase tracking-wide">
+                <span className="shrink-0 px-1 py-0.5 rounded-full bg-[#6F241D] text-white font-body text-[7px] sm:text-[8px] font-semibold uppercase tracking-wide">
                   {d.badge}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-1 sm:gap-2">
+              <div className="grid grid-cols-2 gap-1 sm:gap-1.5">
                 {d.items.map((p) => (
-                  <div key={p.name} className="min-w-0">
-                    <div className="aspect-square rounded-full overflow-hidden bg-[#F7EFE0]">
+                  <div key={p.name} className="min-w-0 flex flex-col items-center text-center">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 shrink-0 rounded-full overflow-hidden bg-[#F7EFE0]">
                       <img
                         src={p.image}
                         alt={p.name}
-                        className="w-full h-full object-cover object-center scale-[1.14] transition-transform duration-500 group-hover:scale-[1.2]"
+                        className="w-full h-full object-cover object-center scale-[1.12] transition-transform duration-500 group-hover:scale-[1.18]"
                       />
                     </div>
-                    <p className="font-body text-[9px] sm:text-[12px] text-[#3F261B] mt-0.5 sm:mt-1 line-clamp-1 leading-tight">
+                    <p className="font-body text-[8px] sm:text-[9px] text-[#3F261B] mt-0.5 line-clamp-2 leading-tight">
                       {p.name}
                     </p>
-                    <p className="font-body text-[10px] sm:text-[13px] font-semibold text-[#3F261B] leading-tight">
+                    <p className="font-body text-[9px] sm:text-[10px] font-semibold text-[#3F261B] leading-tight">
                       ₹{p.price.toLocaleString('en-IN')}
-                      <span className="ml-0.5 font-normal text-[8px] sm:text-[11px] text-[#9A8B7A] line-through">
+                      <span className="ml-0.5 font-normal text-[7px] sm:text-[8px] text-[#9A8B7A] line-through">
                         ₹{p.oldPrice.toLocaleString('en-IN')}
                       </span>
                     </p>
                   </div>
                 ))}
               </div>
-              <span className="inline-flex items-center gap-0.5 mt-1.5 font-body text-[10px] sm:text-[13px] font-semibold text-[#6F241D]">
+              <span className="inline-flex items-center gap-0.5 mt-1 font-body text-[9px] sm:text-[10px] font-semibold text-[#6F241D]">
                 {d.link}
                 <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
               </span>

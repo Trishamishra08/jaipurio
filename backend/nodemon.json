@@ -1,0 +1,6 @@
+{
+  "watch": ["index.js", "controllers", "routes", "models", "middlewares", "config", "utils", "services"],
+  "ignore": ["dump.rdb", "*.rdb", "uploads", "node_modules"],
+  "ext": "js,json",
+  "delay": 1500
+}

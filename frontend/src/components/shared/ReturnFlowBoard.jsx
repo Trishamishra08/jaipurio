@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { platformStore } from '../../data/platformStore';
+import { fetchReturns, advanceReturn, rejectReturn } from '../../utils/marketplaceApi';
 
 const STEPS = [
   'Return Request created',
@@ -16,31 +17,38 @@ const ReturnFlowBoard = ({ role = 'admin' }) => {
   const [items, setItems] = useState(platformStore.returns());
   const [selected, setSelected] = useState(items[0] || null);
 
-  const save = (nextItems, nextSelected) => {
+  useEffect(() => {
+    fetchReturns().then((rows) => {
+      if (Array.isArray(rows) && rows.length) {
+        setItems(rows);
+        setSelected(rows[0]);
+        platformStore.saveReturns(rows);
+      }
+    });
+  }, []);
+
+  const applyItem = (updated) => {
+    const nextItems = items.map((item) => (item.id === updated.id || item._id === updated._id ? { ...item, ...updated } : item));
     setItems(nextItems);
     platformStore.saveReturns(nextItems);
-    if (nextSelected) setSelected(nextSelected);
+    setSelected({ ...selected, ...updated });
   };
 
-  const advance = () => {
+  const advance = async () => {
     if (!selected) return;
-    const index = STEPS.indexOf(selected.status);
-    const nextStatus = STEPS[Math.min(index + 1, STEPS.length - 1)];
-    const updated = { ...selected, status: nextStatus };
-    const nextItems = items.map((item) => (item.id === selected.id ? updated : item));
-    save(nextItems, updated);
-    if (nextStatus === 'Payment status: Refunded') {
-      const orders = platformStore.orders().map((order) =>
-        order.id === selected.orderId ? { ...order, paymentStatus: 'Refunded' } : order
-      );
-      platformStore.saveOrders(orders);
+    const saved = await advanceReturn(selected);
+    if (saved?.status) applyItem(saved);
+    else {
+      const index = STEPS.indexOf(selected.status);
+      const nextStatus = STEPS[Math.min(index + 1, STEPS.length - 1)];
+      applyItem({ ...selected, status: nextStatus });
     }
   };
 
-  const reject = () => {
+  const reject = async () => {
     if (!selected) return;
-    const updated = { ...selected, status: 'Rejected — admin dispute available' };
-    save(items.map((item) => (item.id === selected.id ? updated : item)), updated);
+    const saved = await rejectReturn(selected);
+    applyItem(saved?.status ? saved : { ...selected, status: 'Rejected — admin dispute available' });
   };
 
   return (
@@ -56,7 +64,7 @@ const ReturnFlowBoard = ({ role = 'admin' }) => {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className={selected?.id === item.id ? 'bg-[#f8eee6]' : ''} onClick={() => setSelected(item)}>
+              <tr key={item.id || item._id} className={selected?.id === item.id ? 'bg-[#f8eee6]' : ''} onClick={() => setSelected(item)}>
                 <td>{item.id}</td>
                 <td>#{item.orderId}</td>
                 <td><span className="admin-badge admin-badge-warning">{item.status}</span></td>

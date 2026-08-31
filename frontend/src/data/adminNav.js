@@ -29,7 +29,7 @@ export const adminNav = [
     id: 'ecommerce',
     title: 'Ecommerce',
     icon: ShoppingBag,
-    badgeKey: 'orders',
+    badgeKey: 'pendingActions',
     children: [
       { title: 'Report', path: '/admin/ecommerce/reports' },
       { title: 'Orders', path: '/admin/orders' },
@@ -37,7 +37,7 @@ export const adminNav = [
       { title: 'Order Returns', path: '/admin/returns' },
       { title: 'Shipments', path: '/admin/ecommerce/shipments' },
       { title: 'Invoices', path: '/admin/ecommerce/invoices' },
-      { title: 'Products', path: '/admin/products' },
+      { title: 'Products', path: '/admin/products', badgeKey: 'pendingProducts' },
       { title: 'Product Prices', path: '/admin/ecommerce/product-prices' },
       { title: 'Product Inventory', path: '/admin/inventory' },
       { title: 'Product Categories', path: '/admin/categories' },

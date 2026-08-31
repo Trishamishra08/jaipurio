@@ -7,7 +7,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({
-    email: localStorage.getItem('jaipurio_admin_remember') || '',
+    email: localStorage.getItem('jaipurio_admin_remember') || ADMIN_DEMO.email,
     password: '',
     remember: Boolean(localStorage.getItem('jaipurio_admin_remember')),
   });
@@ -18,11 +18,11 @@ const AdminLogin = () => {
     return <Navigate to="/admin" replace />;
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const result = loginAdmin(form);
+    const result = await loginAdmin(form);
     setLoading(false);
     if (!result.ok) {
       setError(result.message);
@@ -82,7 +82,7 @@ const AdminLogin = () => {
             Remember me?
           </label>
 
-          <button type="submit" className="admin-btn-primary w-full justify-center h-11" disabled={loading}>
+          <button type="submit" className="admin-btn-primary admin-login-submit" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>

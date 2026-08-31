@@ -7,8 +7,8 @@ import { Percent } from 'lucide-react';
  */
 const CouponOffers = () => {
   return (
-    <section className="w-full bg-white px-3 sm:px-5 py-3">
-      <div className="w-full max-w-7xl mx-auto">
+    <section className="w-full bg-white py-3">
+      <div className="site-container">
         <div className="grid grid-cols-1 sm:grid-cols-2 overflow-hidden rounded-2xl border border-[#E8E2D9] bg-white">
           <Link
             to="/shop"

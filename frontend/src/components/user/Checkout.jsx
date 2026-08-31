@@ -1,45 +1,141 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
+import api from '../../utils/api';
+import { payWithRazorpay } from '../../utils/razorpay';
+import { ensureCustomerAuth } from '../../utils/customerAuth';
 import { 
   CheckCircle, 
   MapPin, 
   CreditCard, 
-  ShieldCheck, 
-  Truck, 
   ArrowLeft,
   ChevronRight,
-  Sparkles
+  Loader2,
 } from 'lucide-react';
 
 const Checkout = () => {
-  const { cart, cartTotal, clearCart, addOrder } = useShop();
+  const { cart, cartTotal, clearCart, user } = useShop();
+  const location = useLocation();
   const navigate = useNavigate();
+  const appliedCoupon = location.state?.appliedCoupon || null;
+  const bagFinalTotal = location.state?.finalTotal;
 
   const [step, setStep] = useState(1);
   const [address, setAddress] = useState({
-    fullName: 'Padharo Sa',
-    phone: '+91 98290 12345',
+    fullName: user?.name || 'Padharo Sa',
+    phone: user?.phone || user?.mobile || '+91 98290 12345',
     street: 'Haveli 12, Johari Bazaar',
     city: 'Jaipur',
     state: 'Rajasthan',
-    pincode: '302003'
+    pincode: '302003',
+    email: user?.email || 'customer@gmail.com',
   });
 
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [orderComplete, setOrderComplete] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
+  const [placing, setPlacing] = useState(false);
+  const [orderError, setOrderError] = useState('');
+
+  useEffect(() => {
+    ensureCustomerAuth();
+  }, []);
 
   const shippingCost = cartTotal > 499 ? 0 : 50;
-  const grandTotal = cartTotal + shippingCost;
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.discountType === 'percentage'
+      ? Math.round((cartTotal * appliedCoupon.discountValue) / 100)
+      : appliedCoupon.discountValue
+    : 0;
+  const grandTotal = bagFinalTotal != null ? bagFinalTotal + shippingCost : cartTotal - couponDiscount + shippingCost;
 
-  const handlePlaceOrder = () => {
-    const newOrd = addOrder({
-      shippingAddress: `${address.fullName}, ${address.street}, ${address.city}, ${address.state} - ${address.pincode} (${address.phone})`,
-      paymentMethod
-    });
-    setConfirmedOrderId(newOrd.id);
+  const orderItemsPayload = () =>
+    cart.map((item) => ({
+      product: item._id,
+      quantity: item.quantity,
+      image: item.image,
+    }));
+
+  const shippingPayload = () => ({
+    ...address,
+    name: address.fullName,
+  });
+
+  const persistSuccess = (serverOrder) => {
+    const ref = serverOrder?.orderNumber || serverOrder?.orderId || serverOrder?._id || `ORD-JM-${Date.now()}`;
+    clearCart();
+    setConfirmedOrderId(String(ref));
     setOrderComplete(true);
+  };
+
+  const handlePlaceOrder = async () => {
+    setOrderError('');
+
+    const token = await ensureCustomerAuth();
+    if (!token) {
+      setOrderError('Please log in to complete your order.');
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
+    }
+
+    if (cart.length === 0) {
+      setOrderError('Your cart is empty. Add products from the shop first.');
+      return;
+    }
+
+    setPlacing(true);
+    try {
+      const items = orderItemsPayload();
+      const shippingAddress = shippingPayload();
+      const couponCode = appliedCoupon?.code || '';
+
+      if (paymentMethod === 'cod') {
+        const res = await api.post('/orders', {
+          items,
+          shippingAddress,
+          paymentMethod: 'COD',
+          couponCode,
+        });
+        const serverOrder = res.data?.data?.order;
+        persistSuccess(serverOrder);
+        return;
+      }
+
+      const createRes = await api.post('/orders/razorpay/create', {
+        items,
+        couponCode,
+      });
+      const { order: razorpayOrder, quote, keyId } = createRes.data?.data || {};
+
+      const payment = await payWithRazorpay({
+        razorpayOrder,
+        quote,
+        keyId,
+        customer: {
+          name: address.fullName,
+          email: address.email,
+          phone: address.phone,
+        },
+        onMockPay: async (mockResponse) => mockResponse,
+      });
+
+      const verifyRes = await api.post('/orders/razorpay/verify', {
+        ...payment,
+        orderDetails: { items, shippingAddress, couponCode },
+      });
+
+      const serverOrder = verifyRes.data?.data?.order;
+      persistSuccess(serverOrder);
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 401) {
+        setOrderError('Session expired. Please log in again to place your order.');
+      } else {
+        setOrderError(err.parsedMessage || err.message || 'Could not place order. Please try again.');
+      }
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (orderComplete) {
@@ -311,14 +407,21 @@ const Checkout = () => {
                   <button
                     onClick={() => setStep(2)}
                     className="text-xs font-bold text-[#70452F] hover:underline"
+                    type="button"
                   >
                     ← Edit Payment
                   </button>
+                  {orderError && (
+                    <p className="text-[10px] text-red-600 font-semibold max-w-xs text-right">{orderError}</p>
+                  )}
                   <button
                     onClick={handlePlaceOrder}
-                    className="bg-[#354B35] hover:bg-[#202E20] text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-wider shadow-lg transition-all"
+                    disabled={placing}
+                    type="button"
+                    className="bg-[#354B35] hover:bg-[#202E20] disabled:opacity-60 text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-wider shadow-lg transition-all inline-flex items-center gap-2"
                   >
-                    Confirm & Place Order (₹{grandTotal})
+                    {placing ? <Loader2 size={14} className="animate-spin" /> : null}
+                    {placing ? 'Processing…' : `Confirm & Place Order (₹${grandTotal})`}
                   </button>
                 </div>
               </div>

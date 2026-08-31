@@ -35,9 +35,9 @@ const HeroCarousel = () => {
   }, [active, isVideo]);
 
   return (
-    <section className="relative w-full m-0 p-0 -mt-0 leading-none bg-[#EFE0C9]">
+    <section className="site-full-bleed relative w-full m-0 p-0 leading-none bg-[#EFE0C9]">
       <div className="relative w-full overflow-hidden">
-        <div className="relative w-full aspect-[5/4] sm:aspect-[16/10] md:aspect-[2/1] max-h-[580px]">
+        <div className="relative w-full max-md:aspect-[5/4] max-md:min-h-[240px] max-md:max-h-[340px] md:min-h-[520px] md:h-[62vh] md:max-h-[760px] lg:min-h-[580px] lg:h-[68vh] lg:max-h-[820px] xl:min-h-[620px] xl:h-[72vh] xl:max-h-[880px]">
           {SLIDES.map((slide, i) => {
             const isActive = i === active;
             if (slide.type === 'image') {
@@ -46,7 +46,7 @@ const HeroCarousel = () => {
                   key={slide.src}
                   src={slide.src}
                   alt=""
-                  className={`absolute inset-0 w-full h-full object-cover object-[58%_38%] md:object-center select-none transition-opacity duration-700 ${
+                  className={`absolute inset-0 w-full h-full object-cover max-md:object-[55%_38%] md:object-[50%_72%] lg:object-[50%_78%] xl:object-[center_82%] select-none transition-opacity duration-700 ${
                     isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
                   }`}
                   draggable={false}
@@ -77,20 +77,20 @@ const HeroCarousel = () => {
         {!isVideo && (
           <>
             <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[70%] sm:w-[52%] md:w-[45%] bg-gradient-to-r from-white/80 via-white/25 to-transparent"
+              className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[72%] sm:w-[55%] md:w-[48%] lg:w-[42%] bg-gradient-to-r from-white/85 via-white/30 to-transparent"
               aria-hidden="true"
             />
 
-            <div className="absolute left-3 right-[26%] sm:left-5 sm:right-auto sm:max-w-[280px] md:left-8 md:max-w-[340px] top-[32%] sm:top-[34%] md:top-[36%] z-[3]">
-              <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[34px] font-bold text-[#8B2E3A] leading-[1.15]">
+            <div className="absolute left-4 sm:left-6 md:left-10 lg:left-16 xl:left-24 top-[26%] sm:top-[30%] md:top-[32%] lg:top-[34%] z-[3] max-w-[240px] sm:max-w-[300px] md:max-w-[360px] lg:max-w-[440px]">
+              <h1 className="font-heading text-[22px] sm:text-[28px] md:text-[36px] lg:text-[42px] xl:text-[48px] font-bold text-[#8B2E3A] leading-[1.12]">
                 Authentic Mitti. Pure Rajasthan.
               </h1>
-              <p className="font-body text-[10px] sm:text-xs md:text-sm text-[#4A3A2F] mt-1.5 sm:mt-2 leading-snug max-w-[220px] sm:max-w-none">
+              <p className="font-body text-[10px] sm:text-xs md:text-sm lg:text-base text-[#4A3A2F] mt-1.5 sm:mt-2 leading-snug">
                 Traditional Matkas &amp; Mitti Products direct from Jaipur
               </p>
               <Link
                 to="/shop"
-                className="mt-2.5 sm:mt-3 inline-flex items-center gap-1.5 bg-[#C45C6A] hover:bg-[#8B2E3A] text-white font-body text-[11px] sm:text-xs font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-md active:scale-[0.98] transition-all"
+                className="mt-2.5 sm:mt-3 md:mt-4 inline-flex items-center gap-1.5 bg-[#C45C6A] hover:bg-[#8B2E3A] text-white font-body text-[11px] sm:text-xs md:text-sm font-semibold px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 rounded-full shadow-md active:scale-[0.98] transition-all"
               >
                 Shop Now
                 <ArrowRight size={14} strokeWidth={2.4} />

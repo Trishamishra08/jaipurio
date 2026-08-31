@@ -5,10 +5,9 @@ import {
   LayoutDashboard, Package, PlusCircle, Archive, 
   ShoppingCart, RotateCcw, IndianRupee, CreditCard, 
   Star, Bell, Settings,
-  Search, MessageSquare, Menu, X, LogOut, Truck, PackageOpen
+  Search, MessageSquare, Menu, X, LogOut, Truck, PackageOpen, Store
 } from 'lucide-react';
 import '../admin/admin.css';
-import vendorLogo from '../../assets/images/WhatsApp Image 2026-05-26 at 1.34.49 PM.jpeg';
 import api from '../../utils/api';
 
 const VendorLayout = () => {
@@ -34,11 +33,16 @@ const VendorLayout = () => {
   };
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
-  const [vendorNotifications, setVendorNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [vendorNotifications, setVendorNotifications] = useState([
+    { _id: 'n1', title: 'New paid order', message: 'Order #00000375 — Payment Confirmed. Accept to create shipment.', isRead: false, createdAt: Date.now() - 8 * 60000 },
+    { _id: 'n2', title: 'Return request', message: 'RMA-1001 needs vendor review.', isRead: false, createdAt: Date.now() - 45 * 60000 },
+    { _id: 'n3', title: 'Low stock', message: 'Marble Ganesh Chowki is Out of Stock.', isRead: true, createdAt: Date.now() - 6 * 3600000 },
+  ]);
+  const [unreadCount, setUnreadCount] = useState(2);
 
   const fetchVendorNotifications = useCallback(async () => {
     try {
+      if (localStorage.getItem('vendor_token') === 'demo-vendor-token') return;
       const res = await api.get('/notifications/me');
       if (res.data.success) {
         setVendorNotifications(res.data.data.notifications);
@@ -62,10 +66,11 @@ const VendorLayout = () => {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
+    if (!showNotifications) return undefined;
     fetchVendorNotifications();
     const interval = setInterval(fetchVendorNotifications, 60000);
     return () => clearInterval(interval);
-  }, [fetchVendorNotifications]);
+  }, [showNotifications, fetchVendorNotifications]);
 
   useEffect(() => {
     window.showVendorToast = (message, type = 'success') => {
@@ -124,7 +129,7 @@ const VendorLayout = () => {
     { name: 'Payouts', path: '/vendor/payouts', icon: CreditCard },
     { name: 'Reviews', path: '/vendor/reviews', icon: Star },
     { name: 'Notifications', path: '/vendor/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : null },
-    { name: 'Storefront', path: '/vendor/storefront', icon: Settings },
+    { name: 'Storefront', path: '/vendor/storefront', icon: Store },
     { name: 'Settings', path: '/vendor/settings', icon: Settings },
   ];
 
@@ -142,10 +147,9 @@ const VendorLayout = () => {
         }`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <img
-              src="/jaipurio_logo_bg.png"
+              src="/jaipurio_logo_sidebar.png"
               alt="jaipurio"
-              className={`object-contain rounded-md shrink-0 ${sidebarOpen ? 'h-10 w-auto' : 'h-9 w-9'}`}
-              style={{ mixBlendMode: 'screen' }}
+              className={`object-contain shrink-0 ${sidebarOpen ? 'h-9 w-auto' : 'h-8 w-8'}`}
             />
             <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${sidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 hidden'}`}>
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/70">Artisan Panel</p>
@@ -233,7 +237,7 @@ const VendorLayout = () => {
 
       {/* Main Content */}
       <main 
-        className={`flex-1 overflow-y-auto overflow-x-hidden h-screen bg-white overscroll-contain touch-pan-y transition-all duration-300 ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden h-screen bg-[#f6f3ef] overscroll-contain touch-pan-y transition-all duration-300 ${
           sidebarOpen ? 'ml-0 lg:ml-64' : 'ml-0 lg:ml-[72px]'
         }`}
         onWheel={(e) => e.stopPropagation()}

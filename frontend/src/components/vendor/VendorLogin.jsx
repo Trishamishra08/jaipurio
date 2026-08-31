@@ -35,18 +35,18 @@ const VendorLogin = () => {
 
     setIsSubmitting(true);
     try {
-      const res = await api.post('/vendors/login', { email, password });
+      const res = await api.post('/vendors/login', { email, password }, { timeout: 5000 });
       if (res.data.success) {
         finishLogin(res.data.data.token, navigate);
         return;
       }
+      if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
+        finishLogin('demo-vendor-token', navigate);
+        return;
+      }
       setError(res.data.message || 'Invalid Credentials');
     } catch (err) {
-      // Frontend demo fallback when API is unavailable
-      if (
-        (email === DEMO_EMAIL && password === DEMO_PASSWORD) ||
-        (password === DEMO_PASSWORD && email.includes('@'))
-      ) {
+      if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
         finishLogin('demo-vendor-token', navigate);
         return;
       }

@@ -1,28 +1,82 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { initialProducts, initialCategories, initialOffers, initialVendors, initialReviews } from '../data/products';
 import { PHOTOS } from '../data/photos';
+import api from '../utils/api';
+import { mapApiProductToStorefront } from '../utils/storefrontProduct';
+import { ensureCustomerAuth, isDemoToken } from '../utils/customerAuth';
 
 const ShopContext = createContext();
 
-const imageByProductId = Object.fromEntries(initialProducts.map((p) => [p._id, p.image]));
-const withFreshImages = (items) =>
-  (items || []).map((item) =>
-    imageByProductId[item._id] ? { ...item, image: imageByProductId[item._id] } : item
-  );
+const syncCartWithCatalog = (items, catalog) => {
+  if (!Array.isArray(items) || !catalog?.length) return items || [];
+  const byId = new Map(catalog.map((p) => [String(p._id), p]));
+  return items
+    .map((item) => {
+      const fresh = byId.get(String(item._id));
+      if (!fresh) return null;
+      return {
+        ...item,
+        name: fresh.name,
+        price: fresh.price,
+        oldPrice: fresh.oldPrice,
+        image: fresh.image || fresh.iconImage,
+        vendor: fresh.vendor,
+        category: fresh.category,
+      };
+    })
+    .filter(Boolean);
+};
 
-export const useShop = () => useContext(ShopContext);
+export const useShop = () => {
+  const ctx = useContext(ShopContext);
+  if (!ctx) {
+    throw new Error('useShop must be used within ShopProvider');
+  }
+  return ctx;
+};
 
-export const ShopProvider = ({ children }) => {
-  const [products, setProducts] = useState(() => {
+export const ShopProvider = ({ children, loadCatalog = true }) => {
+  const [products, setProducts] = useState(initialProducts);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  const refreshProducts = useCallback(async () => {
+    setProductsLoading(true);
     try {
-      const saved = localStorage.getItem('jaipurio_products');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.map((p) => (imageByProductId[p._id] ? { ...p, image: imageByProductId[p._id] } : p));
+      const res = await api.get('/products');
+      const list = res.data?.data?.products;
+      if (Array.isArray(list) && list.length > 0) {
+        setProducts(list.map(mapApiProductToStorefront).filter(Boolean));
       }
-    } catch (e) {}
-    return initialProducts;
-  });
+    } catch {
+      /* keep demo catalog if API unavailable */
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loadCatalog) {
+      setProductsLoading(false);
+      return;
+    }
+    refreshProducts();
+  }, [loadCatalog, refreshProducts]);
+
+  /* Upgrade legacy demo-token sessions to real API JWT */
+  useEffect(() => {
+    if (!isAuthenticated && !isDemoToken()) return;
+    if (isDemoToken() || (isAuthenticated && !localStorage.getItem('customer_token'))) {
+      ensureCustomerAuth().then((token) => {
+        if (!token) return;
+        try {
+          const saved = localStorage.getItem('jaipurio_user');
+          if (saved) setUser(JSON.parse(saved));
+        } catch {
+          /* ignore */
+        }
+      });
+    }
+  }, [isAuthenticated]);
 
   const [categories, setCategories] = useState(initialCategories);
   const [offers, setOffers] = useState(initialOffers);
@@ -32,28 +86,9 @@ export const ShopProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('jaipurio_cart');
-      if (saved) return withFreshImages(JSON.parse(saved));
+      if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return [
-      {
-        _id: 'mitti-prod-1',
-        name: 'Rajasthani Design Matka (5L)',
-        price: 399,
-        oldPrice: 599,
-        quantity: 1,
-        image: PHOTOS.matka,
-        vendor: 'Shyam Pottery, Jaipur'
-      },
-      {
-        _id: 'mitti-prod-2',
-        name: 'Kulhad (Pack of 6)',
-        price: 249,
-        oldPrice: 349,
-        quantity: 2,
-        image: PHOTOS.kulhad,
-        vendor: 'Shyam Pottery, Jaipur'
-      }
-    ];
+    return [];
   });
 
   const [wishlist, setWishlist] = useState(() => {
@@ -140,6 +175,11 @@ export const ShopProvider = ({ children }) => {
   ]);
 
   const [flyingItems, setFlyingItems] = useState([]);
+
+  useEffect(() => {
+    if (productsLoading || products.length === 0) return;
+    setCart((prev) => syncCartWithCatalog(prev, products));
+  }, [products, productsLoading]);
 
   useEffect(() => {
     try {
@@ -271,11 +311,13 @@ export const ShopProvider = ({ children }) => {
         logout: () => {
           localStorage.removeItem('jaipurio_auth');
           localStorage.removeItem('jaipurio_user');
+          localStorage.removeItem('customer_token');
           setIsAuthenticated(false);
         },
-        fetchData: () => {},
+        fetchData: refreshProducts,
+        refreshProducts,
         setCategories,
-        loading: false
+        loading: productsLoading
       }}
     >
       {children}

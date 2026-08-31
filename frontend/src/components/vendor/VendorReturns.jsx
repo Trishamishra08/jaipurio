@@ -1,12 +1,14 @@
 import React from 'react';
+import VendorPage from './VendorPage';
 import ReturnFlowBoard from '../shared/ReturnFlowBoard';
 
 const VendorReturns = () => (
-  <div className="admin-app p-4 md:p-6">
-    <h1 className="admin-page-title mb-4">Order Returns</h1>
-    <p className="text-xs text-slate-500 mb-3">Separate workflow from Orders. Review reason + photos, then accept or reject.</p>
+  <VendorPage
+    title="Order Returns"
+    hint="Own module, not mixed with Orders. Open RMA-1001: review photos → Accept or Reject → inspect → refund → commission reverse."
+  >
     <ReturnFlowBoard role="vendor" />
-  </div>
+  </VendorPage>
 );
 
 export default VendorReturns;

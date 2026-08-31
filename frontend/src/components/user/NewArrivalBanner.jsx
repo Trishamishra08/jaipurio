@@ -7,9 +7,9 @@ import { ArrowRight } from 'lucide-react';
  */
 const NewArrivalBanner = () => {
   return (
-    <section className="w-full bg-white px-3 sm:px-5 pt-2 pb-3">
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="relative overflow-hidden rounded-2xl min-h-[148px] sm:min-h-[180px] md:min-h-[210px]">
+    <section className="w-full bg-white pt-2 pb-3">
+      <div className="site-container">
+        <div className="relative overflow-hidden rounded-none sm:rounded-2xl min-h-[148px] sm:min-h-[180px] md:min-h-[240px] lg:min-h-[280px]">
           <img
             src="/jaipurio_banner_art.png"
             alt=""

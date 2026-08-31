@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { platformStore } from '../../data/platformStore';
+import { acceptOrder, setOrderStatus, setShipmentStatus, completeOrder } from '../../utils/marketplaceApi';
 
 const ORDER_STEPS = ['Order Placed', 'Payment Confirmed', 'Vendor Accepts', 'Processing', 'Completed'];
 const SHIP_STEPS = ['Not created', 'Processing', 'Dispatched', 'Delivered'];
@@ -30,31 +31,40 @@ const Track = ({ title, steps, current, onChange, disabledSteps = [] }) => (
   </div>
 );
 
-const OrderDualTrack = ({ orderId, role = 'admin' }) => {
-  const [orders, setOrders] = useState(platformStore.orders());
-  const order = orders.find((item) => item.id === orderId) || orders[0];
+const matchOrder = (item, orderId) =>
+  item.id === orderId || item._id === orderId || item.orderNumber === orderId;
+
+const persistLocal = (orders, current, nextOrder) => {
+  const next = orders.map((item) => (matchOrder(item, current.id) || matchOrder(item, current._id) ? nextOrder : item));
+  platformStore.saveOrders(next);
+  return next;
+};
+
+const OrderDualTrack = ({ orderId, role = 'admin', orders: incoming }) => {
+  const [orders, setOrders] = useState(incoming || platformStore.orders());
+  useEffect(() => {
+    if (incoming) setOrders(incoming);
+  }, [incoming]);
+  const order = orders.find((item) => matchOrder(item, orderId)) || orders[0];
   if (!order) return <p className="text-sm text-slate-500">No order selected.</p>;
 
-  const update = (patch) => {
-    const next = orders.map((item) => (item.id === order.id ? { ...item, ...patch } : item));
-    setOrders(next);
-    platformStore.saveOrders(next);
+  const apply = async (fn, fallbackPatch) => {
+    const saved = await fn(order);
+    const nextOrder = saved && saved.orderStatus ? saved : { ...order, ...fallbackPatch };
+    setOrders((prev) => persistLocal(prev, order, nextOrder));
   };
 
-  const acceptOrder = () => {
-    update({
-      orderStatus: 'Processing',
-      shipment: {
-        ...(order.shipment || {}),
-        number: order.shipment?.number || `SHP-${order.id}`,
-        method: order.shipment?.method || 'Default',
-        status: 'Processing',
-        note: order.shipment?.note || '',
-      },
-    });
-  };
+  const accept = () => apply((o) => acceptOrder(o), {
+    orderStatus: 'Processing',
+    shipment: {
+      ...(order.shipment || {}),
+      number: order.shipment?.number || `SHP-${order.id}`,
+      method: order.shipment?.method || 'Default',
+      status: 'Processing',
+    },
+  });
 
-  const markCompleted = () => update({ orderStatus: 'Completed' });
+  const markCompleted = () => apply((o) => completeOrder(o), { orderStatus: 'Completed' });
 
   return (
     <div className="space-y-3">
@@ -78,9 +88,9 @@ const OrderDualTrack = ({ orderId, role = 'admin' }) => {
           steps={ORDER_STEPS}
           current={order.orderStatus}
           onChange={(step) => {
-            if (step === 'Vendor Accepts') acceptOrder();
+            if (step === 'Vendor Accepts') accept();
             else if (step === 'Completed') markCompleted();
-            else update({ orderStatus: step });
+            else apply((o) => setOrderStatus(o, step), { orderStatus: step });
           }}
         />
         <Track
@@ -90,14 +100,17 @@ const OrderDualTrack = ({ orderId, role = 'admin' }) => {
           disabledSteps={order.orderStatus === 'Order Placed' || order.orderStatus === 'Payment Confirmed' ? ['Processing', 'Dispatched', 'Delivered'] : []}
           onChange={(step) => {
             if (step === 'Not created') return;
-            update({
-              shipment: {
-                number: order.shipment?.number || `SHP-${order.id}`,
-                method: step === 'Dispatched' ? 'Dispatched' : (order.shipment?.method || 'Default'),
-                status: step,
-                note: order.shipment?.note || '',
-              },
-            });
+            apply(
+              (o) => setShipmentStatus(o, step),
+              {
+                shipment: {
+                  number: order.shipment?.number || `SHP-${order.id}`,
+                  method: step === 'Dispatched' ? 'Dispatched' : (order.shipment?.method || 'Default'),
+                  status: step,
+                  note: order.shipment?.note || '',
+                },
+              }
+            );
           }}
         />
       </div>
@@ -142,17 +155,24 @@ const OrderDualTrack = ({ orderId, role = 'admin' }) => {
       <div className="admin-card p-4 space-y-3">
         <label className="admin-field">
           <span>Order note</span>
-          <textarea rows={2} value={order.note} onChange={(e) => update({ note: e.target.value })} />
+          <textarea rows={2} value={order.note || ''} onChange={(e) => apply((o) => setOrderStatus(o, o.orderStatus, { note: e.target.value }), { note: e.target.value })} />
         </label>
         <label className="admin-field">
           <span>Shipment note</span>
-          <textarea rows={2} value={order.shipment?.note || ''} onChange={(e) => update({ shipment: { ...order.shipment, note: e.target.value } })} />
+          <textarea
+            rows={2}
+            value={order.shipment?.note || ''}
+            onChange={(e) => apply(
+              (o) => setShipmentStatus(o, o.shipment?.status || 'Processing', { note: e.target.value }),
+              { shipment: { ...order.shipment, note: e.target.value } }
+            )}
+          />
         </label>
         <div className="flex flex-wrap gap-2">
           {role === 'vendor' && order.orderStatus === 'Payment Confirmed' && (
-            <button type="button" className="admin-btn-primary" onClick={acceptOrder}>Accept & create shipment</button>
+            <button type="button" className="admin-btn-primary" onClick={accept}>Accept & create shipment</button>
           )}
-          <button type="button" className="admin-btn-light" onClick={() => update({ shipment: { ...order.shipment, status: 'Dispatched', method: 'Dispatched' } })}>Update shipping status</button>
+          <button type="button" className="admin-btn-light" onClick={() => apply((o) => setShipmentStatus(o, 'Dispatched', { method: 'Dispatched' }), { shipment: { ...order.shipment, status: 'Dispatched', method: 'Dispatched' } })}>Update shipping status</button>
           <button type="button" className="admin-btn-primary" onClick={markCompleted}>Mark as completed</button>
         </div>
       </div>

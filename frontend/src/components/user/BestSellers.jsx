@@ -8,8 +8,8 @@ const BestSellers = () => {
   const bestSellers = products.slice(0, 4);
 
   return (
-    <section className="w-full bg-white pt-1.5 pb-3 px-3 sm:px-5">
-      <div className="w-full max-w-7xl mx-auto">
+    <section className="w-full bg-white pt-1.5 pb-3">
+      <div className="site-container">
         <SectionHeading title="Popular Picks" to="/shop" />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">

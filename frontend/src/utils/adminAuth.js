@@ -1,5 +1,9 @@
+import api from './api';
+import { loginAdminApi } from './adminApi';
+
 const AUTH_KEY = 'jaipurio_admin_auth';
 const USER_KEY = 'jaipurio_admin_user';
+const TOKEN_KEY = 'admin_token';
 const LOGS_KEY = 'jaipurio_admin_logs';
 const THEME_KEY = 'jaipurio_admin_theme';
 const WIDGETS_KEY = 'jaipurio_admin_widgets';
@@ -21,45 +25,51 @@ export function getAdminUser() {
   return null;
 }
 
+export function getAdminToken() {
+  return localStorage.getItem(TOKEN_KEY) || '';
+}
+
 export function isAdminAuthenticated() {
   try {
-    return localStorage.getItem(AUTH_KEY) === '1' && Boolean(getAdminUser());
+    return localStorage.getItem(AUTH_KEY) === '1' && Boolean(getAdminToken()) && Boolean(getAdminUser());
   } catch {
     return false;
   }
 }
 
-export function loginAdmin({ email, password, remember }) {
-  const match =
-    email.trim().toLowerCase() === ADMIN_DEMO.email &&
-    password === ADMIN_DEMO.password;
+export async function loginAdmin({ email, password, remember }) {
+  try {
+    const data = await loginAdminApi(email.trim(), password);
+    const user = {
+      name: data.name || ADMIN_DEMO.name,
+      email: data.email,
+      role: data.role || 'admin',
+    };
 
-  if (!match) {
-    return { ok: false, message: 'These credentials do not match our records.' };
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(AUTH_KEY, '1');
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (remember) localStorage.setItem('jaipurio_admin_remember', email);
+    else localStorage.removeItem('jaipurio_admin_remember');
+
+    pushActivityLog({
+      actor: user.name,
+      message: `${user.name} logged in to the system`,
+    });
+
+    return { ok: true, user };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err.response?.data?.message || err.message || 'Could not sign in. Check backend is running.',
+    };
   }
-
-  const user = {
-    name: ADMIN_DEMO.name,
-    email: ADMIN_DEMO.email,
-    role: ADMIN_DEMO.role,
-  };
-
-  localStorage.setItem(AUTH_KEY, '1');
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-  if (remember) localStorage.setItem('jaipurio_admin_remember', email);
-  else localStorage.removeItem('jaipurio_admin_remember');
-
-  pushActivityLog({
-    actor: user.name,
-    message: `${user.name} logged in to the system`,
-  });
-
-  return { ok: true, user };
 }
 
 export function logoutAdmin() {
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_KEY);
 }
 
 export function pushActivityLog({ actor, message, ip }) {
@@ -89,34 +99,6 @@ export function getActivityLogs() {
       message: 'Admin Final logged in to the system',
       ip: '103.21.244.12',
       createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'log-2',
-      actor: 'Admin Final',
-      message: 'Admin Final updated product "Rajasthani Design Matka (5L)"',
-      ip: '103.21.244.12',
-      createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'log-3',
-      actor: 'Admin Final',
-      message: 'Admin Final created a new order #ORD-JM-8921',
-      ip: '49.36.18.201',
-      createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'log-4',
-      actor: 'Admin Final',
-      message: 'Admin Final logged in to the system',
-      ip: '49.36.18.201',
-      createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: 'log-5',
-      actor: 'Admin Final',
-      message: 'Admin Final published post "Handcrafted Terracotta Planters"',
-      ip: '103.21.244.12',
-      createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
     },
   ];
 }
@@ -170,4 +152,9 @@ export function loadCollection(id, seed) {
 
 export function saveCollection(id, items) {
   localStorage.setItem(`jaipurio_admin_${id}`, JSON.stringify(items));
+}
+
+/** Dispatch after admin actions so layout badges refresh */
+export function refreshAdminBadges() {
+  window.dispatchEvent(new CustomEvent('jaipurio:admin-badges-refresh'));
 }

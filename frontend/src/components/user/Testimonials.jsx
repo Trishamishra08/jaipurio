@@ -42,11 +42,11 @@ const Testimonials = () => {
 
   return (
     <section className="w-full bg-white py-6 border-t border-[#E8E2D9] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="site-container">
         <SectionHeading title="Words from our Patrons" />
       </div>
 
-      <div className="testimonial-track max-w-7xl mx-auto">
+      <div className="testimonial-track site-container">
         <div className="testimonial-marquee">
           {loop.map((rev, i) => (
             <ReviewCard key={`${rev.id}-${i}`} rev={rev} />

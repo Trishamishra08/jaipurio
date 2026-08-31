@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AdminPageHeader from './AdminPageHeader';
-import { platformStore } from '../../data/platformStore';
+import { fetchPayouts, advancePayout } from '../../utils/marketplaceApi';
 
 const AdminPayoutFlow = () => {
-  const [items, setItems] = useState(platformStore.payouts());
+  const [items, setItems] = useState([]);
 
-  const advance = (id) => {
-    const next = items.map((item) => {
-      if (item.id !== id) return item;
-      if (item.status === 'Pending approval') return { ...item, status: 'Payment sent' };
-      if (item.status === 'Payment sent') return { ...item, status: 'Settlement generated' };
-      return item;
-    });
-    setItems(next);
-    platformStore.savePayouts(next);
+  useEffect(() => {
+    fetchPayouts().then((rows) => setItems(Array.isArray(rows) ? rows : []));
+  }, []);
+
+  const advance = async (item) => {
+    const saved = await advancePayout(item);
+    setItems((prev) => prev.map((row) => ((row.id === item.id || row._id === item._id) ? { ...row, ...saved } : row)));
   };
 
   return (
@@ -32,14 +30,14 @@ const AdminPayoutFlow = () => {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id || item._id}>
                 <td>{item.id}</td>
-                <td>{item.vendor}</td>
+                <td>{typeof item.vendor === 'string' ? item.vendor : item.vendor?.storeName}</td>
                 <td>₹{item.amount}</td>
                 <td><span className="admin-badge admin-badge-warning">{item.status}</span></td>
                 <td className="text-right">
-                  {item.status !== 'Settlement generated' && (
-                    <button type="button" className="admin-btn-primary" onClick={() => advance(item.id)}>Approve / send</button>
+                  {item.status !== 'Settled' && item.status !== 'Rejected' && (
+                    <button type="button" className="admin-btn-primary" onClick={() => advance(item)}>Approve / send</button>
                   )}
                 </td>
               </tr>

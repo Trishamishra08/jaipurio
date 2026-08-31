@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -6,7 +6,6 @@ import {
   Globe,
   LogOut,
   Menu,
-  MessageSquare,
   Moon,
   Search,
   Settings,
@@ -22,8 +21,19 @@ import {
   logoutAdmin,
   setAdminTheme,
 } from '../../utils/adminAuth';
+import { fetchAdminPendingCounts } from '../../utils/adminApi';
 import AdminCommandPalette from './AdminCommandPalette';
 import './admin.css';
+
+const emptyBadges = {
+  pendingProducts: 0,
+  pendingOrders: 0,
+  pendingReturns: 0,
+  pendingPayouts: 0,
+  pendingVendors: 0,
+  pendingActions: 0,
+  unreadNotifications: 0,
+};
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -34,16 +44,34 @@ const AdminLayout = () => {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [badges, setBadges] = useState(emptyBadges);
   const user = getAdminUser();
 
-  const badges = useMemo(
-    () => ({
-      orders: 17,
-      contacts: 334,
-      messages: 10,
-    }),
-    []
-  );
+  const loadBadges = useCallback(async () => {
+    try {
+      const data = await fetchAdminPendingCounts();
+      setBadges({ ...emptyBadges, ...data });
+    } catch {
+      setBadges(emptyBadges);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBadges();
+    const interval = setInterval(loadBadges, 30000);
+    const onRefresh = () => loadBadges();
+    window.addEventListener('jaipurio:admin-badges-refresh', onRefresh);
+    window.addEventListener('focus', onRefresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('jaipurio:admin-badges-refresh', onRefresh);
+      window.removeEventListener('focus', onRefresh);
+    };
+  }, [loadBadges]);
+
+  useEffect(() => {
+    loadBadges();
+  }, [location.pathname, loadBadges]);
 
   useEffect(() => {
     const parent = adminNav.find((item) => isNavItemActive(item, location.pathname) && item.children);
@@ -112,6 +140,7 @@ const AdminLayout = () => {
             const active = isNavItemActive(item, location.pathname);
             const expanded = Boolean(openMenus[item.id]);
             const badge = item.badgeKey ? badges[item.badgeKey] : null;
+            const showBadge = Number(badge) > 0;
 
             if (!item.children) {
               return (
@@ -136,20 +165,25 @@ const AdminLayout = () => {
                 >
                   <Icon size={18} />
                   <span>{item.title}</span>
-                  {badge ? <em className="admin-nav-badge">{badge}</em> : null}
+                  {showBadge ? <em className="admin-nav-badge">{badge}</em> : null}
                   <ChevronDown size={14} className={`admin-nav-chevron ${expanded ? 'rotate-180' : ''}`} />
                 </button>
                 {expanded && (
                   <div className="admin-subnav">
-                    {item.children.map((child) => (
+                    {item.children.map((child) => {
+                      const childBadge = child.badgeKey ? badges[child.badgeKey] : null;
+                      const showChildBadge = Number(childBadge) > 0;
+                      return (
                       <NavLink
                         key={child.path}
                         to={child.path}
                         className={({ isActive }) => `admin-subnav-link ${isActive ? 'is-active' : ''}`}
                       >
-                        {child.title}
+                        <span>{child.title}</span>
+                        {showChildBadge ? <em className="admin-subnav-badge">{childBadge}</em> : null}
                       </NavLink>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -183,24 +217,34 @@ const AdminLayout = () => {
             <div className="relative">
               <button type="button" className="admin-icon-ghost" onClick={() => setNotifOpen((v) => !v)}>
                 <Bell size={18} />
-                <span className="admin-header-badge">0</span>
+                {badges.pendingProducts > 0 ? (
+                  <span className="admin-header-badge">{badges.pendingProducts}</span>
+                ) : null}
               </button>
               {notifOpen && (
                 <div className="admin-dropdown w-72">
                   <div className="px-4 py-3 border-b border-slate-100 font-semibold text-sm">Notifications</div>
-                  <p className="px-4 py-6 text-sm text-slate-400 text-center">No notifications</p>
+                  {badges.pendingProducts > 0 ? (
+                    <Link
+                      to="/admin/products"
+                      className="block px-4 py-3 text-sm hover:bg-slate-50 border-b border-slate-50"
+                      onClick={() => setNotifOpen(false)}
+                    >
+                      <strong className="text-[#6F241D]">{badges.pendingProducts} product{badges.pendingProducts === 1 ? '' : 's'}</strong>
+                      <span className="block text-slate-500 text-xs mt-0.5">Pending vendor approval</span>
+                    </Link>
+                  ) : (
+                    <p className="px-4 py-6 text-sm text-slate-400 text-center">No pending approvals</p>
+                  )}
                 </div>
               )}
             </div>
 
-            <Link to="/admin/contacts" className="admin-icon-ghost">
-              <MessageSquare size={18} />
-              <span className="admin-header-badge">{badges.messages}</span>
-            </Link>
-
             <Link to="/admin/orders" className="admin-icon-ghost">
               <ShoppingCart size={18} />
-              <span className="admin-header-badge">{badges.orders}</span>
+              {badges.pendingOrders > 0 ? (
+                <span className="admin-header-badge">{badges.pendingOrders}</span>
+              ) : null}
             </Link>
 
             <button type="button" className="admin-user" onClick={() => setProfileOpen((v) => !v)}>

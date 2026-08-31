@@ -7,6 +7,8 @@ import Navbar from './components/user/Navbar';
 import Home from './components/user/Home';
 import Shop from './components/user/Shop';
 import ProductDetail from './components/user/ProductDetail';
+import BlogSection from './components/user/BlogSection';
+import BlogDetail from './components/user/BlogDetail';
 import VendorPublicStore from './components/user/VendorPublicStore';
 import Checkout from './components/user/Checkout';
 import UserOrders from './components/user/UserOrders';
@@ -45,14 +47,15 @@ import AdminRoutes from './components/admin/AdminRoutes';
 
 const PublicLayout = () => {
   const { pathname } = useLocation();
-  const showFooter = pathname === '/home';
+  const showFooter =
+    pathname === '/home' || pathname.startsWith('/product') || pathname.startsWith('/blog');
   const isLocationPage = pathname === '/location';
 
   return (
-    <div className="flex flex-col min-h-screen font-body bg-white">
+    <div className="flex flex-col min-h-screen font-body bg-white w-full max-w-none overflow-x-hidden">
       {!isLocationPage && <Navbar />}
       <CartDrawer />
-      <main className="flex-1">
+      <main className="flex-1 w-full max-w-none">
         <Outlet />
       </main>
       {showFooter && <Footer />}
@@ -69,10 +72,21 @@ const AuthLayout = () => {
   );
 };
 
+const PublicShopLayout = () => <PublicLayout />;
+
+/** Single shop context for the app; skip catalog API on vendor/admin routes. */
+const AppShopProvider = ({ children }) => {
+  const { pathname } = useLocation();
+  const loadCatalog =
+    !pathname.startsWith('/vendor') &&
+    !pathname.startsWith('/admin');
+  return <ShopProvider loadCatalog={loadCatalog}>{children}</ShopProvider>;
+};
+
 function App() {
   return (
-    <ShopProvider>
-      <Router>
+    <Router>
+      <AppShopProvider>
         <Routes>
           {/* App load → splash → login */}
           <Route path="/" element={<SplashPage />} />
@@ -83,10 +97,12 @@ function App() {
           </Route>
 
           {/* Main app after login */}
-          <Route element={<PublicLayout />}>
+          <Route element={<PublicShopLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/blog" element={<BlogSection />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
             <Route path="/vendors" element={<Navigate to="/vendor" replace />} />
             <Route path="/store/:id" element={<VendorPublicStore />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -193,10 +209,10 @@ function App() {
           </Route>
           <Route path="/admin/*" element={<AdminRoutes />} />
 
-          <Route path="*" element={<Navigate to="/home" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
-      </Router>
-    </ShopProvider>
+      </AppShopProvider>
+    </Router>
   );
 }
 

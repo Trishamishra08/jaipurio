@@ -1,34 +1,45 @@
-import React from 'react';
-import { platformStore } from '../../data/platformStore';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import VendorPage from './VendorPage';
+import { fetchShipments } from '../../utils/marketplaceApi';
 
 const VendorShipments = () => {
-  const rows = platformStore.orders().filter((order) => order.shipment?.number);
+  const [rows, setRows] = useState([]);
+  useEffect(() => {
+    fetchShipments().then((data) => setRows(Array.isArray(data) ? data : []));
+  }, []);
+
   return (
-    <div className="admin-app p-4 md:p-6">
-      <h1 className="admin-page-title mb-4">Shipments</h1>
+    <VendorPage
+      title="Shipments"
+      hint="Shipment exists only after vendor accepts. Status: Processing → Dispatched → Delivered. Separate from order Completed."
+      extra={<Link to="/vendor/orders" className="admin-btn-light">Open an order to update status</Link>}
+    >
       <div className="admin-card overflow-hidden">
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Shipment number</th>
               <th>Order</th>
+              <th>Shipment number</th>
               <th>Method</th>
               <th>Shipping status</th>
+              <th>Note</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((order) => (
-              <tr key={order.id}>
-                <td>{order.shipment.number}</td>
+              <tr key={order.id || order._id}>
                 <td>#{order.id}</td>
-                <td>{order.shipment.method}</td>
-                <td><span className="admin-badge admin-badge-info">{order.shipment.status}</span></td>
+                <td>{order.shipment?.number || '—'}</td>
+                <td>{order.shipment?.method || '—'}</td>
+                <td><span className="admin-badge admin-badge-info">{order.shipment?.status || 'Not created'}</span></td>
+                <td>{order.shipment?.note || '—'}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </VendorPage>
   );
 };
 

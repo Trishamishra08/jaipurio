@@ -91,17 +91,17 @@ const features = [
 
 const FeaturesBar = () => {
   return (
-    <section className="w-full bg-white py-1.5 px-3 sm:px-5">
-      <div className="w-full max-w-7xl mx-auto">
-        <div className="bg-white border border-[#E8E2D9] rounded-xl px-0.5 py-1.5 sm:px-2 sm:py-2 shadow-sm">
+    <section className="site-full-bleed w-full bg-white py-2 md:py-3 border-y border-[#E8E2D9]">
+      <div className="site-container">
+        <div className="bg-white md:bg-transparent border border-[#E8E2D9] md:border-0 rounded-xl md:rounded-none px-0.5 py-1.5 sm:px-2 sm:py-2 md:px-0 md:py-0 shadow-sm md:shadow-none">
           <div className="grid grid-cols-5 divide-x divide-dotted divide-[#C9B89A]">
             {features.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col items-center justify-center text-center px-0.5 sm:px-1 py-0.5 gap-0.5"
+                className="flex flex-col items-center justify-center text-center px-0.5 sm:px-2 md:px-4 py-0.5 md:py-1 gap-0.5 md:gap-1"
               >
                 <div className="flex items-center justify-center shrink-0 leading-none">{item.icon}</div>
-                <span className="font-body text-[7.5px] leading-[1.12] sm:text-[10px] font-medium text-[#3A2218] max-w-[56px] sm:max-w-[88px]">
+                <span className="font-body text-[7.5px] leading-[1.12] sm:text-[10px] md:text-xs lg:text-sm font-medium text-[#3A2218] max-w-[56px] sm:max-w-[88px] md:max-w-none">
                   {item.label}
                 </span>
               </div>

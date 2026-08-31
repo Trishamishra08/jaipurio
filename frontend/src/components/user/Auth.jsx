@@ -6,6 +6,7 @@ import { useShop } from '../../context/ShopContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { registerFCMToken } from '../../services/pushNotificationService';
 import api from '../../utils/api';
+import { loginDemoCustomer } from '../../utils/customerAuth';
 import AuthFrame from './AuthFrame';
 
 const DEMO_MOBILE = '8839044030';
@@ -157,23 +158,30 @@ const Auth = () => {
           name: 'Demo User',
           mobile: DEMO_MOBILE,
           phone: `+91 ${DEMO_MOBILE}`,
-          email: 'demo@jaipurio.com',
+          email: 'customer@gmail.com',
           address: 'Johari Bazaar, Jaipur, Rajasthan',
         };
-        localStorage.setItem('customer_token', 'demo-token-jaipurio');
-        persistLogin(userData);
+        const session = await loginDemoCustomer(userData);
+        if (session) {
+          persistLogin(session.user);
+        } else {
+          persistLogin(userData);
+        }
         showNotification('Login Successful! Welcome to jaipurio.');
         setTimeout(() => navigate(resolveRedirect(location.state?.from, '/home')), 800);
       } else if (form.otp === DEMO_OTP) {
-        /* Any mobile + demo OTP for local testing */
         const userData = {
           name: 'Jaipurio Guest',
           mobile: form.mobile,
           phone: `+91 ${form.mobile}`,
           email: '',
         };
-        localStorage.setItem('customer_token', 'demo-token-jaipurio');
-        persistLogin(userData);
+        const session = await loginDemoCustomer(userData);
+        if (session) {
+          persistLogin(session.user);
+        } else {
+          persistLogin(userData);
+        }
         showNotification('Login Successful! Welcome to jaipurio.');
         setTimeout(() => navigate(resolveRedirect(location.state?.from, '/home')), 800);
       } else {
