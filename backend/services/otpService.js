@@ -6,7 +6,7 @@ const axios = require('axios');
  * Template ID: from SMS_INDIA_HUB_TEMPLATE_ID
  */
 const buildOtpMessage = (otp) => {
-  const brand = process.env.SMS_BRAND_NAME || 'sadabharat';
+  const brand = process.env.SMS_BRAND_NAME || 'Jaipurio';
   const senderId = process.env.SMS_INDIA_HUB_SENDER_ID || 'BGADEC';
   // Exact registered template text — only replace ##var## values
   return `Welcome to the ${brand} powered by Appzeto.Your OTP for registration is ${otp}.${senderId}`;

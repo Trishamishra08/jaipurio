@@ -26,6 +26,10 @@ export const getConversationId = {
 // Get or create a conversation node in RTDB
 // ──────────────────────────────────────────────
 export async function getOrCreateConversation(conversationId, metadata) {
+  if (!db) {
+    console.warn('Chat: Firebase RTDB not configured. Skipping conversation create.');
+    return null;
+  }
   const convRef = ref(db, `chats/${conversationId}/metadata`);
   const snapshot = await get(convRef);
 

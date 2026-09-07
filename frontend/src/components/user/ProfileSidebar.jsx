@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useShop } from '../../context/ShopContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -132,7 +132,7 @@ const ProfileSidebar = ({ activeTab = 'profile' }) => {
                   userName: user.name || user.fullName || 'User',
                 }}
                 currentUser={{ id: user._id, name: user.name || user.fullName || 'User', role: 'user' }}
-                recipientName="Sada Bharat Support"
+                recipientName="Jaipurio Support"
                 onClose={() => setIsSupportChatOpen(false)}
                 className="h-full flex-1 border-0 sm:rounded-2xl rounded-t-2xl shadow-none"
               />

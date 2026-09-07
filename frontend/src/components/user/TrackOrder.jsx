@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { FiArrowLeft, FiCheck, FiMapPin, FiPackage, FiTruck, FiNavigation, FiCreditCard, FiPlusCircle, FiImage } from 'react-icons/fi';
 import { AnimatePresence } from 'framer-motion';
 import { RMAModal } from './UserOrders';
@@ -281,7 +281,7 @@ const TrackOrder = () => {
                   userName: user.name || user.fullName || 'User',
                 }}
                 currentUser={{ id: user._id, name: user.name || user.fullName || 'User', role: 'user' }}
-                recipientName="Sada Bharat Support"
+                recipientName="Jaipurio Support"
                 onClose={() => setIsSupportChatOpen(false)}
                 className="h-full flex-1 border-0 rounded-none shadow-none"
               />

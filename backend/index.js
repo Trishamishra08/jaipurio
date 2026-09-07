@@ -100,7 +100,10 @@ app.use(errorHandler);
 const PORT = Number(process.env.PORT) || 5000;
 
 const startServer = () => {
-  freePort(PORT);
+  // freePort is local-dev only — on Render/VPS the platform assigns PORT
+  if (process.env.NODE_ENV !== 'production') {
+    freePort(PORT);
+  }
   const server = app.listen(PORT);
 
   server.once('listening', () => {

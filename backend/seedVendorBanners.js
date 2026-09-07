@@ -20,7 +20,7 @@ const vendorBanners = [
   {
     title: 'Keep More Profits In Your Pocket',
     badge: '🌿 Flat 5% Platform Fees',
-    description: 'Special seasonal discount: Platform fee slashed to flat 5% for all Premium Ayurvedic Sellers.',
+    description: 'Special seasonal discount: Platform fee slashed to flat 5% for all Premium Mitti Craft Sellers.',
     btnText: 'Learn More',
     type: 'Vendor Dashboard',
     image: 'https://via.placeholder.com/1200x400/054425/FFFFFF?text=Vendor+Banner+2',

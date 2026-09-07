@@ -58,7 +58,7 @@ const seedData = async () => {
         name: 'Anjali Sharma',
         role: 'Verified Buyer',
         rating: 5,
-        content: 'Sada Bharat Ayurvedic has completely transformed my skincare routine. The authenticity of the herbs is unmatched!',
+        content: 'Jaipurio matka keeps water naturally cool. Packaging was safe and the hand-painted work looks authentic.',
         image: 'https://i.pravatar.cc/150?img=1',
         isApproved: true
       },
@@ -66,15 +66,15 @@ const seedData = async () => {
         name: 'Vikram Singh',
         role: 'Regular Customer',
         rating: 5,
-        content: 'Delivery is always on time and the quality of the Bhasma products is exactly as described in the ancient texts.',
+        content: 'Kulhads arrived unbroken and the chai aroma is exactly like railway-station mitti cups. Will reorder.',
         image: 'https://i.pravatar.cc/150?img=11',
         isApproved: true
       },
       {
         name: 'Priya Desai',
-        role: 'Health Enthusiast',
+        role: 'Home Decor Lover',
         rating: 4,
-        content: 'I love their organic teas. Great packaging and excellent customer service whenever I have a question about dosage.',
+        content: 'Loved the terracotta planter and elephant figurine. Great support when I asked about fragile shipping.',
         image: 'https://i.pravatar.cc/150?img=5',
         isApproved: true
       }

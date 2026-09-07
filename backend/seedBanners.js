@@ -4,31 +4,31 @@ const Banner = require('./models/bannerModel');
 
 const bannersData = [
   {
-    title: 'Pure Ayurvedic Goodness',
-    image: '/src/assets/images/banner3.png',
+    title: 'Mitti ki Khushboo',
+    image: '/jaipurio_banner_art.png',
     link: '/shop',
     type: 'Main Slider',
-    badge: '100% Natural',
-    heading: 'Pure Ayurvedic<br />Goodness',
-    subtitle: 'Natural ingredients for a healthy<br className="hidden sm:block" /> body, mind & soul',
+    badge: '100% Handmade',
+    heading: 'Mitti ki Khushboo<br />Rajasthan ki Pehchaan',
+    subtitle: 'Authentic kulhads, matkas & terracotta crafts<br className="hidden sm:block" /> from Jaipur artisans',
     buttonText: 'Shop Now',
   },
   {
-    title: 'Sada Bharat Standard Banner',
-    image: '/src/assets/images/sadabharat_banner.png',
+    title: 'Jaipurio Heritage Banner',
+    image: '/jaipurio_home_banner.jpg',
     type: 'Main Slider',
-    hasText: false
+    hasText: false,
   },
   {
-    title: 'Traditional Healing Modern Life',
-    image: '/src/assets/images/sadabharat_banner1.png',
+    title: 'Handcrafted Terracotta',
+    image: '/jaipurio_banner_clean.png',
     link: '/shop',
     type: 'Main Slider',
-    badge: 'Authentic Care',
-    heading: 'Traditional Healing<br />Modern Life',
-    subtitle: 'Experience the magic of Ayurveda<br className="hidden sm:block" /> in your daily routine',
+    badge: 'Artisan Made',
+    heading: 'Handcrafted Terracotta<br />From Jaipur Kilns',
+    subtitle: 'Explore matkas, kulhads, planters<br className="hidden sm:block" /> and festive diyas',
     buttonText: 'Explore More',
-  }
+  },
 ];
 
 const seedBanners = async () => {
@@ -36,10 +36,8 @@ const seedBanners = async () => {
     await connectDB();
     await Banner.deleteMany({});
     console.log('Existing banners removed.');
-    
     await Banner.insertMany(bannersData);
-    console.log('Banners successfully seeded!');
-    
+    console.log('Jaipurio banners seeded!');
     process.exit(0);
   } catch (error) {
     console.error(`Error seeding banners: ${error.message}`);

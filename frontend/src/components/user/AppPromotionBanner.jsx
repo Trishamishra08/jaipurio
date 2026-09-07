@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 import './AppPromotionBanner.css';
 import logo from '../../assets/images/logo.png';
@@ -23,7 +23,7 @@ const AppPromotionBanner = () => {
               Beauty at Your <br className="hidden md:block" /> Fingertips
             </motion.h2>
             <p className="app-promo-description">
-              Experience Sada Bharat like never before. Download our app for a faster, smoother shopping experience and exclusive in-app offers specially curated for you.
+              Experience Jaipurio like never before. Download our app for a faster, smoother shopping experience and exclusive in-app offers specially curated for you.
             </p>
             
             <div className="app-download-buttons">

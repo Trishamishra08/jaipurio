@@ -1,41 +1,29 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 
-import blogFloating1 from '../../assets/images/cat_wellness.png';
-import blogFloating2 from '../../assets/images/cat_skincare_new.png';
-import blogFloating3 from '../../assets/images/cat_haircare_new.png';
-import blogFloating4 from '../../assets/images/cat_essentialoils_new.png';
-import insta1 from '../../assets/images/blog_skincare.png';
-import insta2 from '../../assets/images/blog_haircare.png';
-import insta3 from '../../assets/images/blog_vit_c.png';
-import insta4 from '../../assets/images/cat_bathbody_new.png';
-import catSkincare from '../../assets/images/cat_skincare.png';
-import catWellness from '../../assets/images/cat_wellness.png';
-import promoImage from '../../assets/images/promo.png';
-
 const floatingImages = [
-  { src: blogFloating1, size: 'w-16 h-20 md:w-24 md:h-32', top: '10%', left: '8%', delay: 0 },
-  { src: blogFloating2, size: 'w-14 h-18 md:w-20 md:h-28', top: '22%', left: '22%', delay: 1 },
-  { src: blogFloating3, size: 'w-18 h-24 md:w-28 md:h-36', top: '5%', left: '40%', delay: 0.5 },
-  { src: blogFloating4, size: 'w-16 h-20 md:w-24 md:h-32', top: '18%', left: '60%', delay: 1.5 },
-  { src: insta1, size: 'w-14 h-18 md:w-20 md:h-28', top: '10%', left: '78%', delay: 0.2 },
-  { src: insta2, size: 'w-16 h-20 md:w-24 md:h-32', top: '48%', left: '10%', delay: 0.8 },
-  { src: insta3, size: 'w-18 h-24 md:w-28 md:h-36', top: '55%', left: '42%', delay: 1.2 },
-  { src: insta4, size: 'w-14 h-18 md:w-20 md:h-28', top: '52%', left: '72%', delay: 0.4 },
+  { src: '/matka.png', size: 'w-16 h-20 md:w-24 md:h-32', top: '10%', left: '8%', delay: 0 },
+  { src: '/kulhad.png', size: 'w-14 h-18 md:w-20 md:h-28', top: '22%', left: '22%', delay: 1 },
+  { src: '/planter.png', size: 'w-18 h-24 md:w-28 md:h-36', top: '5%', left: '40%', delay: 0.5 },
+  { src: '/diya.png', size: 'w-16 h-20 md:w-24 md:h-32', top: '18%', left: '60%', delay: 1.5 },
+  { src: '/elephant.png', size: 'w-14 h-18 md:w-20 md:h-28', top: '10%', left: '78%', delay: 0.2 },
+  { src: '/camel.png', size: 'w-16 h-20 md:w-24 md:h-32', top: '48%', left: '10%', delay: 0.8 },
+  { src: '/matka.png', size: 'w-18 h-24 md:w-28 md:h-36', top: '55%', left: '42%', delay: 1.2 },
+  { src: '/kulhad.png', size: 'w-14 h-18 md:w-20 md:h-28', top: '52%', left: '72%', delay: 0.4 },
 ];
 
 const visionPoints = [
-  'Exceptional product quality',
+  'Authentic handmade mitti crafts',
   'Seamless digital shopping experiences',
-  'Strong customer relationships',
+  'Strong artisan & customer relationships',
 ];
 
 const missionPoints = [
-  'Offer carefully curated, high-quality products',
-  'Ensure reliable and efficient delivery experiences',
-  'Build long-term trust through transparency',
+  'Offer carefully curated terracotta & clay products',
+  'Ensure reliable fragile-care delivery across India',
+  'Build long-term trust through transparent sourcing',
   'Continuously improve through innovation and feedback',
-  'Expand while maintaining Indian values and authenticity',
+  'Expand while preserving Rajasthani craft heritage',
 ];
 
 const differentiators = [
@@ -110,14 +98,14 @@ const AboutSection = () => {
                 About Us
               </h2>
               <p className="text-sm md:text-base leading-relaxed opacity-90  tracking-wide">
-                At Sada Bharat Ayurvedic, wellness is a way of life. It is about harmony, nature, and purity.
-                We are an authentic Indian Ayurvedic brand offering thoughtfully curated remedies and products
+                At Jaipurio, mitti craft is a way of life. It is about heritage, handmade skill, and purity of clay.
+                We are an authentic Rajasthani marketplace for terracotta matkas, kulhads, planters, and festive crafts
                 with a seamless, trustworthy shopping experience.
               </p>
               <p className="text-sm md:text-base leading-relaxed opacity-90  tracking-wide mt-4">
-                From herb selection to customer-first service, every detail is built on one promise:
-                deliver pure Ayurveda you can trust and experiences you can cherish. We are a growing community
-                that celebrates natural healing, vitality, and well-being.
+                From potter’s wheel to your doorstep, every detail is built on one promise:
+                deliver handmade mitti you can trust and experiences you can cherish. We celebrate artisans,
+                traditional kilns, and the earthy aroma of pure clay.
               </p>
               <div className="mt-6">
                 <p className="text-xs uppercase tracking-[0.3em]  opacity-70">
@@ -229,7 +217,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src={catSkincare} alt="Category Skincare" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src="/matka.png" alt="Matkas" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
             <motion.div
@@ -245,7 +233,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src={catWellness} alt="Category Wellness" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src="/kulhad.png" alt="Kulhads" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
             <motion.div
@@ -261,7 +249,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src={promoImage} alt="Sada Bharat Ayurvedic Brand" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src="/jaipurio_banner_art.png" alt="Jaipurio Brand" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
           </div>
         </div>

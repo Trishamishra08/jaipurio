@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiCalendar, FiClock, FiUser, FiMail, FiPhone, FiMessageSquare, FiCheckCircle } from 'react-icons/fi';
 import api from '../../utils/api';
@@ -49,7 +49,7 @@ const Consultation = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-2xl md:text-4xl font-serif font-bold mb-2 tracking-wide"
           >
-            Expert Ayurvedic Consultation
+            Artisan Craft Guidance
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 10 }}
@@ -57,7 +57,7 @@ const Consultation = () => {
             transition={{ delay: 0.1 }}
             className="text-sm text-[#D4AF37] font-medium"
           >
-            Discover your Dosha. Restore your balance.
+            Care tips for matkas, kulhads & terracotta.
           </motion.p>
         </div>
       </div>
@@ -67,17 +67,17 @@ const Consultation = () => {
         {/* Info Column */}
         <div>
           <h2 className="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-6">
-            Why Consult an Ayurvedic Expert?
+            Why Talk to a Craft Expert?
           </h2>
           <p className="text-gray-600 leading-relaxed mb-8">
-            Ayurveda is a 5,000-year-old system of natural healing that focuses on the individual's unique constitution (Prakriti). Our experienced Vaidyas (Ayurvedic Doctors) provide personalized holistic treatment plans involving diet, lifestyle modifications, and authentic herbal formulations to help you achieve optimal health and beauty from within.
+            Terracotta needs the right care — seasoning matkas, choosing kulhad sizes, and packing fragile pieces. Our Jaipurio craft specialists help you pick authentic mitti products and share tips for long-lasting handmade clayware.
           </p>
 
           <div className="space-y-4">
             {[
-              { title: "Personalized Assessment", desc: "In-depth analysis of your unique mind-body type (Dosha) and underlying imbalances." },
-              { title: "Holistic Approach", desc: "Treatment plans that integrate herbal remedies, dietary advice, and lifestyle modifications." },
-              { title: "Expert Guidance", desc: "Consult directly with certified Ayurvedic practitioners with years of clinical experience." }
+              { title: "Product Guidance", desc: "Help choosing the right matka capacity, kulhad packs, and planter sizes for your home." },
+              { title: "Care & Seasoning", desc: "Practical tips to season clay pots, clean terracotta, and keep crafts crack-free." },
+              { title: "Artisan Support", desc: "Connect with Jaipur pottery experts for bulk festive orders and custom handmade requests." }
             ].map((feature, idx) => (
               <motion.div 
                 key={idx}
@@ -102,7 +102,7 @@ const Consultation = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-pink/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
             <h3 className="text-xl font-serif font-bold text-brand-dark mb-2">Have a quick question?</h3>
             <p className="text-sm text-gray-600 mb-4">You can also reach out to us via WhatsApp for quick inquiries regarding our products.</p>
-            <a href={getWhatsAppHref('Hello Sada Bharat, I have an inquiry.')} onClick={handleWhatsAppClick('Hello Sada Bharat, I have an inquiry.')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:shadow-lg transition-all hover:-translate-y-0.5">
+            <a href={getWhatsAppHref('Hello Jaipurio, I have an inquiry.')} onClick={handleWhatsAppClick('Hello Jaipurio, I have an inquiry.')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#25D366] text-white px-6 py-2.5 rounded-full font-bold text-sm hover:shadow-lg transition-all hover:-translate-y-0.5">
               Chat on WhatsApp
             </a>
           </div>
@@ -133,7 +133,7 @@ const Consultation = () => {
           ) : (
             <>
               <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">Book Your Session</h2>
-              <p className="text-sm text-gray-500 mb-8">Fill out the form below to request an appointment with our Ayurvedic experts.</p>
+              <p className="text-sm text-gray-500 mb-8">Fill out the form below to request a call with our mitti craft specialists.</p>
               
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { FiCheckCircle, FiShield, FiHeart, FiBox } from 'react-icons/fi';
 import { RiLeafLine } from 'react-icons/ri';
 import { motion } from 'framer-motion';
@@ -6,28 +6,28 @@ import { motion } from 'framer-motion';
 const features = [
   {
     icon: <RiLeafLine className="text-3xl text-brand-gold" />,
-    title: '100% Natural Ingredients',
-    description: 'Sourced from organic farms across India.'
+    title: '100% Pure Mitti',
+    description: 'Natural terracotta from Rajasthan kilns.'
   },
   {
     icon: <FiShield className="text-3xl text-brand-gold" />,
-    title: 'Dermatologically Tested',
-    description: 'Safe for all skin types, including sensitive skin.'
+    title: 'Fragile-Care Shipping',
+    description: 'Safe packaging for clay crafts across India.'
   },
   {
     icon: <FiHeart className="text-3xl text-brand-gold" />,
-    title: 'Cruelty Free',
-    description: 'We never test on animals, only on willing humans.'
+    title: 'Artisan Made',
+    description: 'Handcrafted by Jaipur pottery families.'
   },
   {
     icon: <FiCheckCircle className="text-3xl text-brand-gold" />,
-    title: 'Ayurvedic Formulations',
-    description: 'Ancient wisdom meets modern science.'
+    title: 'Heritage Designs',
+    description: 'Traditional mandana motifs & folk forms.'
   },
   {
     icon: <FiBox className="text-3xl text-brand-gold" />,
-    title: 'Eco Friendly Packaging',
-    description: '100% recyclable and biodegradable materials.'
+    title: 'Eco Friendly Craft',
+    description: 'Biodegradable clay — no plastic pots.'
   },
 ];
 
@@ -41,7 +41,7 @@ const WhyChoose = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-8"
         >
-          <h2 className="text-xl md:text-2xl font-serif font-bold mb-1 text-brand-dark uppercase tracking-wide">Why Choose Sada Bharat?</h2>
+          <h2 className="text-xl md:text-2xl font-serif font-bold mb-1 text-brand-dark uppercase tracking-wide">Why Choose Jaipurio?</h2>
           <div className="w-16 h-1 bg-brand-gold mx-auto"></div>
         </motion.div>
 

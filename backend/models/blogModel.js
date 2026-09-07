@@ -23,7 +23,7 @@ const blogSchema = new mongoose.Schema({
   },
   author: {
     type: String,
-    default: 'Sada Bharat Team'
+    default: 'Jaipurio Team'
   },
   status: {
     type: String,

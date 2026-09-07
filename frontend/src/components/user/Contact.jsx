@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 import { FiMail, FiPhone, FiMapPin, FiInstagram, FiFacebook, FiTwitter, FiArrowRight } from 'react-icons/fi';
 
@@ -49,7 +49,7 @@ const Contact = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="text-gray-500 text-xs md:text-sm  max-w-sm mx-auto lg:mx-0 leading-relaxed font-['Poppins']"
               >
-                "Because every drop of wellness, every ritual, and every touch of nature deserves to be remembered."
+                "Because every matka, every kulhad, and every handmade craft deserves to be cherished."
               </motion.p>
             </div>
 
@@ -93,8 +93,8 @@ const Contact = () => {
               <ContactInfo
                 icon={<FiMail size={16} />}
                 label="Email us at"
-                value="care@sadabharat.com"
-                href="mailto:care@sadabharat.com"
+                value="care@jaipurio.in"
+                href="mailto:care@jaipurio.in"
               />
               <ContactInfo
                 icon={<FiPhone size={16} />}
@@ -112,13 +112,13 @@ const Contact = () => {
               <ContactInfo
                 icon={<FiInstagram size={16} />}
                 label="Follow our journey"
-                value="@sadabharatayurvedic"
-                href="https://instagram.com/sadabharatayurvedic/"
+                value="@jaipurio"
+                href="https://instagram.com/jaipurio/"
               />
               <ContactInfo
                 icon={<FiMapPin size={16} />}
                 label="Visit our HQ"
-                value={<>Sada Bharat Ayurvedic HQ<br />Fatehabad-125050 Haryana</>}
+                value={<>Jaipurio HQ<br />Johari Bazaar, Jaipur, Rajasthan 302003</>}
                 href="#"
               />
             </div>
@@ -174,7 +174,7 @@ const Contact = () => {
                 Our Physical <span className="text-brand-gold">Sanctuary</span>
               </h2>
               <p className="text-[10px] md:text-xs text-gray-500 font-['Poppins'] max-w-sm leading-relaxed">
-                Step into our HQ to experience the essence of pure Ayurvedic wellness in person.
+                Step into our Jaipur workshop experience — mitti crafts, kulhads, and terracotta heritage in person.
               </p>
 
               <div className="pt-2">
@@ -192,7 +192,7 @@ const Contact = () => {
             <div className="flex-1 w-full h-[250px] md:h-[320px] rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white group relative">
               <iframe
                 title="Store Location"
-                src="https://maps.google.com/maps?q=29.513181,75.450953&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=26.9239,75.8267&t=&z=16&ie=UTF8&iwloc=&output=embed"
                 className="w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000"
                 style={{ border: 0 }}
                 allowFullScreen=""
@@ -208,12 +208,12 @@ const Contact = () => {
       <footer className="py-8 bg-brand-pink/5 overflow-hidden border-t border-brand-pink/10">
         <div className="container mx-auto px-4 flex flex-col items-center justify-center text-center">
           <div className="flex space-x-8 mb-4">
-            <SocialIcon icon={<FiInstagram />} href="https://instagram.com/sadabharatayurvedic/" />
-            <SocialIcon icon={<FiFacebook />} href="https://facebook.com/sadabharatayurvedic/" />
+            <SocialIcon icon={<FiInstagram />} href="https://instagram.com/jaipurio/" />
+            <SocialIcon icon={<FiFacebook />} href="https://facebook.com/jaipurio/" />
             <SocialIcon icon={<FiTwitter />} href="#" />
           </div>
           <p className="text-gray-400 text-[10px] uppercase tracking-widest ">
-            Stay Inspired &bull; Sada Bharat Ayurvedic
+            Stay Inspired &bull; Jaipurio
           </p>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import api from '../../../utils/api';
 
 const ReturnPolicy = () => {
@@ -37,7 +37,7 @@ const ReturnPolicy = () => {
         />
         <div className="pt-8 border-t border-brand-pink/5 text-center">
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
-            © 2026 Sada Bharat Pvt Ltd. All Rights Reserved.
+            © 2026 Jaipurio. All Rights Reserved.
           </p>
         </div>
       </div>

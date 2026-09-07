@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiLayers, FiCalendar, FiClock, FiUploadCloud } from 'react-icons/fi';
 import api from '../../utils/api';
@@ -10,7 +10,7 @@ const AdminBlogs = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
-        title: '', category: '', excerpt: '', content: '', image: '', author: 'Sada Bharat Team', status: 'Published'
+        title: '', category: '', excerpt: '', content: '', image: '', author: 'Jaipurio Team', status: 'Published'
     });
 
     const fetchBlogs = async () => {
@@ -73,7 +73,7 @@ const AdminBlogs = () => {
             }
             setIsModalOpen(false);
             setEditingId(null);
-            setFormData({ title: '', category: '', excerpt: '', content: '', image: '', author: 'Sada Bharat Team', status: 'Published' });
+            setFormData({ title: '', category: '', excerpt: '', content: '', image: '', author: 'Jaipurio Team', status: 'Published' });
             fetchBlogs();
         } catch (err) {
             alert('Operation failed: ' + err.message);
@@ -100,7 +100,7 @@ const AdminBlogs = () => {
                 <button
                     onClick={() => { 
                         setEditingId(null); 
-                        setFormData({ title: '', category: '', excerpt: '', content: '', image: '', author: 'Sada Bharat Team', status: 'Published' }); 
+                        setFormData({ title: '', category: '', excerpt: '', content: '', image: '', author: 'Jaipurio Team', status: 'Published' }); 
                         setIsModalOpen(true); 
                     }}
                     className="bg-admin-dark text-white px-8 py-3 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl"

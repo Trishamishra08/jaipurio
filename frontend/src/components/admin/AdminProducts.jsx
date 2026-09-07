@@ -510,7 +510,7 @@ const AdminProducts = () => {
                   type="text"
                   name="name" value={form.name} onChange={handleInputChange}
                   
-                  placeholder="e.g. Organic Neem Tulsi Face Wash"
+                  placeholder="e.g. Rajasthani Design Matka (5L)"
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800"
                 />
               </div>
@@ -531,7 +531,7 @@ const AdminProducts = () => {
                     rows="2"
                     name="ingredients" value={form.ingredients} onChange={handleInputChange}
                     
-                    placeholder="e.g. Bhringraj, Amla, Coconut Oil, Brahmi"
+                    placeholder="e.g. Pure Clay, Terracotta, Handmade"
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[12px] focus:outline-none focus:border-[#054425] focus:ring-1 focus:ring-[#054425] font-sans font-medium text-gray-800 resize-none"
                   ></textarea>
                 </div>
@@ -774,7 +774,7 @@ const AdminProducts = () => {
                 />
                 <div className="flex flex-col">
                   <span className="text-[11px] text-gray-750 font-bold leading-none">Prescription Required</span>
-                  <span className="text-[9px] text-gray-400 font-semibold mt-0.5">Check if this is a prescription-only ayurvedic medicine</span>
+                  <span className="text-[9px] text-gray-400 font-semibold mt-0.5">Mark fragile clay items that need special packing</span>
                 </div>
               </label>
 

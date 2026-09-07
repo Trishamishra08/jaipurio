@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import AdminLayout from './AdminLayout';
 import { FiClock, FiSettings, FiUsers, FiImage } from 'react-icons/fi';
 
@@ -17,7 +17,7 @@ const AdminComingSoon = ({ title, icon }) => {
           <span classname="w-10 h-[1px] bg-admin-accent/20" /> under development <span classname="w-10 h-[1px] bg-admin-accent/20" />
         </p>
       <button className="bg-admin-dark text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-admin-dark/20 hover:scale-105 transition-all">
-        Coming Soon to Sada Bharat
+        Coming Soon to Jaipurio
       </button>
     </div>
   );

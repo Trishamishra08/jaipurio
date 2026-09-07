@@ -5,8 +5,11 @@
   "description": "jaipurio marketplace monorepo",
   "scripts": {
     "dev": "npm run dev --prefix frontend",
-    "build": "npm run build --prefix frontend",
-    "preview": "npm run preview --prefix frontend"
+    "build": "npm install --prefix backend",
+    "start": "npm start --prefix backend",
+    "preview": "npm run preview --prefix frontend",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm run dev --prefix frontend"
   },
   "engines": {
     "node": ">=18"

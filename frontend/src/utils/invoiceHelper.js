@@ -1,4 +1,4 @@
-import html2pdf from 'html2pdf.js';
+﻿import html2pdf from 'html2pdf.js';
 
 export const generateInvoice = async (order) => {
   const element = document.createElement('div');
@@ -15,14 +15,14 @@ export const generateInvoice = async (order) => {
       <div style="display: flex; align-items: center; gap: 20px;">
         <img src="/logo_invoice.jpg" style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px;" />
         <div>
-          <h1 style="color: #5C2E3E; margin: 0; font-size: 28px; text-transform: uppercase; font-weight: 900;">Sada Bharat</h1>
-          <p style="margin: 5px 0; font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Sacred Organic Beauty Rituals</p>
+          <h1 style="color: #5C2E3E; margin: 0; font-size: 28px; text-transform: uppercase; font-weight: 900;">Jaipurio</h1>
+          <p style="margin: 5px 0; font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Authentic Mitti & Terracotta Crafts</p>
         </div>
       </div>
       <div style="text-align: right; font-size: 10px; color: #666; font-weight: bold; line-height: 1.4;">
-        <p style="margin: 0;">Lajpat Nagar, Near Radha Swami Bhawan</p>
-        <p style="margin: 0;">Fatehabad - 125050, Haryana</p>
-        <p style="margin: 0;">GSTIN: 06AAKCS7164N1Z2 (PROVISIONAL)</p>
+        <p style="margin: 0;">Johari Bazaar</p>
+        <p style="margin: 0;">Jaipur - 302003, Rajasthan</p>
+        <p style="margin: 0;">GSTIN: (PROVISIONAL)</p>
         <p style="margin: 0;">Contact: +91 97727 77736</p>
       </div>
     </div>
@@ -100,8 +100,8 @@ export const generateInvoice = async (order) => {
     </div>
 
     <div style="margin-top: 50px; text-align: center; border-top: 1px dashed #ddd; padding-top: 20px;">
-      <p style="font-size: 10px; color: #999; font-style: italic;">"This is a digitally generated sacred invoice for your ritual treasures at Sada Bharat."</p>
-      <p style="font-size: 8px; color: #bbb; margin-top: 10px;">Return Policy: 2 Days from delivery date. Visit sadabharat.com for details.</p>
+      <p style="font-size: 10px; color: #999; font-style: italic;">"This is a digitally generated invoice for your mitti crafts order at Jaipurio."</p>
+      <p style="font-size: 8px; color: #bbb; margin-top: 10px;">Return Policy: 2 Days from delivery date. Visit jaipurio.in for details.</p>
     </div>
   `;
 

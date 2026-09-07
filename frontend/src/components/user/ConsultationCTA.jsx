@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getWhatsAppHref, handleWhatsAppClick } from '../../utils/whatsapp';
 
@@ -22,8 +22,8 @@ const ConsultationCTA = ({ onChatClick }) => {
               Live Chat
             </button>
             <a 
-              href={getWhatsAppHref('Hello Sada Bharat Ayurvedic, I have an inquiry regarding your products.')}
-              onClick={handleWhatsAppClick('Hello Sada Bharat Ayurvedic, I have an inquiry regarding your products.')}
+              href={getWhatsAppHref('Hello Jaipurio, I have an inquiry regarding your products.')}
+              onClick={handleWhatsAppClick('Hello Jaipurio, I have an inquiry regarding your products.')}
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto bg-white/5 text-white backdrop-blur-md px-6 py-2.5 rounded-full font-bold uppercase tracking-widest text-[8.5px] border border-white/10 text-center"

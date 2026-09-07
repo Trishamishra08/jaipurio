@@ -1,7 +1,7 @@
 const { cacheGet, cacheSet, cacheDel } = require('../config/redis');
 const { optimizeMediaUrls } = require('./imageOptimize');
 
-const PREFIX = 'sadabharat:catalog:v4:';
+const PREFIX = 'jaipurio:catalog:v1:';
 
 const CATALOG_KEYS = {
   products: `${PREFIX}products`,

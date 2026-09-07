@@ -101,8 +101,12 @@ const Offers = () => {
           matchesOffer = p.category?.toLowerCase() === 'skin care' || p.category?.toLowerCase() === 'skincare';
         } else if (lowerOffer.includes('haircare')) {
           matchesOffer = p.category?.toLowerCase() === 'hair care' || p.category?.toLowerCase() === 'haircare';
-        } else if (lowerOffer.includes('wellness') || lowerOffer.includes('supplements')) {
-          matchesOffer = p.category?.toLowerCase() === 'wellness' || p.category?.toLowerCase() === 'health care' || p.category?.toLowerCase() === 'supplements';
+        } else if (lowerOffer.includes('matka') || lowerOffer.includes('kulhad') || lowerOffer.includes('decor')) {
+          matchesOffer =
+            p.category?.toLowerCase() === 'matkas' ||
+            p.category?.toLowerCase() === 'kulhads' ||
+            p.category?.toLowerCase() === 'home decor' ||
+            p.category?.toLowerCase() === 'planters';
         } else if (lowerOffer.includes('oils')) {
           matchesOffer = p.category?.toLowerCase() === 'aromatherapy' || p.subCategory?.toLowerCase() === 'oil';
         }
@@ -268,7 +272,7 @@ const Offers = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-black font-serif italic mb-0.5 text-white drop-shadow-sm leading-tight">Deal of the Day</h2>
-                  <p className="text-sm text-gray-200 mb-1.5">Exclusive discount on all Ayurvedic Skincare &amp; Wellness</p>
+                  <p className="text-sm text-gray-200 mb-1.5">Exclusive discount on matkas, kulhads &amp; terracotta decor</p>
                   <div className="flex gap-2">
                     <span className="px-2.5 py-0.5 bg-white/10 rounded-full text-[9px] uppercase tracking-widest font-bold">Free Shipping</span>
                     <span className="px-2.5 py-0.5 bg-white/10 rounded-full text-[9px] uppercase tracking-widest font-bold">Extra 5% on Prepaid</span>

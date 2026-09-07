@@ -1,7 +1,7 @@
-export const WHATSAPP_PHONE = '919772777736';
+﻿export const WHATSAPP_PHONE = '919772777736';
 
 const DEFAULT_MESSAGE =
-  'Hello Sada Bharat Ayurvedic, I have an inquiry regarding your organic products.';
+  'Hello Jaipurio, I have an inquiry regarding your mitti crafts.';
 
 const isMobileDevice = () =>
   /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(

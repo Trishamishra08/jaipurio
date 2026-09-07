@@ -54,7 +54,7 @@ const uploadToCloudinary = (file) => {
     const svg = isSvgFile(originalname, mimetype);
 
     const uploadOptions = {
-      folder: 'sadabharat',
+      folder: 'jaipurio',
       resource_type: video ? 'video' : pdf ? 'raw' : 'image'
     };
 

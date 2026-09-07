@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Upload, CheckCircle2, ChevronRight, ChevronLeft, ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -487,7 +487,7 @@ const VendorRegister = () => {
                           <label className="block text-[10px] font-bold text-gray-700 mb-1.5 uppercase tracking-wide">Email Address *</label>
                           <input 
                             type="email" 
-                            placeholder="e.g. seller@sadabharat.com" 
+                            placeholder="e.g. seller@jaipurio.in" 
                             required 
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}

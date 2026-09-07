@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiTrendingUp, FiInstagram, FiEye, FiEyeOff, FiUpload } from 'react-icons/fi';
 import api from '../../utils/api';
@@ -13,7 +13,7 @@ const AdminInstagram = () => {
     const initialFormState = {
         caption: '',
         image: '',
-        link: 'https://instagram.com/sadabharatpvtltd/',
+        link: 'https://instagram.com/jaipurio/',
         status: 'Show'
     };
 

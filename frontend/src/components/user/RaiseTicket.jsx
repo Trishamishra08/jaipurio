@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiMessageSquare, FiSend, FiClock, FiCheckCircle, FiAlertCircle, FiArrowLeft, FiPlus, FiTag, FiHash, FiMessageCircle } from 'react-icons/fi';
 import { useNavigate, Link } from 'react-router-dom';
@@ -136,7 +136,7 @@ const RaiseTicket = () => {
                   conversationId={conversationId}
                   metadata={chatMetadata}
                   currentUser={currentChatUser}
-                  recipientName="Sada Bharat Support"
+                  recipientName="Jaipurio Support"
                   className="h-[560px]"
                 />
               )}

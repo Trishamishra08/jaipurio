@@ -1,4 +1,4 @@
-import { messaging, getToken, onMessage } from '../firebase';
+import { messaging, getToken, onMessage, isFirebaseConfigured } from '../firebase';
 import api from '../utils/api';
 
 const VAPID_KEY = "BLZJOuqmrktdjuHnFKrjSLGMqAF0h2mVNvv5rAFEP4vuVs66ySe9gR_20QcMHCEwFsuDMu6nV5PppBmU1RlFvhE";
@@ -37,6 +37,10 @@ async function requestNotificationPermission() {
 // Get FCM token
 async function getFCMToken() {
   try {
+    if (!isFirebaseConfigured || !messaging) {
+      console.info('FCM: Firebase not configured for Jaipurio yet.');
+      return null;
+    }
     const registration = await registerServiceWorker();
     await registration.update(); // Update service worker to latest
     

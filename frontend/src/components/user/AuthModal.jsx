@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiSmartphone, FiArrowRight } from 'react-icons/fi';
 import { useShop } from '../../context/ShopContext';
@@ -78,7 +78,7 @@ const AuthModal = () => {
 
             <img src={logoPink} alt="Logo" className="h-12 mx-auto mb-4" />
             <h2 className="text-xl font-serif font-black text-[#5C2E3E] uppercase tracking-widest leading-none">
-              Welcome to the <br/> World of Sada Bharat
+              Welcome to the <br/> World of Jaipurio
             </h2>
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FiInstagram } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import api from '../../utils/api';
@@ -44,12 +44,12 @@ const InstagramFeed = () => {
           </ScrollHeading>
           <ScrollHeading
             as="a"
-            href="https://www.instagram.com/sadabharatayurvedic?utm_source=qr"
+            href="https://www.instagram.com/jaipurio?utm_source=qr"
             target="_blank"
             rel="noreferrer"
             className="text-sm font-semibold text-[#D4AF37] hover:text-[#054425] transition-colors"
           >
-            @sadabharatayurvedic
+            @jaipurio
           </ScrollHeading>
         </div>
 

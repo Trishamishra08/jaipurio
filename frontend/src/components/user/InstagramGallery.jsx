@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { FiInstagram } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 import api from '../../utils/api';
 
 
-const instagramUrl = "https://www.instagram.com/sadabharatpvtltd/";
+const instagramUrl = "https://www.instagram.com/jaipurio/";
 
 const InstagramGallery = () => {
   const [dynamicInsta, setDynamicInsta] = useState([]);
