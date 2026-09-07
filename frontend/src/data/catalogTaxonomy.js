@@ -46,4 +46,38 @@ export const catalogTaxonomy = [
   },
 ];
 
+export const flattenTaxonomy = (nodes = catalogTaxonomy, prefix = '') => {
+  const rows = [];
+  nodes.forEach((node) => {
+    const path = prefix ? `${prefix} → ${node.name}` : node.name;
+    rows.push({ ...node, path });
+    if (node.children) rows.push(...flattenTaxonomy(node.children, path));
+  });
+  return rows;
+};
+
+export const GLOBAL_ATTRIBUTES = [
+  { name: 'Material', values: 'Pure Clay, Terracotta, Red Clay, Mixed Mitti' },
+  { name: 'Capacity', values: '150 ml, 500 ml, 1L, 2L, 3L, 5L' },
+  { name: 'Size', values: 'Small, Medium, Large, Pack of 4, Pack of 6, Pack of 8' },
+  { name: 'Finish', values: 'Natural, Handpainted, Mandana, Matte' },
+  { name: 'Origin', values: 'Jaipur, Jodhpur, Pushkar, Bikaner, Sanganer' },
+];
+
+export const GLOBAL_OPTIONS = [
+  { name: 'Gift wrap', type: 'Checkbox' },
+  { name: 'Fragile packing', type: 'Checkbox' },
+  { name: 'Size', type: 'Dropdown' },
+];
+
+export const flattenCategoryOptions = (nodes = catalogTaxonomy, prefix = '') => {
+  const options = [];
+  nodes.forEach((node) => {
+    const label = prefix ? `${prefix} / ${node.name}` : node.name;
+    options.push({ id: node.id, label });
+    if (node.children) options.push(...flattenCategoryOptions(node.children, label));
+  });
+  return options;
+};
+
 export default catalogTaxonomy;

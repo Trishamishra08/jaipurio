@@ -38,8 +38,28 @@ if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
 // Connect to Database and cache (server starts after DB connects)
 connectRedis().catch(() => {});
 
-// Middlewares
-app.use(cors());
+// Middlewares — allow Vercel + local frontends
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://jaipurio-one.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || /\.vercel\.app$/i.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(ipRateLimiter);
