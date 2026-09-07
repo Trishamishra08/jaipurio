@@ -1,4 +1,9 @@
-require('dotenv').config();
+try {
+  require('dotenv').config();
+} catch {
+  // Render injects env vars — dotenv is optional in production
+}
+
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');

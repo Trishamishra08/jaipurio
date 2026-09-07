@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "description": "jaipurio marketplace monorepo",
   "scripts": {
+    "postinstall": "npm install --prefix backend --omit=dev",
     "dev": "npm run dev --prefix frontend",
-    "build": "npm install --prefix backend",
+    "build": "npm install --prefix backend --omit=dev",
     "start": "npm start --prefix backend",
     "preview": "npm run preview --prefix frontend",
     "backend": "npm start --prefix backend",
