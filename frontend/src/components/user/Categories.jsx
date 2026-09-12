@@ -1,15 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
-
-const CATEGORIES = [
-  { name: 'Matkas', image: '/matka.png' },
-  { name: 'Kulhads', image: '/kulhad.png' },
-  { name: 'Planters', image: '/planter.png' },
-  { name: 'Home Decor', image: '/elephant.png' },
-  { name: 'Puja Essentials', image: '/diya.png' },
-  { name: 'More', image: '/camel.png', to: '/shop' },
-];
+import { CATEGORY_CHIPS as CATEGORIES } from '../../data/categoryMedia';
 
 const CategoryItem = ({ cat, mobile }) => {
   const href = cat.to || `/shop?category=${encodeURIComponent(cat.name)}`;

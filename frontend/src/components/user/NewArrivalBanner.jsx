@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 /**
  * Mid-page New Arrival promo — pink palace/matka banner after categories.
@@ -11,7 +12,7 @@ const NewArrivalBanner = () => {
       <div className="site-container">
         <div className="relative overflow-hidden rounded-none sm:rounded-2xl min-h-[148px] sm:min-h-[180px] md:min-h-[240px] lg:min-h-[280px]">
           <img
-            src="/jaipurio_banner_art.png"
+            src={mediaUrl('/jaipurio_banner_art.png')}
             alt=""
             className="absolute inset-0 w-full h-full object-cover object-[55%_42%] select-none"
             draggable={false}

@@ -11,7 +11,7 @@ const api = {
 
 const VendorLogistics = () => {
     const [settings, setSettings] = useState({
-        pickupAddress: '123 HANDCRAFTED Market, Wellness Street, New Delhi, 110001',
+        pickupAddress: '123 Pottery Lane, Blue Pottery Road, Jaipur, 302001',
         preferredPartner: 'Delhivery',
         processingDays: '1-2 Days',
     });

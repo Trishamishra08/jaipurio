@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import { Upload, CheckCircle2, ChevronRight, ChevronLeft, ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
@@ -333,10 +334,10 @@ const VendorRegister = () => {
         {/* LEFT PANEL (Image & Wave) - Distinct Image and Wave curves for Register */}
         <div className="relative w-full md:w-[50%] lg:w-[55%] h-[32vh] sm:h-[40vh] md:h-full shrink-0">
           <img 
-            src="/jaipurio_banner_clean.png" 
+            src={mediaUrl('/jaipurio_banner_clean.png')} 
             alt="jaipurio artisan background" 
             className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => { e.target.onerror = null; e.target.src = '/matka.png'; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = mediaUrl('/matka.png'); }}
           />
           {/* Maroon overlay for jaipurio theme */}
           <div className="absolute inset-0 bg-gradient-to-tr from-[#6F241D]/90 via-[#6F241D]/45 to-transparent z-10" />
@@ -373,7 +374,7 @@ const VendorRegister = () => {
           <div className="absolute inset-0 p-4 pt-4 md:p-12 flex flex-col z-30 text-white">
             <div className="flex items-center gap-3 md:gap-4">
               <img
-                src="/jaipurio_logo_bg.png"
+                src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
                 className="h-12 md:h-16 w-auto object-contain rounded-md shrink-0"
                 style={{ mixBlendMode: 'screen' }}
@@ -396,7 +397,7 @@ const VendorRegister = () => {
           <div className="w-full max-w-md md:-translate-x-8 lg:-translate-x-16 relative z-10 pt-2 md:pt-4 flex flex-col h-full max-h-[620px] justify-between">
             <div className="text-center mb-4">
               <img
-                src="/jaipurio_logo_bg.png"
+                src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
                 className="h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
                 draggable={false}

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import {
   Menu,
   Search,
@@ -48,7 +49,7 @@ const JaipurioLogo = ({ size = 'md' }) => {
     <Link to="/home" className="flex flex-col items-center max-w-full group">
       <div className="flex items-center justify-center gap-1.5 sm:gap-2">
         <span className={`text-[#A94E2C] ${starSize} font-brand leading-none`} aria-hidden="true">
-          ✦
+          âœ¦
         </span>
         <span
           className={`font-brand ${titleSize} font-bold tracking-[0.06em] text-[#C45C6A] leading-none group-hover:text-[#8B2E3A] transition-colors`}
@@ -56,7 +57,7 @@ const JaipurioLogo = ({ size = 'md' }) => {
           jaipurio
         </span>
         <span className={`text-[#A94E2C] ${starSize} font-brand leading-none`} aria-hidden="true">
-          ✦
+          âœ¦
         </span>
       </div>
       {showTagline && (
@@ -163,12 +164,12 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Promo bar — all screens */}
+      {/* Promo bar â€” all screens */}
       <div className="relative z-[60] bg-[#C45C6A] text-[#FFF0EE] py-1 px-3 text-center text-[10px] sm:text-xs tracking-wider font-dm">
-        <span className="font-medium">Free Shipping on Orders Above ₹499 | 100% Pure Mitti</span>
+        <span className="font-medium">Free Shipping on Orders Above â‚¹499 | 100% Pure Mitti</span>
       </div>
 
-      {/* ─── MOBILE APP HEADER (unchanged behaviour) ─── */}
+      {/* â”€â”€â”€ MOBILE APP HEADER (unchanged behaviour) â”€â”€â”€ */}
       <div
         className={`lg:hidden ${homeOverlay ? 'bg-transparent' : 'bg-white'} ${scrolled ? 'shadow-sm' : ''}`}
       >
@@ -282,7 +283,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ─── DESKTOP WEBSITE HEADER (compact) ─── */}
+      {/* â”€â”€â”€ DESKTOP WEBSITE HEADER (compact) â”€â”€â”€ */}
       <div className="hidden lg:block bg-white border-b border-[#E8E2D9] shadow-[0_1px_0_rgba(111,36,29,0.06)]">
         {/* Utility strip */}
         <div className="bg-[#FCF8F2] border-b border-[#E8E2D9]/80">
@@ -298,7 +299,7 @@ const Navbar = () => {
               <ChevronDown size={12} className="text-[#6F241D]" />
             </button>
             <div className="flex items-center gap-3 xl:gap-4">
-              <span className="hidden xl:inline text-[#9A8B7A]">100% Handmade · Pan India Delivery</span>
+              <span className="hidden xl:inline text-[#9A8B7A]">100% Handmade Â· Pan India Delivery</span>
               <Link to="/login" className="hover:text-[#6F241D] transition-colors">
                 Login
               </Link>
@@ -310,7 +311,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Logo left · search fills middle · icons right */}
+        {/* Logo left Â· search fills middle Â· icons right */}
         <div className="site-container py-2">
           <div className="flex items-center gap-3 xl:gap-4">
             <Link
@@ -319,7 +320,7 @@ const Navbar = () => {
               aria-label="jaipurio home"
             >
               <img
-                src="/jaipurio_logo_header.png"
+                src={mediaUrl('/jaipurio_logo_header.png')}
                 alt="Jaipurio"
                 className="header-logo-img h-10 xl:h-11 w-auto min-w-[120px] object-contain object-left"
                 draggable={false}

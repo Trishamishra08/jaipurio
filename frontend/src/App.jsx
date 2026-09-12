@@ -7,10 +7,9 @@ import Navbar from './components/user/Navbar';
 import Home from './components/user/Home';
 import Shop from './components/user/Shop';
 import ProductDetail from './components/user/ProductDetail';
-import BlogSection from './components/user/BlogSection';
-import BlogDetail from './components/user/BlogDetail';
 import VendorPublicStore from './components/user/VendorPublicStore';
 import Checkout from './components/user/Checkout';
+import StandaloneCheckout from './components/user/StandaloneCheckout';
 import UserOrders from './components/user/UserOrders';
 import Wishlist from './components/user/Wishlist';
 import Profile from './components/user/Profile';
@@ -40,22 +39,40 @@ import VendorNotifications from './components/vendor/VendorNotifications';
 import VendorAnalytics from './components/vendor/VendorAnalytics';
 import VendorSupport from './components/vendor/VendorSupport';
 import VendorSettings from './components/vendor/VendorSettings';
-import VendorIncompleteOrders from './components/vendor/VendorIncompleteOrders';
-import VendorShipments from './components/vendor/VendorShipments';
-import VendorStorefront from './components/vendor/VendorStorefront';
-import AdminRoutes from './components/admin/AdminRoutes';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminEcommerceReports from './components/admin/ecommerce/AdminEcommerceReports';
+import AdminEcommerceOrders from './components/admin/ecommerce/AdminEcommerceOrders';
+import AdminEcommerceOrderEdit from './components/admin/ecommerce/AdminEcommerceOrderEdit';
+import AdminEcommerceIncompleteOrders from './components/admin/ecommerce/AdminEcommerceIncompleteOrders';
+import AdminEcommerceOrderReturns from './components/admin/ecommerce/AdminEcommerceOrderReturns';
+import AdminEcommerceShipments from './components/admin/ecommerce/AdminEcommerceShipments';
+import AdminEcommerceInvoices from './components/admin/ecommerce/AdminEcommerceInvoices';
+import AdminEcommerceProducts from './components/admin/ecommerce/AdminEcommerceProducts';
+import AdminEcommerceProductEdit from './components/admin/ecommerce/AdminEcommerceProductEdit';
+import AdminEcommerceProductPrices from './components/admin/ecommerce/AdminEcommerceProductPrices';
+import AdminEcommerceProductInventory from './components/admin/ecommerce/AdminEcommerceProductInventory';
+import AdminEcommerceProductCategories from './components/admin/ecommerce/AdminEcommerceProductCategories';
+import AdminEcommerceProductTags from './components/admin/ecommerce/AdminEcommerceProductTags';
+import AdminEcommerceProductAttributeSets from './components/admin/ecommerce/AdminEcommerceProductAttributeSets';
+import AdminEcommerceProductOptions from './components/admin/ecommerce/AdminEcommerceProductOptions';
+import AdminEcommerceProductCollections from './components/admin/ecommerce/AdminEcommerceProductCollections';
+import AdminEcommerceProductLabels from './components/admin/ecommerce/AdminEcommerceProductLabels';
+import AdminEcommerceBrands from './components/admin/ecommerce/AdminEcommerceBrands';
+import AdminEcommerceReviews from './components/admin/ecommerce/AdminEcommerceReviews';
+import AdminEcommerceFlashSales from './components/admin/ecommerce/AdminEcommerceFlashSales';
+import AdminEcommerceDiscounts from './components/admin/ecommerce/AdminEcommerceDiscounts';
+import AdminEcommerceCustomers from './components/admin/ecommerce/AdminEcommerceCustomers';
 
 const PublicLayout = () => {
   const { pathname } = useLocation();
-  const showFooter =
-    pathname === '/home' || pathname.startsWith('/product') || pathname.startsWith('/blog');
+  const showFooter = pathname === '/home';
   const isLocationPage = pathname === '/location';
 
   return (
-    <div className="flex flex-col min-h-screen font-body bg-white w-full max-w-none overflow-x-hidden">
+    <div className="flex flex-col min-h-screen font-body bg-white">
       {!isLocationPage && <Navbar />}
       <CartDrawer />
-      <main className="flex-1 w-full max-w-none">
+      <main className="flex-1">
         <Outlet />
       </main>
       {showFooter && <Footer />}
@@ -72,21 +89,10 @@ const AuthLayout = () => {
   );
 };
 
-const PublicShopLayout = () => <PublicLayout />;
-
-/** Single shop context for the app; skip catalog API on vendor/admin routes. */
-const AppShopProvider = ({ children }) => {
-  const { pathname } = useLocation();
-  const loadCatalog =
-    !pathname.startsWith('/vendor') &&
-    !pathname.startsWith('/admin');
-  return <ShopProvider loadCatalog={loadCatalog}>{children}</ShopProvider>;
-};
-
 function App() {
   return (
-    <Router>
-      <AppShopProvider>
+    <ShopProvider>
+      <Router>
         <Routes>
           {/* App load → splash → login */}
           <Route path="/" element={<SplashPage />} />
@@ -96,13 +102,14 @@ function App() {
             <Route path="/register" element={<Register />} />
           </Route>
 
+          {/* Standalone Recovered Checkout Route */}
+          <Route path="/checkout/:token" element={<StandaloneCheckout />} />
+
           {/* Main app after login */}
-          <Route element={<PublicShopLayout />}>
+          <Route element={<PublicLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/blog" element={<BlogSection />} />
-            <Route path="/blog/:id" element={<BlogDetail />} />
             <Route path="/vendors" element={<Navigate to="/vendor" replace />} />
             <Route path="/store/:id" element={<VendorPublicStore />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -192,8 +199,6 @@ function App() {
               <Route path="add-product" element={<VendorAddProduct />} />
               <Route path="inventory" element={<VendorInventory />} />
               <Route path="orders" element={<VendorOrders />} />
-              <Route path="incomplete-orders" element={<VendorIncompleteOrders />} />
-              <Route path="shipments" element={<VendorShipments />} />
               <Route path="returns" element={<VendorReturns />} />
               <Route path="logistics" element={<VendorLogistics />} />
               <Route path="earnings" element={<VendorEarnings />} />
@@ -203,16 +208,41 @@ function App() {
               <Route path="notifications" element={<VendorNotifications />} />
               <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="support" element={<VendorSupport />} />
-              <Route path="storefront" element={<VendorStorefront />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
           </Route>
-          <Route path="/admin/*" element={<AdminRoutes />} />
+          <Route path="/admin" element={<Navigate to="/admin/ecommerce/reports" replace />} />
+          <Route path="/admin/ecommerce" element={<Navigate to="/admin/ecommerce/reports" replace />} />
+          <Route path="/admin/ecommerce/reports" element={<AdminEcommerceReports />} />
+          <Route path="/admin/ecommerce/orders" element={<AdminEcommerceOrders />} />
+          <Route path="/admin/ecommerce/orders/edit/:id" element={<AdminEcommerceOrderEdit />} />
+          <Route path="/admin/ecommerce/orders/create" element={<AdminEcommerceOrderEdit />} />
+          <Route path="/admin/ecommerce/incomplete-orders" element={<AdminEcommerceIncompleteOrders />} />
+          <Route path="/admin/ecommerce/incomplete-orders/view/:id" element={<StandaloneCheckout />} />
+          <Route path="/admin/ecommerce/order-returns" element={<AdminEcommerceOrderReturns />} />
+          <Route path="/admin/ecommerce/shipments" element={<AdminEcommerceShipments />} />
+          <Route path="/admin/ecommerce/invoices" element={<AdminEcommerceInvoices />} />
+          <Route path="/admin/ecommerce/products" element={<AdminEcommerceProducts />} />
+          <Route path="/admin/ecommerce/products/edit/:id" element={<AdminEcommerceProductEdit />} />
+          <Route path="/admin/ecommerce/products/create" element={<AdminEcommerceProductEdit />} />
+          <Route path="/admin/ecommerce/product-prices" element={<AdminEcommerceProductPrices />} />
+          <Route path="/admin/ecommerce/product-inventory" element={<AdminEcommerceProductInventory />} />
+          <Route path="/admin/ecommerce/product-categories" element={<AdminEcommerceProductCategories />} />
+          <Route path="/admin/ecommerce/product-tags" element={<AdminEcommerceProductTags />} />
+          <Route path="/admin/ecommerce/product-attribute-sets" element={<AdminEcommerceProductAttributeSets />} />
+          <Route path="/admin/ecommerce/options" element={<AdminEcommerceProductOptions />} />
+          <Route path="/admin/ecommerce/product-collections" element={<AdminEcommerceProductCollections />} />
+          <Route path="/admin/ecommerce/product-labels" element={<AdminEcommerceProductLabels />} />
+          <Route path="/admin/ecommerce/brands" element={<AdminEcommerceBrands />} />
+          <Route path="/admin/ecommerce/reviews" element={<AdminEcommerceReviews />} />
+          <Route path="/admin/ecommerce/flash-sales" element={<AdminEcommerceFlashSales />} />
+          <Route path="/admin/ecommerce/discounts" element={<AdminEcommerceDiscounts />} />
+          <Route path="/admin/customers" element={<AdminEcommerceCustomers />} />
 
-        <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
-      </AppShopProvider>
-    </Router>
+      </Router>
+    </ShopProvider>
   );
 }
 

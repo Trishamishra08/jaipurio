@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const SLIDES = [
-  { type: 'image', src: '/jaipurio_banner_art.png' },
-  { type: 'video', src: '/generate_a_simple_video_for_th.mp4' },
+  { type: 'image', src: mediaUrl('/jaipurio_banner_art.png') },
+  { type: 'video', src: mediaUrl('/generate_a_simple_video_for_th.mp4') },
 ];
 
 /**

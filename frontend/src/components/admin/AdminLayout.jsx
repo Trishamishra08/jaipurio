@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import {
   Bell,
   ChevronDown,
@@ -130,7 +131,7 @@ const AdminLayout = () => {
       <aside className={`admin-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
         <div className="admin-logo-wrap">
           <Link to="/admin" className="admin-logo-box">
-            <img src="/jaipurio_logo_sidebar.png" alt="Jaipurio" />
+            <img src={mediaUrl('/jaipurio_logo_sidebar.png')} alt="Jaipurio" />
           </Link>
         </div>
 

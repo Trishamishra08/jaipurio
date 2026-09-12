@@ -99,18 +99,18 @@ const run = async () => {
 
   const matkas = await Category.findOneAndUpdate(
     { title: 'Matkas', parent: null },
-    { title: 'Matkas', path: 'Matkas', level: 1, slug: 'matkas', url: '/matka.png' },
+    { title: 'Matkas', path: 'Matkas', level: 1, slug: 'matkas', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786905/jaipurio/matka.webp' },
     { upsert: true, returnDocument: 'after' }
   );
   await Category.findOneAndUpdate(
     { title: 'Water Pots', parent: matkas._id },
-    { title: 'Water Pots', parent: matkas._id, path: 'Matkas / Water Pots', level: 2, slug: 'water-pots', url: '/matka.png' },
+    { title: 'Water Pots', parent: matkas._id, path: 'Matkas / Water Pots', level: 2, slug: 'water-pots', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786905/jaipurio/matka.webp' },
     { upsert: true, returnDocument: 'after' }
   );
 
   await Category.findOneAndUpdate(
     { title: 'Kulhads', parent: null },
-    { title: 'Kulhads', path: 'Kulhads', level: 1, slug: 'kulhads', url: '/kulhad.png' },
+    { title: 'Kulhads', path: 'Kulhads', level: 1, slug: 'kulhads', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786907/jaipurio/kulhad.webp' },
     { upsert: true, returnDocument: 'after' }
   );
 
@@ -128,7 +128,7 @@ const run = async () => {
       stock: 24,
       lifecycle: 'Published',
       warehouse: 'Jaipur WH-1',
-      image: '/matka.png',
+      image: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786905/jaipurio/matka.webp',
       tags: 'matka, mitti, water pot',
       isFeatured: true,
     },
@@ -145,7 +145,7 @@ const run = async () => {
       stock: 50,
       lifecycle: 'Published',
       warehouse: 'Jaipur WH-1',
-      image: '/kulhad.png',
+      image: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786907/jaipurio/kulhad.webp',
       isFeatured: true,
       tags: 'kulhad, chai, terracotta',
     },
@@ -162,7 +162,7 @@ const run = async () => {
       stock: 40,
       lifecycle: 'Published',
       warehouse: 'Jaipur WH-1',
-      image: '/diya.png',
+      image: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786912/jaipurio/diya.webp',
       tags: 'diya, festive, puja',
     },
   ];

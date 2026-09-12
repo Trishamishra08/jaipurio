@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import {
   Search,
   ShoppingCart,
@@ -48,23 +49,23 @@ const ACTIONS = [
   {
     icon: Search,
     title: 'Discover',
-    copy: 'Browse matkas, kulhads, décor & puja sets across 40+ categories.',
+    copy: 'Browse matkas, kulhads, dÃ©cor & puja sets across 40+ categories.',
     to: '/shop',
-    link: 'Shop all products →',
+    link: 'Shop all products â†’',
   },
   {
     icon: ShoppingCart,
     title: 'Shop & Track',
-    copy: 'Secure checkout, order tracking, easy returns — pan India.',
+    copy: 'Secure checkout, order tracking, easy returns â€” pan India.',
     to: '/orders',
-    link: 'Track your order →',
+    link: 'Track your order â†’',
   },
   {
     icon: ShoppingBag,
     title: 'Sell & Earn',
     copy: 'Open a storefront as an artisan house, or join as a partner.',
     to: '/vendor/register',
-    link: 'Start selling →',
+    link: 'Start selling â†’',
   },
 ];
 
@@ -201,7 +202,7 @@ const Footer = () => {
         onClick={toTop}
         className="w-full bg-[#4A1614] py-2 font-body text-[11px] sm:text-[12px] tracking-wide text-white/90 hover:bg-[#3F1311]"
       >
-        ▲ Back to top
+        â–² Back to top
       </button>
 
       <div className="relative overflow-hidden bg-[#2A100E]">
@@ -215,10 +216,10 @@ const Footer = () => {
         <div className="relative z-[1]">
           <div className="footer-pichwai" aria-hidden />
 
-          {/* Layer 1 — Heritage + brand + app */}
+          {/* Layer 1 â€” Heritage + brand + app */}
           <div className="site-container pt-4 pb-3 sm:pt-8 sm:pb-6 text-center">
             <p className="font-body text-[8px] sm:text-[10px] font-semibold tracking-[0.22em] uppercase text-[#E8C4A0]">
-              — Rajasthani Heritage —
+              â€” Rajasthani Heritage â€”
             </p>
             <h2 className="font-playfair font-semibold text-[16px] sm:text-[26px] md:text-[32px] leading-snug mt-1 px-2">
               Painted like a Pichwai, packed like an heirloom
@@ -231,7 +232,7 @@ const Footer = () => {
           <div className="site-container pb-3 sm:pb-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <img src="/jaipurio_logo.png" alt="Jaipurio" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+                <img src={mediaUrl('/jaipurio_logo.png')} alt="Jaipurio" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
                 <p className="font-playfair text-[13px] sm:text-[18px] leading-snug">
                   Commission a bespoke piece, or open your own boutique on Jaipurio.
                 </p>
@@ -264,7 +265,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Layer 2 — Stats + actions + directory */}
+          {/* Layer 2 â€” Stats + actions + directory */}
           <div className="bg-[#F6EFE4] text-[#2B1E1A]">
             <div className="site-container py-2.5 sm:py-3">
               <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto scrollbar-none snap-x">
@@ -303,7 +304,7 @@ const Footer = () => {
                 <div>
                   <h3 className="font-playfair font-semibold text-[15px] sm:text-[20px]">Complete site directory</h3>
                   <p className="font-body text-[9px] sm:text-[11px] text-white/60 hidden sm:block">
-                    Every category, artisan house, and customer page — tap a heading to open.
+                    Every category, artisan house, and customer page â€” tap a heading to open.
                   </p>
                 </div>
                 <span className="shrink-0 px-2 py-0.5 rounded-full border border-white/20 font-body text-[9px] text-white/70">
@@ -346,7 +347,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Layer 3 — Shipping + office */}
+          {/* Layer 3 â€” Shipping + office */}
           <div className="border-t border-white/10">
             <div className="site-container py-3 sm:py-5">
               <p className="font-body text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E8C4A0] mb-1.5">
@@ -389,7 +390,7 @@ const Footer = () => {
                     rel="noreferrer"
                     className="inline-block mt-1.5 font-body text-[11px] font-semibold text-[#E8C4A0]"
                   >
-                    Open in Maps →
+                    Open in Maps â†’
                   </a>
                 </div>
                 <div className="relative rounded-lg overflow-hidden border border-white/15 h-[88px] sm:h-[140px] bg-black/30">
@@ -411,7 +412,7 @@ const Footer = () => {
               </div>
 
               <p className="mt-3 pt-2 border-t border-white/10 font-body text-[9px] sm:text-[10px] text-white/45 text-center sm:text-left">
-                © 2026 Jaipurio. All Rights Reserved.
+                Â© 2026 Jaipurio. All Rights Reserved.
               </p>
             </div>
           </div>

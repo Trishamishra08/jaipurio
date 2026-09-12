@@ -4,12 +4,12 @@ const Category = require('./models/categoryModel');
 const connectDB = require('./config/db');
 
 const categories = [
-  { title: 'Matkas', slug: 'matkas', url: '/matka.png' },
-  { title: 'Kulhads', slug: 'kulhads', url: '/kulhad.png' },
-  { title: 'Planters', slug: 'planters', url: '/planter.png' },
-  { title: 'Home Decor', slug: 'home-decor', url: '/elephant.png' },
-  { title: 'Puja Essentials', slug: 'puja-essentials', url: '/diya.png' },
-  { title: 'Kitchen Mitti', slug: 'kitchen-mitti', url: '/matka.png' },
+  { title: 'Matkas', slug: 'matkas', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786905/jaipurio/matka.webp' },
+  { title: 'Kulhads', slug: 'kulhads', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786907/jaipurio/kulhad.webp' },
+  { title: 'Planters', slug: 'planters', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786910/jaipurio/planter.webp' },
+  { title: 'Home Decor', slug: 'home-decor', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786914/jaipurio/elephant.webp' },
+  { title: 'Puja Essentials', slug: 'puja-essentials', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786912/jaipurio/diya.webp' },
+  { title: 'Kitchen Mitti', slug: 'kitchen-mitti', url: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786905/jaipurio/matka.webp' },
 ];
 
 const seedData = async () => {

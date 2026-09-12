@@ -1,19 +1,18 @@
 import { useShop } from '../../context/ShopContext';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-// Removed local import of offersVideo to fix cache error by using public folder directly
-const offersVideo = '/offers_video.mp4';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
+const offersVideo = mediaUrl('/top_banner_video.mp4');
 
 const OffersBanner = () => {
   const { banners } = useShop();
   const offer = banners.find(b => b.type === 'Offer' || b.type === 'Offers') || banners.find(b => b.type === 'Main Slider') || banners[0];
 
-  // We always want to show the video if it exists locally, regardless of backend banners
   if (!offer && !offersVideo) return null;
 
   const displayOffer = offer || {
-    title: "Exclusive Divine Offers",
+    title: "Handcrafted Mitti Offers",
     subtitle: "Limited Time Access",
     link: "/shop",
     btnText: "Explore Collection"

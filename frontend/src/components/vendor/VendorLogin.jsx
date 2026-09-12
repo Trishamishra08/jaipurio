@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { registerFCMToken } from '../../services/pushNotificationService';
@@ -66,12 +67,12 @@ const VendorLogin = () => {
       >
         <div className="relative w-full md:w-[50%] lg:w-[55%] h-[32vh] sm:h-[40vh] md:h-full shrink-0">
           <img
-            src="/jaipurio_banner_clean.png"
+            src={mediaUrl('/jaipurio_banner_clean.png')}
             alt="jaipurio artisan"
             className="absolute inset-0 w-full h-full object-cover"
             onError={(e) => {
               e.target.onerror = null;
-              e.target.src = '/matka.png';
+              e.target.src = mediaUrl('/matka.png');
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-tr from-[#3D1E16]/92 via-[#6F241D]/55 to-transparent z-10" />
@@ -91,7 +92,7 @@ const VendorLogin = () => {
           <div className="absolute inset-0 p-4 pt-4 md:p-12 flex flex-col z-30 text-white">
             <div className="flex items-center gap-3 md:gap-4">
               <img
-                src="/jaipurio_logo_bg.png"
+                src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
                 className="h-12 md:h-16 w-auto object-contain rounded-md shrink-0"
                 style={{ mixBlendMode: 'screen' }}
@@ -118,7 +119,7 @@ const VendorLogin = () => {
           <div className="w-full max-w-md md:-translate-x-6 lg:-translate-x-10 relative z-10 pt-2">
             <div className="text-center mb-5">
               <img
-                src="/jaipurio_logo_bg.png"
+                src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
                 className="h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
                 draggable={false}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Heart, Star, ShoppingBag } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const BADGE_STYLES = {
   bestseller: { label: 'Best Seller', className: 'bg-[#E8DCC8]/95 text-[#5C4030]' },
@@ -52,12 +53,13 @@ const ProductCard = ({ product }) => {
       className="bg-white rounded-[10px] overflow-hidden shadow-[0_2px_10px_rgba(62,39,35,0.07)] hover:shadow-[0_6px_16px_rgba(62,39,35,0.1)] transition-shadow duration-300 flex flex-col group cursor-pointer border border-[#E8E2D9]"
     >
       <div className="relative w-full aspect-[4/3.2] bg-[#F7EFE0] overflow-hidden">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.05] transition-transform duration-500"
-          loading="lazy"
-        />
+          <img
+            src={mediaUrl(product.image)}
+            alt={product.name}
+            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.05] transition-transform duration-500"
+            loading="lazy"
+            decoding="async"
+          />
 
         <span
           className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full font-dm text-[9px] sm:text-[10px] font-semibold tracking-wide shadow-sm backdrop-blur-[2px] ${badge.className}`}

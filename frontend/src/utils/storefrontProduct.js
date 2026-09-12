@@ -1,6 +1,8 @@
 /**
  * Maps backend product records to the storefront shape used by ShopContext / ProductDetail.
  */
+import { mediaUrl } from '../data/cloudinaryMedia';
+
 export function parseProductFaqs(faqs) {
   if (!faqs) return [];
   if (Array.isArray(faqs)) return faqs;
@@ -42,7 +44,8 @@ export function mapApiProductToStorefront(raw) {
         ? listPrice
         : 0;
   const materialAttr = (raw.attributes || []).find((a) => a?.name === 'Material');
-  const gallery = [...new Set([...(raw.images || []), raw.image, raw.featuredImage].filter(Boolean))];
+  const gallery = [...new Set([...(raw.images || []), raw.image, raw.featuredImage].filter(Boolean))]
+    .map((src) => mediaUrl(src));
   const vendorName =
     raw.store ||
     raw.storeName ||
@@ -61,7 +64,7 @@ export function mapApiProductToStorefront(raw) {
     mrp: comparePrice || listPrice,
     salePrice: salePrice || undefined,
     image: gallery[0] || '',
-    iconImage: raw.iconImage || gallery[0] || '',
+    iconImage: mediaUrl(raw.iconImage) || gallery[0] || '',
     images: gallery.slice(1),
     category: raw.category || '',
     brand: raw.brand || '',

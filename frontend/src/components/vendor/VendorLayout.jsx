@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Package, PlusCircle, Archive, 
@@ -34,7 +35,7 @@ const VendorLayout = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [vendorNotifications, setVendorNotifications] = useState([
-    { _id: 'n1', title: 'New paid order', message: 'Order #00000375 — Payment Confirmed. Accept to create shipment.', isRead: false, createdAt: Date.now() - 8 * 60000 },
+    { _id: 'n1', title: 'New paid order', message: 'Order #00000375 â€” Payment Confirmed. Accept to create shipment.', isRead: false, createdAt: Date.now() - 8 * 60000 },
     { _id: 'n2', title: 'Return request', message: 'RMA-1001 needs vendor review.', isRead: false, createdAt: Date.now() - 45 * 60000 },
     { _id: 'n3', title: 'Low stock', message: 'Marble Ganesh Chowki is Out of Stock.', isRead: true, createdAt: Date.now() - 6 * 3600000 },
   ]);
@@ -147,7 +148,7 @@ const VendorLayout = () => {
         }`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <img
-              src="/jaipurio_logo_sidebar.png"
+              src={mediaUrl('/jaipurio_logo_sidebar.png')}
               alt="jaipurio"
               className={`object-contain shrink-0 ${sidebarOpen ? 'h-9 w-auto' : 'h-8 w-8'}`}
             />
@@ -399,7 +400,7 @@ const VendorLayout = () => {
             }`}
           >
             <span className="text-sm shrink-0">
-              {toast.type === 'success' ? '🌿' : toast.type === 'warning' ? '⚠️' : '⚡'}
+              {toast.type === 'success' ? 'ðŸŒ¿' : toast.type === 'warning' ? 'âš ï¸' : 'âš¡'}
             </span>
             <span className="text-[12px] font-bold font-sans tracking-wide">{toast.message}</span>
           </motion.div>

@@ -1,9 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { Percent } from 'lucide-react';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 /**
- * Two-column coupon strip — pink theme, after Popular Picks.
+ * Two-column coupon strip — after Popular Picks.
  */
 const CouponOffers = () => {
   return (
@@ -19,14 +20,13 @@ const CouponOffers = () => {
             </div>
             <div className="min-w-0">
               <p className="font-playfair font-semibold text-[14px] sm:text-[16px] text-[#6F241D] leading-tight">
-                Extra 10% off on prepaid orders
+                Flat 20% Off
               </p>
               <p className="font-dm text-[10px] sm:text-[11px] text-[#806653] mt-0.5">
-                Instant discount at checkout
+                On mitti crafts above ₹999
               </p>
             </div>
           </Link>
-
           <Link
             to="/shop"
             className="relative flex items-center gap-3 px-4 py-4 sm:py-5 border-t sm:border-t-0 border-dashed border-[#E8E2D9] hover:bg-[#FAF4EA] transition-colors overflow-hidden"
@@ -34,7 +34,7 @@ const CouponOffers = () => {
             <div
               className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 opacity-20"
               style={{
-                backgroundImage: 'url(/jaipurio_banner_art.png)',
+                backgroundImage: `url(${mediaUrl('/jaipurio_banner_art.png')})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'right center',
               }}

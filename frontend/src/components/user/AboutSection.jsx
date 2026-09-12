@@ -1,15 +1,16 @@
 ﻿import React from 'react';
 import { motion } from 'framer-motion';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const floatingImages = [
-  { src: '/matka.png', size: 'w-16 h-20 md:w-24 md:h-32', top: '10%', left: '8%', delay: 0 },
-  { src: '/kulhad.png', size: 'w-14 h-18 md:w-20 md:h-28', top: '22%', left: '22%', delay: 1 },
-  { src: '/planter.png', size: 'w-18 h-24 md:w-28 md:h-36', top: '5%', left: '40%', delay: 0.5 },
-  { src: '/diya.png', size: 'w-16 h-20 md:w-24 md:h-32', top: '18%', left: '60%', delay: 1.5 },
-  { src: '/elephant.png', size: 'w-14 h-18 md:w-20 md:h-28', top: '10%', left: '78%', delay: 0.2 },
-  { src: '/camel.png', size: 'w-16 h-20 md:w-24 md:h-32', top: '48%', left: '10%', delay: 0.8 },
-  { src: '/matka.png', size: 'w-18 h-24 md:w-28 md:h-36', top: '55%', left: '42%', delay: 1.2 },
-  { src: '/kulhad.png', size: 'w-14 h-18 md:w-20 md:h-28', top: '52%', left: '72%', delay: 0.4 },
+  { src: mediaUrl('/matka.png'), size: 'w-16 h-20 md:w-24 md:h-32', top: '10%', left: '8%', delay: 0 },
+  { src: mediaUrl('/kulhad.png'), size: 'w-14 h-18 md:w-20 md:h-28', top: '22%', left: '22%', delay: 1 },
+  { src: mediaUrl('/planter.png'), size: 'w-18 h-24 md:w-28 md:h-36', top: '5%', left: '40%', delay: 0.5 },
+  { src: mediaUrl('/diya.png'), size: 'w-16 h-20 md:w-24 md:h-32', top: '18%', left: '60%', delay: 1.5 },
+  { src: mediaUrl('/elephant.png'), size: 'w-14 h-18 md:w-20 md:h-28', top: '10%', left: '78%', delay: 0.2 },
+  { src: mediaUrl('/camel.png'), size: 'w-16 h-20 md:w-24 md:h-32', top: '48%', left: '10%', delay: 0.8 },
+  { src: mediaUrl('/matka.png'), size: 'w-18 h-24 md:w-28 md:h-36', top: '55%', left: '42%', delay: 1.2 },
+  { src: mediaUrl('/kulhad.png'), size: 'w-14 h-18 md:w-20 md:h-28', top: '52%', left: '72%', delay: 0.4 },
 ];
 
 const visionPoints = [
@@ -217,7 +218,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src="/matka.png" alt="Matkas" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src={mediaUrl('/matka.png')} alt="Matkas" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
             <motion.div
@@ -229,11 +230,11 @@ const AboutSection = () => {
               <div className="absolute top-4 left-0 right-0 z-10 flex justify-center">
                 <div className="bg-brand-pink/80 backdrop-blur-md px-6 py-1 rounded-full border border-white/30 shadow-sm">
                   <span className="text-[10px] uppercase tracking-[0.4em] text-white ">
-                    •• Wellness ••
+                    •• Kulhads ••
                   </span>
                 </div>
               </div>
-              <img src="/kulhad.png" alt="Kulhads" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src={mediaUrl('/kulhad.png')} alt="Kulhads" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
             <motion.div
@@ -249,7 +250,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src="/jaipurio_banner_art.png" alt="Jaipurio Brand" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src={mediaUrl('/jaipurio_banner_art.png')} alt="Jaipurio Brand" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
           </div>
         </div>

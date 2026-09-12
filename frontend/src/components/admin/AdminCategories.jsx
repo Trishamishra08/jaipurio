@@ -2,18 +2,8 @@ import React, { useState } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiMoreVertical, FiX, FiImage, FiArrowLeft, FiGrid, FiSmile, FiUploadCloud } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useShop } from '../../context/ShopContext';
-
 import { categoryService } from '../../services/categoryService';
-
-
-import iconHairCare from '../../assets/images/icons/icon_hair_care_1779911677580.png';
-import iconSkinCare from '../../assets/images/icons/icon_skin_care_1779911695841.png';
-import iconHealthCare from '../../assets/images/icons/icon_health_care_1779911711916.png';
-import iconHerbalTea from '../../assets/images/icons/icon_herbal_tea_1779911729080.png';
-import iconSupplements from '../../assets/images/icons/icon_supplements_1779911746926.png';
-import iconBodyCare from '../../assets/images/icons/icon_body_care_1779911767707.png';
-import iconAromatherapy from '../../assets/images/icons/icon_aromatherapy_1779911786264.png';
-import iconBabyCare from '../../assets/images/icons/icon_baby_care_1779911800390.png';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const AdminCategories = () => {
   const { categories, products, fetchData } = useShop();
@@ -26,15 +16,13 @@ const AdminCategories = () => {
 
   const getCategoryIconSrc = (name) => {
     const n = name?.toLowerCase() || '';
-    if (n.includes('hair')) return iconHairCare;
-    if (n.includes('skin')) return iconSkinCare;
-    if (n.includes('health') || n.includes('well') || n.includes('immun')) return iconHealthCare;
-    if (n.includes('tea') || n.includes('herbal')) return iconHerbalTea;
-    if (n.includes('supplement') || n.includes('digest')) return iconSupplements;
-    if (n.includes('body')) return iconBodyCare;
-    if (n.includes('aroma')) return iconAromatherapy;
-    if (n.includes('baby')) return iconBabyCare;
-    return iconHairCare;
+    if (n.includes('matka') || n.includes('surahi')) return mediaUrl('/matka.png');
+    if (n.includes('kulhad') || n.includes('chai')) return mediaUrl('/kulhad.png');
+    if (n.includes('planter') || n.includes('garden')) return mediaUrl('/planter.png');
+    if (n.includes('puja') || n.includes('diya')) return mediaUrl('/diya.png');
+    if (n.includes('decor') || n.includes('elephant')) return mediaUrl('/elephant.png');
+    if (n.includes('camel') || n.includes('more')) return mediaUrl('/camel.png');
+    return mediaUrl('/matka.png');
   };
 
   const handleFileChange = async (e) => {

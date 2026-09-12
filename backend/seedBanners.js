@@ -5,7 +5,7 @@ const Banner = require('./models/bannerModel');
 const bannersData = [
   {
     title: 'Mitti ki Khushboo',
-    image: '/jaipurio_banner_art.png',
+    image: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786919/jaipurio/jaipurio_banner_art.jpg',
     link: '/shop',
     type: 'Main Slider',
     badge: '100% Handmade',
@@ -15,13 +15,13 @@ const bannersData = [
   },
   {
     title: 'Jaipurio Heritage Banner',
-    image: '/jaipurio_home_banner.jpg',
+    image: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786921/jaipurio/jaipurio_home_banner.jpg',
     type: 'Main Slider',
     hasText: false,
   },
   {
     title: 'Handcrafted Terracotta',
-    image: '/jaipurio_banner_clean.png',
+    image: 'https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786920/jaipurio/jaipurio_banner_clean.jpg',
     link: '/shop',
     type: 'Main Slider',
     badge: 'Artisan Made',

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
-const VIDEO_SRC = '/splash.mp4';
+const VIDEO_SRC = mediaUrl('/splash.mp4');
+const LOGO_SRC = mediaUrl('/jaipurio_logo_bg.png');
 const SKIP_SEC = 2;
 const SPLASH_MS = 3500;
 const EXIT_MS = 500;
@@ -106,7 +108,7 @@ const SplashPage = () => {
         {!ready && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 bg-black">
             <img
-              src="/jaipurio_logo_bg.png"
+              src={LOGO_SRC}
               alt="jaipurio"
               className="w-[80%] max-w-[320px] h-auto object-contain select-none"
               draggable={false}
@@ -136,7 +138,7 @@ const SplashPage = () => {
         {ready && (
           <div className="absolute top-4 left-0 right-0 z-20 flex justify-center px-5 pointer-events-none">
             <img
-              src="/jaipurio_logo_bg.png"
+              src={LOGO_SRC}
               alt="jaipurio"
               className="w-[58%] max-w-[220px] h-auto object-contain select-none"
               style={{ mixBlendMode: 'screen' }}

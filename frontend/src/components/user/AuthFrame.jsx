@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const HEROES = ['/login_hero_1.png', '/login_hero_2.png'];
 
@@ -51,7 +52,7 @@ const AuthFrame = ({ children }) => {
           <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-40 md:hidden">
             <div className="h-[48px] w-[176px] bg-white rounded-xl shadow-[0_8px_20px_rgba(111,36,29,0.16)] ring-1 ring-[#F3D5D0] overflow-hidden flex items-center justify-center">
               <img
-                src="/jaipurio_logo.png"
+                src={mediaUrl('/jaipurio_logo.png')}
                 alt="Jaipurio"
                 className="h-[250%] w-auto max-w-none object-cover object-center select-none"
                 draggable={false}
@@ -64,7 +65,7 @@ const AuthFrame = ({ children }) => {
               <div className="hidden md:flex mb-5">
                 <div className="h-[52px] w-[196px] bg-white rounded-xl shadow-sm ring-1 ring-[#F3D5D0] overflow-hidden flex items-center justify-center">
                   <img
-                    src="/jaipurio_logo.png"
+                    src={mediaUrl('/jaipurio_logo.png')}
                     alt="Jaipurio"
                     className="h-[250%] w-auto max-w-none object-cover object-center"
                   />

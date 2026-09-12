@@ -1,0 +1,2320 @@
+================================================================================
+ECOMMERCE SIDEBAR CLONE - ALL CHANGES AND NEW COMPONENTS
+Generated: 2026-09-12T09:27:51.913Z
+================================================================================
+
+################################################################################
+FILE: frontend/src/App.jsx
+################################################################################
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
+import { ShopProvider } from './context/ShopContext';
+
+import SplashPage from './components/shared/SplashPage';
+import Navbar from './components/user/Navbar';
+import Home from './components/user/Home';
+import Shop from './components/user/Shop';
+import ProductDetail from './components/user/ProductDetail';
+import VendorPublicStore from './components/user/VendorPublicStore';
+import Checkout from './components/user/Checkout';
+import UserOrders from './components/user/UserOrders';
+import Wishlist from './components/user/Wishlist';
+import Profile from './components/user/Profile';
+import LocationPage from './components/user/LocationPage';
+import CartDrawer from './components/user/CartDrawer';
+import Footer from './components/user/Footer';
+import BottomNavigation from './components/user/BottomNavigation';
+import Auth from './components/user/Auth';
+import Register from './components/user/Register';
+
+import VendorLayout from './components/vendor/VendorLayout';
+import VendorAuthGuard from './components/vendor/VendorAuthGuard';
+import VendorLogin from './components/vendor/VendorLogin';
+import VendorRegister from './components/vendor/VendorRegister';
+import VendorHome from './components/vendor/VendorHome';
+import VendorProducts from './components/vendor/VendorProducts';
+import VendorAddProduct from './components/vendor/VendorAddProduct';
+import VendorInventory from './components/vendor/VendorInventory';
+import VendorOrders from './components/vendor/VendorOrders';
+import VendorReturns from './components/vendor/VendorReturns';
+import VendorLogistics from './components/vendor/VendorLogistics';
+import VendorEarnings from './components/vendor/VendorEarnings';
+import VendorPayouts from './components/vendor/VendorPayouts';
+import VendorCoupons from './components/vendor/VendorCoupons';
+import VendorReviews from './components/vendor/VendorReviews';
+import VendorNotifications from './components/vendor/VendorNotifications';
+import VendorAnalytics from './components/vendor/VendorAnalytics';
+import VendorSupport from './components/vendor/VendorSupport';
+import VendorSettings from './components/vendor/VendorSettings';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminEcommerceReports from './components/admin/ecommerce/AdminEcommerceReports';
+import AdminEcommerceOrders from './components/admin/ecommerce/AdminEcommerceOrders';
+import AdminEcommerceIncompleteOrders from './components/admin/ecommerce/AdminEcommerceIncompleteOrders';
+import AdminEcommerceOrderReturns from './components/admin/ecommerce/AdminEcommerceOrderReturns';
+import AdminEcommerceShipments from './components/admin/ecommerce/AdminEcommerceShipments';
+import AdminEcommerceInvoices from './components/admin/ecommerce/AdminEcommerceInvoices';
+import AdminEcommerceProducts from './components/admin/ecommerce/AdminEcommerceProducts';
+import AdminEcommerceProductPrices from './components/admin/ecommerce/AdminEcommerceProductPrices';
+import AdminEcommerceProductInventory from './components/admin/ecommerce/AdminEcommerceProductInventory';
+import AdminEcommerceProductCategories from './components/admin/ecommerce/AdminEcommerceProductCategories';
+import AdminEcommerceProductTags from './components/admin/ecommerce/AdminEcommerceProductTags';
+import AdminEcommerceProductAttributeSets from './components/admin/ecommerce/AdminEcommerceProductAttributeSets';
+import AdminEcommerceProductOptions from './components/admin/ecommerce/AdminEcommerceProductOptions';
+import AdminEcommerceProductCollections from './components/admin/ecommerce/AdminEcommerceProductCollections';
+import AdminEcommerceProductLabels from './components/admin/ecommerce/AdminEcommerceProductLabels';
+import AdminEcommerceBrands from './components/admin/ecommerce/AdminEcommerceBrands';
+import AdminEcommerceReviews from './components/admin/ecommerce/AdminEcommerceReviews';
+import AdminEcommerceFlashSales from './components/admin/ecommerce/AdminEcommerceFlashSales';
+import AdminEcommerceDiscounts from './components/admin/ecommerce/AdminEcommerceDiscounts';
+import AdminEcommerceCustomers from './components/admin/ecommerce/AdminEcommerceCustomers';
+
+const PublicLayout = () => {
+  const { pathname } = useLocation();
+  const showFooter = pathname === '/home';
+  const isLocationPage = pathname === '/location';
+
+  return (
+    <div className="flex flex-col min-h-screen font-body bg-white">
+      {!isLocationPage && <Navbar />}
+      <CartDrawer />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      {showFooter && <Footer />}
+      {!isLocationPage && <BottomNavigation />}
+    </div>
+  );
+};
+
+const AuthLayout = () => {
+  return (
+    <div className="min-h-screen font-body bg-[#F8E6E4]">
+      <Outlet />
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <ShopProvider>
+      <Router>
+        <Routes>
+          {/* App load → splash → login */}
+          <Route path="/" element={<SplashPage />} />
+
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<Auth />} />
+            <Route path="/register" element={<Register />} />
+          </Route>
+
+          {/* Main app after login */}
+          <Route element={<PublicLayout />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/vendors" element={<Navigate to="/vendor" replace />} />
+            <Route path="/store/:id" element={<VendorPublicStore />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/orders" element={<UserOrders />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/location" element={<LocationPage />} />
+            <Route
+              path="/about"
+              element={
+                <div className="py-12 bg-white text-center px-4">
+                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
+                    Our Heritage Story
+                  </h1>
+                  <p className="font-dm text-xs text-[#806653] mt-2 max-w-lg mx-auto">
+                    jaipurio connects authentic local potters and handicraft families across
+                    Rajasthan with craft lovers across India.
+                  </p>
+                </div>
+              }
+            />
+            <Route
+              path="/contact"
+              element={
+                <div className="py-12 bg-white text-center px-4">
+                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
+                    Connect with jaipurio
+                  </h1>
+                  <p className="font-dm text-xs text-[#806653] mt-2">
+                    Email: namaste@jaipurio.com • Phone: +91 98290 12345
+                  </p>
+                </div>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <div className="py-12 bg-white text-center px-4">
+                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
+                    Notifications
+                  </h1>
+                  <p className="font-dm text-xs text-[#806653] mt-2">
+                    No unread notifications at this time.
+                  </p>
+                </div>
+              }
+            />
+            <Route
+              path="/privacy-policy"
+              element={
+                <div className="py-12 bg-white text-center px-4">
+                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
+                    Privacy Policy
+                  </h1>
+                </div>
+              }
+            />
+            <Route
+              path="/terms-conditions"
+              element={
+                <div className="py-12 bg-white text-center px-4">
+                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
+                    Terms & Conditions
+                  </h1>
+                </div>
+              }
+            />
+            <Route
+              path="/return-policy"
+              element={
+                <div className="py-12 bg-white text-center px-4">
+                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
+                    Safe Fragile Shipping Policy
+                  </h1>
+                </div>
+              }
+            />
+          </Route>
+
+          <Route path="/vendor/login" element={<VendorLogin />} />
+          <Route path="/vendor/register" element={<VendorRegister />} />
+          <Route element={<VendorAuthGuard />}>
+            <Route path="/vendor" element={<VendorLayout />}>
+              <Route index element={<VendorHome />} />
+              <Route path="dashboard" element={<VendorHome />} />
+              <Route path="products" element={<VendorProducts />} />
+              <Route path="add-product" element={<VendorAddProduct />} />
+              <Route path="inventory" element={<VendorInventory />} />
+              <Route path="orders" element={<VendorOrders />} />
+              <Route path="returns" element={<VendorReturns />} />
+              <Route path="logistics" element={<VendorLogistics />} />
+              <Route path="earnings" element={<VendorEarnings />} />
+              <Route path="payouts" element={<VendorPayouts />} />
+              <Route path="coupons" element={<VendorCoupons />} />
+              <Route path="reviews" element={<VendorReviews />} />
+              <Route path="notifications" element={<VendorNotifications />} />
+              <Route path="analytics" element={<VendorAnalytics />} />
+              <Route path="support" element={<VendorSupport />} />
+              <Route path="settings" element={<VendorSettings />} />
+            </Route>
+          </Route>
+          <Route path="/admin" element={<Navigate to="/admin/ecommerce/reports" replace />} />
+          <Route path="/admin/ecommerce" element={<Navigate to="/admin/ecommerce/reports" replace />} />
+          <Route path="/admin/ecommerce/reports" element={<AdminEcommerceReports />} />
+          <Route path="/admin/ecommerce/orders" element={<AdminEcommerceOrders />} />
+          <Route path="/admin/ecommerce/incomplete-orders" element={<AdminEcommerceIncompleteOrders />} />
+          <Route path="/admin/ecommerce/order-returns" element={<AdminEcommerceOrderReturns />} />
+          <Route path="/admin/ecommerce/shipments" element={<AdminEcommerceShipments />} />
+          <Route path="/admin/ecommerce/invoices" element={<AdminEcommerceInvoices />} />
+          <Route path="/admin/ecommerce/products" element={<AdminEcommerceProducts />} />
+          <Route path="/admin/ecommerce/product-prices" element={<AdminEcommerceProductPrices />} />
+          <Route path="/admin/ecommerce/product-inventory" element={<AdminEcommerceProductInventory />} />
+          <Route path="/admin/ecommerce/product-categories" element={<AdminEcommerceProductCategories />} />
+          <Route path="/admin/ecommerce/product-tags" element={<AdminEcommerceProductTags />} />
+          <Route path="/admin/ecommerce/product-attribute-sets" element={<AdminEcommerceProductAttributeSets />} />
+          <Route path="/admin/ecommerce/options" element={<AdminEcommerceProductOptions />} />
+          <Route path="/admin/ecommerce/product-collections" element={<AdminEcommerceProductCollections />} />
+          <Route path="/admin/ecommerce/product-labels" element={<AdminEcommerceProductLabels />} />
+          <Route path="/admin/ecommerce/brands" element={<AdminEcommerceBrands />} />
+          <Route path="/admin/ecommerce/reviews" element={<AdminEcommerceReviews />} />
+          <Route path="/admin/ecommerce/flash-sales" element={<AdminEcommerceFlashSales />} />
+          <Route path="/admin/ecommerce/discounts" element={<AdminEcommerceDiscounts />} />
+          <Route path="/admin/customers" element={<AdminEcommerceCustomers />} />
+
+          <Route path="*" element={<Navigate to="/home" replace />} />
+        </Routes>
+      </Router>
+    </ShopProvider>
+  );
+}
+
+export default App;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/EcommerceLayout.jsx
+################################################################################
+import React, { useState } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import {
+  FiGrid,
+  FiShoppingBag,
+  FiBox,
+  FiRefreshCw,
+  FiRotateCcw,
+  FiTruck,
+  FiFileText,
+  FiDollarSign,
+  FiLayers,
+  FiTag,
+  FiSliders,
+  FiFolder,
+  FiBookmark,
+  FiAward,
+  FiStar,
+  FiZap,
+  FiPercent,
+  FiUsers,
+  FiSearch,
+  FiMoon,
+  FiSun,
+  FiBell,
+  FiMail,
+  FiShoppingCart,
+  FiExternalLink,
+  FiMenu,
+  FiX,
+  FiChevronDown,
+  FiChevronRight
+} from 'react-icons/fi';
+
+export const ecommerceNavItems = [
+  { id: 'reports', title: 'Report', path: '/admin/ecommerce/reports', icon: FiGrid },
+  { id: 'orders', title: 'Orders', count: 17, path: '/admin/ecommerce/orders', icon: FiShoppingBag },
+  { id: 'incomplete-orders', title: 'Incomplete orders', path: '/admin/ecommerce/incomplete-orders', icon: FiShoppingBag },
+  { id: 'order-returns', title: 'Order returns', path: '/admin/ecommerce/order-returns', icon: FiRotateCcw },
+  { id: 'shipments', title: 'Shipments', path: '/admin/ecommerce/shipments', icon: FiTruck },
+  { id: 'invoices', title: 'Invoices', path: '/admin/ecommerce/invoices', icon: FiFileText },
+  { id: 'products', title: 'Products', path: '/admin/ecommerce/products', icon: FiBox },
+  { id: 'product-prices', title: 'Product Prices', path: '/admin/ecommerce/product-prices', icon: FiDollarSign },
+  { id: 'product-inventory', title: 'Product Inventory', path: '/admin/ecommerce/product-inventory', icon: FiBox },
+  { id: 'product-categories', title: 'Product categories', path: '/admin/ecommerce/product-categories', icon: FiLayers },
+  { id: 'product-tags', title: 'Product tags', path: '/admin/ecommerce/product-tags', icon: FiTag },
+  { id: 'product-attribute-sets', title: 'Product attributes', path: '/admin/ecommerce/product-attribute-sets', icon: FiSliders },
+  { id: 'options', title: 'Product options', path: '/admin/ecommerce/options', icon: FiSliders },
+  { id: 'product-collections', title: 'Product collections', path: '/admin/ecommerce/product-collections', icon: FiFolder },
+  { id: 'product-labels', title: 'Product labels', path: '/admin/ecommerce/product-labels', icon: FiBookmark },
+  { id: 'brands', title: 'Brands', path: '/admin/ecommerce/brands', icon: FiAward },
+  { id: 'reviews', title: 'Reviews', path: '/admin/ecommerce/reviews', icon: FiStar },
+  { id: 'flash-sales', title: 'Flash sales', path: '/admin/ecommerce/flash-sales', icon: FiZap },
+  { id: 'discounts', title: 'Discounts', path: '/admin/ecommerce/discounts', icon: FiPercent },
+  { id: 'customers', title: 'Customers', path: '/admin/customers', icon: FiUsers },
+];
+
+export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [ecommerceOpen, setEcommerceOpen] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+  const location = useLocation();
+
+  return (
+    <div className={`min-h-screen flex flex-col font-sans ${darkMode ? 'bg-[#181F2C] text-slate-100 dark' : 'bg-[#F4F6F9] text-[#2c384e]'}`}>
+      {/* Top Header Navbar */}
+      <header className={`h-14 ${darkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-[#1E293B] text-white border-b border-slate-800'} px-4 flex items-center justify-between sticky top-0 z-50 shadow-xs`}>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-1.5 rounded-md hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            title="Toggle navigation"
+          >
+            <FiMenu size={18} />
+          </button>
+          
+          <Link to="/admin" className="flex items-center gap-2">
+            <span className="font-bold text-lg tracking-wider text-white">JAIPURIO</span>
+          </Link>
+
+          {/* Search box */}
+          <div className="relative hidden md:block w-72 ml-4">
+            <input 
+              type="text" 
+              placeholder="Search (ctrl/cmd + k)" 
+              className="w-full bg-[#2A374A] border border-slate-700 text-xs text-white placeholder-slate-400 rounded-md py-1.5 pl-8 pr-3 focus:outline-hidden focus:border-blue-500"
+            />
+            <FiSearch className="absolute left-2.5 top-2 text-slate-400" size={14} />
+          </div>
+        </div>
+
+        {/* Right tools */}
+        <div className="flex items-center gap-3 text-xs">
+          <a 
+            href="/home" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hidden sm:flex items-center gap-1.5 text-slate-300 hover:text-white px-2 py-1 rounded-md hover:bg-slate-700 transition"
+          >
+            <FiExternalLink size={13} />
+            <span>View website</span>
+          </a>
+
+          <button 
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700"
+            title="Toggle theme"
+          >
+            {darkMode ? <FiSun size={15} /> : <FiMoon size={15} />}
+          </button>
+
+          <button className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700">
+            <FiBell size={15} />
+            <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">0</span>
+          </button>
+
+          <button className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700">
+            <FiMail size={15} />
+            <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">10</span>
+          </button>
+
+          <button className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700">
+            <FiShoppingCart size={15} />
+            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">17</span>
+          </button>
+
+          {/* User profile */}
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-700">
+            <div className="w-8 h-8 rounded-md bg-teal-600 text-white flex items-center justify-center font-bold text-sm">
+              A
+            </div>
+            <div className="hidden lg:block text-left">
+              <div className="font-semibold text-white leading-tight">Admin Final</div>
+              <div className="text-[10px] text-slate-400">admin@gmail.com</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main workspace container */}
+      <div className="flex flex-1">
+        {/* Left Sidebar */}
+        <aside className={`${isSidebarOpen ? 'w-64' : 'w-0 hidden'} shrink-0 ${darkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-[#202938] border-slate-800'} text-slate-300 min-h-[calc(100vh-3.5rem)] transition-all duration-200 shadow-lg select-none`}>
+          <div className="p-3 space-y-1">
+            <Link 
+              to="/admin" 
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-slate-800/80 hover:text-white transition-colors ${
+                location.pathname === '/admin' ? 'bg-[#0f172a] text-white font-medium' : ''
+              }`}
+            >
+              <FiGrid size={16} />
+              <span>Dashboard</span>
+            </Link>
+
+            {/* Ecommerce dropdown */}
+            <div>
+              <button 
+                onClick={() => setEcommerceOpen(!ecommerceOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-white font-medium bg-[#111827] hover:bg-slate-800 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <FiShoppingBag size={16} className="text-blue-400" />
+                  <span>Ecommerce</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">17</span>
+                  <FiChevronDown size={14} className={`transform transition-transform ${ecommerceOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {ecommerceOpen && (
+                <div className="mt-1 pl-2 space-y-0.5 border-l border-slate-700/60 ml-4 py-1">
+                  {ecommerceNavItems.map(item => {
+                    const isActive = location.pathname === item.path || (item.path !== '/admin/ecommerce/reports' && location.pathname.startsWith(item.path));
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.id}
+                        to={item.path}
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-md text-[13px] transition-colors ${
+                          isActive 
+                            ? 'bg-blue-600 text-white font-semibold' 
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon size={14} className={isActive ? 'text-white' : 'text-slate-400'} />
+                          <span>{item.title}</span>
+                        </div>
+                        {item.count && (
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                            isActive ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-200'
+                          }`}>
+                            {item.count}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Other admin links */}
+            <div className="pt-2 border-t border-slate-700/60">
+              <Link to="/admin/customers" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-slate-800/80 hover:text-white transition-colors">
+                <FiUsers size={16} />
+                <span>Customers</span>
+              </Link>
+              <Link to="/admin/vendors" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-slate-800/80 hover:text-white transition-colors">
+                <FiUsers size={16} />
+                <span>Vendors</span>
+              </Link>
+              <Link to="/admin/settings" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-slate-800/80 hover:text-white transition-colors">
+                <FiSliders size={16} />
+                <span>Settings</span>
+              </Link>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content View */}
+        <main className="flex-1 p-5 md:p-6 overflow-x-hidden">
+          {/* Breadcrumb Header */}
+          <div className="flex items-center justify-between mb-4">
+            <nav className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <Link to="/admin" className="text-blue-600 hover:underline uppercase">DASHBOARD</Link>
+              <span>/</span>
+              <span className="uppercase text-slate-400">ECOMMERCE</span>
+              {breadcrumb.map((crumb, idx) => (
+                <React.Fragment key={idx}>
+                  <span>/</span>
+                  <span className={`uppercase ${idx === breadcrumb.length - 1 ? 'text-slate-600 font-semibold' : 'text-blue-600'}`}>
+                    {crumb}
+                  </span>
+                </React.Fragment>
+              ))}
+            </nav>
+          </div>
+
+          {/* Page Content */}
+          <div className="bg-transparent">
+            {children || <Outlet />}
+          </div>
+
+          {/* Footer status */}
+          <footer className="mt-12 pt-4 border-t border-slate-200 text-slate-400 text-xs flex items-center justify-between">
+            <span>Copyright 2026 © Jaipurio Admin. Version 1.22.1</span>
+            <span>Page loaded in 0.42 seconds</span>
+          </footer>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default EcommerceLayout;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminDataTable.jsx
+################################################################################
+import React, { useState } from 'react';
+import {
+  FiSearch,
+  FiPlus,
+  FiDownload,
+  FiRefreshCw,
+  FiChevronDown,
+  FiCalendar,
+  FiFilter,
+  FiMoreVertical,
+  FiEdit,
+  FiTrash2,
+  FiEye
+} from 'react-icons/fi';
+
+export const AdminDataTable = ({
+  title,
+  columns = [],
+  data = [],
+  searchPlaceholder = 'Search...',
+  onSearch,
+  onCreate,
+  createLabel = 'Create',
+  onExport,
+  onReload,
+  showCreate = true,
+  showExport = true,
+  showReload = true,
+  showBulkActions = true,
+  showFilters = true,
+  extraHeaderActions,
+  emptyMessage = 'No data to display',
+  onRowClick
+}) => {
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const toggleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedRows(data.map((_, i) => i));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const toggleSelectRow = (index) => {
+    if (selectedRows.includes(index)) {
+      setSelectedRows(selectedRows.filter(i => i !== index));
+    } else {
+      setSelectedRows([...selectedRows, index]);
+    }
+  };
+
+  const filteredData = data.filter(item => {
+    if (!searchTerm) return true;
+    return Object.values(item).some(val => 
+      String(val).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="bg-white rounded-md border border-slate-200 shadow-2xs">
+      {/* Top Action Bar */}
+      <div className="p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {showBulkActions && (
+            <div className="relative inline-block">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
+                <span>Bulk Actions</span>
+                <FiChevronDown size={13} className="text-slate-500" />
+              </button>
+            </div>
+          )}
+
+          {showFilters && (
+            <button className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition">
+              <FiFilter size={13} className="text-slate-500" />
+              <span>Filters</span>
+            </button>
+          )}
+
+          {/* Search Box */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (onSearch) onSearch(e.target.value);
+              }}
+              className="w-48 sm:w-64 border border-slate-300 rounded-md text-xs py-1.5 pl-3 pr-8 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+            <FiSearch className="absolute right-2.5 top-2.5 text-slate-400" size={13} />
+          </div>
+        </div>
+
+        {/* Right side buttons */}
+        <div className="flex items-center gap-2">
+          {extraHeaderActions}
+
+          {showCreate && (
+            <button
+              onClick={onCreate}
+              className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold shadow-xs transition"
+            >
+              <FiPlus size={14} />
+              <span>{createLabel}</span>
+            </button>
+          )}
+
+          {showExport && (
+            <button
+              onClick={onExport}
+              className="flex items-center gap-1 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+            >
+              <FiDownload size={13} className="text-slate-500" />
+              <span>Export</span>
+              <FiChevronDown size={12} className="text-slate-400" />
+            </button>
+          )}
+
+          {showReload && (
+            <button
+              onClick={onReload}
+              className="flex items-center gap-1 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+              title="Reload table"
+            >
+              <FiRefreshCw size={13} className="text-slate-500" />
+              <span>Reload</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="w-10 px-3 py-2.5 text-center">
+                <input
+                  type="checkbox"
+                  onChange={toggleSelectAll}
+                  checked={selectedRows.length > 0 && selectedRows.length === data.length}
+                  className="rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                />
+              </th>
+              {columns.map((col, idx) => (
+                <th
+                  key={idx}
+                  className={`px-3.5 py-2.5 ${col.className || ''}`}
+                  style={{ width: col.width }}
+                >
+                  <div className="flex items-center gap-1 select-none">
+                    <span>{col.header}</span>
+                    {col.sortable !== false && (
+                      <span className="text-slate-400 text-[9px]">↕</span>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+            {paginatedData.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length + 1} className="text-center py-10 text-slate-400 font-normal">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((row, rowIdx) => {
+                const isSelected = selectedRows.includes(rowIdx);
+                return (
+                  <tr
+                    key={row.id || rowIdx}
+                    onClick={() => onRowClick && onRowClick(row)}
+                    className={`hover:bg-slate-50/80 transition-colors ${
+                      isSelected ? 'bg-blue-50/40' : ''
+                    } ${onRowClick ? 'cursor-pointer' : ''}`}
+                  >
+                    <td className="w-10 px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectRow(rowIdx)}
+                        className="rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                      />
+                    </td>
+                    {columns.map((col, colIdx) => (
+                      <td key={colIdx} className={`px-3.5 py-2.5 ${col.className || ''}`}>
+                        {col.cell ? col.cell(row, rowIdx) : row[col.accessor]}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Bottom Pagination & Records count */}
+      <div className="p-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-2">
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="border border-slate-300 rounded-md py-1 px-2 text-xs bg-white focus:outline-hidden"
+          >
+            <option value={10}>10</option>
+            <option value={30}>30</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={500}>500</option>
+          </select>
+          <span>
+            {filteredData.length === 0 
+              ? 'No record' 
+              : `Show from ${(currentPage - 1) * pageSize + 1} to ${Math.min(currentPage * pageSize, filteredData.length)} in ${filteredData.length} records`}
+          </span>
+        </div>
+
+        {/* Pagination buttons */}
+        <div className="flex items-center gap-1">
+          <button
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            className="px-2.5 py-1 border border-slate-300 rounded-md text-xs hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            « Previous
+          </button>
+          <span className="px-2.5 py-1 bg-blue-600 text-white rounded-md text-xs font-semibold">
+            {currentPage}
+          </span>
+          <button
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            className="px-2.5 py-1 border border-slate-300 rounded-md text-xs hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Next »
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDataTable;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceReports.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+import {
+  FiCalendar,
+  FiTrendingUp,
+  FiShoppingBag,
+  FiUsers,
+  FiDollarSign,
+  FiBox,
+  FiArrowUpRight,
+  FiCheckCircle,
+  FiClock
+} from 'react-icons/fi';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area
+} from 'recharts';
+
+const salesData = [
+  { date: '14 Aug', sales: 0, orders: 0 },
+  { date: '16 Aug', sales: 0, orders: 1 },
+  { date: '18 Aug', sales: 0, orders: 0 },
+  { date: '20 Aug', sales: 0, orders: 0 },
+  { date: '22 Aug', sales: 0, orders: 1 },
+  { date: '24 Aug', sales: 0, orders: 0 },
+  { date: '26 Aug', sales: 0, orders: 0 },
+  { date: '28 Aug', sales: 0, orders: 0 },
+  { date: '30 Aug', sales: 0, orders: 0 },
+  { date: '01 Sep', sales: 0, orders: 2 },
+  { date: '03 Sep', sales: 0, orders: 1 },
+  { date: '05 Sep', sales: 0, orders: 2 },
+  { date: '07 Sep', sales: 0, orders: 0 },
+  { date: '09 Sep', sales: 0, orders: 0 },
+  { date: '11 Sep', sales: 0, orders: 1 },
+];
+
+const customerGrowthData = [
+  { date: '01 Sep', customers: 1 },
+  { date: '02 Sep', customers: 2 },
+  { date: '05 Sep', customers: 4 },
+  { date: '06 Sep', customers: 5 },
+  { date: '11 Sep', customers: 7 },
+];
+
+const trendingProducts = [
+  { id: '860', name: 'Shakha with Blue Chudiyan | Traditional Bengali Jewelry Set', views: 249 },
+  { id: '7463', name: 'Pure Brass Standing Trishul Carved - Sacred Shiva Trident Temple Art | Jaipurio', views: 216 },
+  { id: '7872', name: 'Surya Marble Mandir Hexa - Buy Compact Hexagonal Sun Temple Online | Jaipurio', views: 188 },
+  { id: '1265', name: 'Rajasthani Bur Bangles | Traditional Lac Chudiya | Heritage Design | Ethnic Craft', views: 183 },
+  { id: '7431', name: 'Pure Brass Standing Nandi 14" Fully Engraved - Sacred Temple Sculpture | Jaipurio', views: 174 },
+  { id: '7878', name: 'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio', views: 168 },
+  { id: '5184', name: "Personalized Premium Men's Classic Taupe Breeches - Buy Custom Riding Pants", views: 168 },
+  { id: '5992', name: 'Lehariya Kesariya Traditional Safa - Buy Premium Wave Pattern Groom Headgear', views: 166 },
+  { id: '5983', name: 'Golden Check Silk Safa Opulent Turban Men - Luxury Rajasthani Pagri', views: 166 },
+  { id: '7559', name: 'Brass Radha Krishna Arch Idol 4.5 Inches - Temple Grade Divine Love Murti', views: 165 },
+];
+
+const AdminEcommerceReports = () => {
+  const [dateRange, setDateRange] = useState('From 2026-08-14 to 2026-09-12');
+
+  return (
+    <EcommerceLayout breadcrumb={['REPORT']}>
+      {/* Top filter date bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white p-3 rounded-md border border-slate-200">
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100">
+            <FiCalendar size={14} className="text-slate-500" />
+            <span>{dateRange}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 4 Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
+          <div className="text-xs text-slate-500 font-medium">Revenue</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">₹0.0</div>
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
+            <FiDollarSign size={12} />
+            <span>0% from last month</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
+          <div className="text-xs text-slate-500 font-medium">Products</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">0</div>
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
+            <FiBox size={12} />
+            <span>Active catalog items</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
+          <div className="text-xs text-slate-500 font-medium">Customers</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">7</div>
+          <div className="mt-2 text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+            <FiArrowUpRight size={12} />
+            <span>7 increase</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
+          <div className="text-xs text-slate-500 font-medium">Orders</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">0</div>
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
+            <FiShoppingBag size={12} />
+            <span>Completed orders</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Customers Growth */}
+        <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
+          <h4 className="text-sm font-semibold text-slate-800 mb-4">Customers</h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={customerGrowthData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                <Tooltip />
+                <Area type="monotone" dataKey="customers" stroke="#3b82f6" fill="#93c5fd" fillOpacity={0.3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Orders Bar Chart */}
+        <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
+          <h4 className="text-sm font-semibold text-slate-800 mb-4">Orders</h4>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                <Tooltip />
+                <Bar dataKey="orders" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Sales Reports & Earnings Breakdown */}
+      <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs mb-6">
+        <h4 className="text-sm font-semibold text-slate-800 mb-4">Sales Reports</h4>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={salesData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="flex flex-col justify-center border-l border-slate-100 pl-6 space-y-4 text-xs">
+            <div>
+              <div className="text-slate-400">Total Earnings</div>
+              <div className="text-2xl font-bold text-slate-800">₹0.0</div>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-slate-100">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <FiCheckCircle className="text-emerald-500" /> Completed
+              </span>
+              <span className="font-semibold text-slate-700">₹0.0</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-slate-100">
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <FiClock className="text-amber-500" /> Pending
+              </span>
+              <span className="font-semibold text-slate-700">₹0.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trending Products & Recent Orders Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Orders */}
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 mb-3">Recent Orders</h4>
+          <AdminDataTable
+            showCreate={false}
+            showExport={false}
+            showReload={false}
+            showBulkActions={false}
+            columns={[
+              { header: 'ID', accessor: 'id' },
+              { header: 'Customer', accessor: 'customer' },
+              { header: 'Amount', accessor: 'amount' },
+              { header: 'Payment status', accessor: 'paymentStatus' },
+              { header: 'Status', accessor: 'status' },
+              { header: 'Created At', accessor: 'createdAt' },
+            ]}
+            data={[]}
+            emptyMessage="No data to display"
+          />
+        </div>
+
+        {/* Trending Products */}
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 mb-3">Trending Products</h4>
+          <AdminDataTable
+            showCreate={false}
+            showExport={false}
+            showReload={false}
+            showBulkActions={false}
+            columns={[
+              { header: 'ID', accessor: 'id', width: '60px' },
+              { 
+                header: 'Product name', 
+                accessor: 'name',
+                cell: (row) => (
+                  <a href={`/product/${row.id}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium line-clamp-1">
+                    {row.name}
+                  </a>
+                )
+              },
+              { 
+                header: 'Views', 
+                accessor: 'views', 
+                width: '70px',
+                cell: (row) => <span className="font-semibold text-slate-800">{row.views}</span>
+              },
+            ]}
+            data={trendingProducts}
+          />
+        </div>
+      </div>
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceReports;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceOrders.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+import { FiEye, FiTrash2, FiEdit2, FiCheck, FiX, FiClock } from 'react-icons/fi';
+
+const mockOrders = [
+  {
+    id: '370',
+    customer: 'Singh',
+    email: 'vaibhavsingh8032@gmail.com',
+    phone: '8839665405',
+    amount: '₹1,700.0',
+    paymentMethod: 'Cash on delivery (COD)',
+    paymentStatus: 'Pending',
+    status: 'Pending',
+    taxAmount: '₹0.0',
+    shippingAmount: '0.00',
+    createdAt: '2026-05-13',
+    store: '—'
+  },
+  {
+    id: '369',
+    customer: 'Aarav Sharma',
+    email: 'aarav.sharma@gmail.com',
+    phone: '9829012345',
+    amount: '₹3,450.0',
+    paymentMethod: 'Razorpay (Online)',
+    paymentStatus: 'Completed',
+    status: 'Delivered',
+    taxAmount: '₹172.5',
+    shippingAmount: '0.00',
+    createdAt: '2026-05-12',
+    store: 'Jaipur Blue Pottery'
+  },
+  {
+    id: '368',
+    customer: 'Pooja Verma',
+    email: 'pooja.verma@yahoo.com',
+    phone: '9414055678',
+    amount: '₹890.0',
+    paymentMethod: 'Cash on delivery (COD)',
+    paymentStatus: 'Pending',
+    status: 'Processing',
+    taxAmount: '₹44.5',
+    shippingAmount: '50.00',
+    createdAt: '2026-05-11',
+    store: 'Marwar Mitti'
+  }
+];
+
+export const AdminEcommerceOrders = () => {
+  const [orders, setOrders] = useState(mockOrders);
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'Completed':
+      case 'Delivered':
+        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">Completed</span>;
+      case 'Pending':
+        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">Pending</span>;
+      case 'Processing':
+        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">Processing</span>;
+      case 'Canceled':
+        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">Canceled</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700">{status}</span>;
+    }
+  };
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    {
+      header: 'Customer',
+      accessor: 'customer',
+      cell: (row) => (
+        <div>
+          <div className="font-semibold text-slate-800">{row.customer}</div>
+          <div className="text-[11px] text-blue-600 hover:underline">{row.email}</div>
+          <div className="text-[10px] text-slate-400">{row.phone}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Amount',
+      accessor: 'amount',
+      cell: (row) => <span className="font-bold text-slate-800">{row.amount}</span>
+    },
+    { header: 'Payment method', accessor: 'paymentMethod' },
+    {
+      header: 'Payment status',
+      accessor: 'paymentStatus',
+      cell: (row) => getStatusBadge(row.paymentStatus)
+    },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => getStatusBadge(row.status)
+    },
+    { header: 'Tax Amount', accessor: 'taxAmount' },
+    { header: 'Shipping amount', accessor: 'shippingAmount' },
+    { header: 'Created At', accessor: 'createdAt' },
+    { header: 'Store', accessor: 'store' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:text-blue-800 text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:text-red-700 text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['ORDERS']}>
+      <AdminDataTable
+        columns={columns}
+        data={orders}
+        searchPlaceholder="Search orders..."
+        createLabel="Create"
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceOrders;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceIncompleteOrders.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+const mockIncompleteOrders = [
+  { id: '394', customer: '—', amount: '₹178,000.0', createdAt: '2026-08-31', store: '—' },
+  { id: '393', customer: 'Jitusinh Balvantsinh rajput', amount: '₹1,799.0', createdAt: '2026-08-21', store: '—' },
+  { id: '392', customer: 'Deepak Meena', amount: '₹4,500.0', createdAt: '2026-08-15', store: 'Alwar Crafts' },
+];
+
+export const AdminEcommerceIncompleteOrders = () => {
+  const [data, setData] = useState(mockIncompleteOrders);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Customer', accessor: 'customer', cell: (row) => <span className="font-medium text-slate-800">{row.customer}</span> },
+    { header: 'Amount', accessor: 'amount', cell: (row) => <span className="font-bold text-slate-800">{row.amount}</span> },
+    { header: 'Created At', accessor: 'createdAt' },
+    { header: 'Store', accessor: 'store' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">View Detail</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['ORDERS', 'INCOMPLETE ORDERS']}>
+      <AdminDataTable
+        columns={columns}
+        data={data}
+        searchPlaceholder="Search incomplete orders..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceIncompleteOrders;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceOrderReturns.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceOrderReturns = () => {
+  const [returns, setReturns] = useState([
+    {
+      id: 'RET-104',
+      orderId: 'ORD-340',
+      customer: 'Priya Rathore',
+      productItems: 'Rajasthani Design Matka (5L)',
+      reason: 'Damaged in transit',
+      status: 'Pending Review',
+      createdAt: '2026-09-02'
+    },
+    {
+      id: 'RET-103',
+      orderId: 'ORD-312',
+      customer: 'Vikram Joshi',
+      productItems: 'Kulhad Pack of 6',
+      reason: 'Color mismatch',
+      status: 'Approved',
+      createdAt: '2026-08-28'
+    }
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '70px' },
+    { header: 'Order ID', accessor: 'orderId', cell: (row) => <span className="text-blue-600 font-semibold">{row.orderId}</span> },
+    { header: 'Customer', accessor: 'customer', cell: (row) => <span className="font-medium text-slate-800">{row.customer}</span> },
+    { header: 'Product item(s)', accessor: 'productItems' },
+    { header: 'Return reason', accessor: 'reason' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+          row.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Created At', accessor: 'createdAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Process</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Reject</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['ORDER RETURNS']}>
+      <AdminDataTable
+        columns={columns}
+        data={returns}
+        showCreate={false}
+        searchPlaceholder="Search returns..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceOrderReturns;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceShipments.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceShipments = () => {
+  const [shipments, setShipments] = useState([
+    {
+      id: 'SHP-891',
+      orderId: 'ORD-370',
+      carrier: 'Delhivery Surface',
+      trackingCode: 'DL-901847192',
+      customer: 'Singh',
+      destination: 'Jaipur, Rajasthan',
+      status: 'Shipped',
+      shippedAt: '2026-05-14'
+    },
+    {
+      id: 'SHP-890',
+      orderId: 'ORD-369',
+      carrier: 'BlueDart Express',
+      trackingCode: 'BD-881294821',
+      customer: 'Aarav Sharma',
+      destination: 'Udaipur, Rajasthan',
+      status: 'Delivered',
+      shippedAt: '2026-05-12'
+    }
+  ]);
+
+  const columns = [
+    { header: 'Shipment ID', accessor: 'id', width: '90px' },
+    { header: 'Order ID', accessor: 'orderId', cell: (row) => <span className="text-blue-600 font-semibold">{row.orderId}</span> },
+    { header: 'Carrier', accessor: 'carrier' },
+    { header: 'Tracking No.', accessor: 'trackingCode', cell: (row) => <span className="font-mono text-slate-800">{row.trackingCode}</span> },
+    { header: 'Customer', accessor: 'customer' },
+    { header: 'Destination', accessor: 'destination' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+          row.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Shipped At', accessor: 'shippedAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Track</button>
+          <button className="text-slate-600 hover:underline text-[11px] font-medium">Print Label</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['SHIPMENTS']}>
+      <AdminDataTable
+        columns={columns}
+        data={shipments}
+        createLabel="New Shipment"
+        searchPlaceholder="Search shipments or tracking numbers..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceShipments;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceInvoices.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceInvoices = () => {
+  const [invoices, setInvoices] = useState([
+    {
+      id: 'INV-2026-001',
+      orderId: 'ORD-369',
+      customer: 'Aarav Sharma',
+      amount: '₹3,450.0',
+      tax: '₹172.5',
+      status: 'Paid',
+      issueDate: '2026-05-12'
+    },
+    {
+      id: 'INV-2026-002',
+      orderId: 'ORD-370',
+      customer: 'Singh',
+      amount: '₹1,700.0',
+      tax: '₹0.0',
+      status: 'Unpaid',
+      issueDate: '2026-05-13'
+    }
+  ]);
+
+  const columns = [
+    { header: 'Invoice #', accessor: 'id', width: '110px', cell: (row) => <span className="font-semibold text-slate-800">{row.id}</span> },
+    { header: 'Order ID', accessor: 'orderId', cell: (row) => <span className="text-blue-600">{row.orderId}</span> },
+    { header: 'Customer', accessor: 'customer' },
+    { header: 'Amount', accessor: 'amount', cell: (row) => <span className="font-bold text-slate-800">{row.amount}</span> },
+    { header: 'Tax', accessor: 'tax' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+          row.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Issue Date', accessor: 'issueDate' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Download PDF</button>
+          <button className="text-slate-600 hover:underline text-[11px] font-medium">Print</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['INVOICES']}>
+      <AdminDataTable
+        columns={columns}
+        data={invoices}
+        createLabel="Generate Invoice"
+        searchPlaceholder="Search invoices..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceInvoices;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProducts.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+import { initialProducts } from '../../../data/products';
+import { FiPlus, FiEdit2, FiTrash2, FiExternalLink } from 'react-icons/fi';
+
+export const AdminEcommerceProducts = () => {
+  const [products, setProducts] = useState(
+    initialProducts.map((p, idx) => ({
+      id: p._id || String(idx + 101),
+      name: p.name,
+      image: p.image,
+      sku: `JPR-MIT-${idx + 100}`,
+      price: `₹${p.price}.0`,
+      originalPrice: p.oldPrice ? `₹${p.oldPrice}.0` : '—',
+      category: p.category,
+      stock: p.stock || 25,
+      status: 'In Stock',
+      createdAt: '2026-08-15'
+    }))
+  );
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '70px' },
+    {
+      header: 'Product',
+      accessor: 'name',
+      cell: (row) => (
+        <div className="flex items-center gap-3">
+          <img src={row.image} alt={row.name} className="w-10 h-10 object-cover rounded-md border border-slate-200" />
+          <div>
+            <div className="font-semibold text-slate-800 line-clamp-1">{row.name}</div>
+            <div className="text-[11px] text-slate-400 font-mono">SKU: {row.sku}</div>
+          </div>
+        </div>
+      )
+    },
+    { header: 'Price', accessor: 'price', cell: (row) => <span className="font-bold text-slate-800">{row.price}</span> },
+    { header: 'Category', accessor: 'category' },
+    { header: 'Quantity', accessor: 'stock', cell: (row) => <span className="font-semibold">{row.stock}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Created At', accessor: 'createdAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS']}>
+      <AdminDataTable
+        columns={columns}
+        data={products}
+        createLabel="Add Product"
+        searchPlaceholder="Search products by name, SKU..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProducts;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductPrices.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+import { initialProducts } from '../../../data/products';
+
+export const AdminEcommerceProductPrices = () => {
+  const [data, setData] = useState(
+    initialProducts.map((p, idx) => ({
+      id: String(idx + 101),
+      name: p.name,
+      regularPrice: `₹${p.price}.0`,
+      salePrice: p.oldPrice ? `₹${p.oldPrice}.0` : '—',
+      costPerItem: `₹${Math.round(p.price * 0.6)}.0`,
+      margin: '40%',
+      taxes: '5% GST Included'
+    }))
+  );
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Product Name', accessor: 'name', cell: (row) => <span className="font-medium text-slate-800">{row.name}</span> },
+    { header: 'Regular Price', accessor: 'regularPrice', cell: (row) => <span className="font-bold text-slate-800">{row.regularPrice}</span> },
+    { header: 'Sale Price', accessor: 'salePrice' },
+    { header: 'Cost per item', accessor: 'costPerItem' },
+    { header: 'Gross Margin', accessor: 'margin', cell: (row) => <span className="text-emerald-600 font-semibold">{row.margin}</span> },
+    { header: 'Tax Calculation', accessor: 'taxes' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => <button className="text-blue-600 hover:underline text-[11px] font-medium">Update Price</button>
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT PRICES']}>
+      <AdminDataTable
+        columns={columns}
+        data={data}
+        showCreate={false}
+        searchPlaceholder="Filter prices..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductPrices;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductInventory.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+import { initialProducts } from '../../../data/products';
+
+export const AdminEcommerceProductInventory = () => {
+  const [inventory, setInventory] = useState(
+    initialProducts.map((p, idx) => ({
+      id: String(idx + 101),
+      name: p.name,
+      sku: `JPR-MIT-${idx + 100}`,
+      stock: p.stock || 25,
+      reserved: 2,
+      available: (p.stock || 25) - 2,
+      lowStockThreshold: 10,
+      stockStatus: (p.stock || 25) > 10 ? 'In Stock' : 'Low Stock'
+    }))
+  );
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Product', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
+    { header: 'SKU', accessor: 'sku', cell: (row) => <span className="font-mono text-slate-500">{row.sku}</span> },
+    { header: 'On Hand', accessor: 'stock', cell: (row) => <span className="font-bold">{row.stock}</span> },
+    { header: 'Committed / Reserved', accessor: 'reserved' },
+    { header: 'Available to Sell', accessor: 'available', cell: (row) => <span className="font-bold text-emerald-600">{row.available}</span> },
+    {
+      header: 'Status',
+      accessor: 'stockStatus',
+      cell: (row) => (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+          row.stockStatus === 'In Stock' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+        }`}>
+          {row.stockStatus}
+        </span>
+      )
+    },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Adjust Stock</button>
+          <button className="text-slate-600 hover:underline text-[11px] font-medium">History</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT INVENTORY']}>
+      <AdminDataTable
+        columns={columns}
+        data={inventory}
+        createLabel="Stock Adjustment"
+        searchPlaceholder="Search inventory by product name or SKU..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductInventory;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductCategories.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceProductCategories = () => {
+  const [categories, setCategories] = useState([
+    { id: '1', name: 'Terracotta Matkas & Pots', slug: 'terracotta-matkas', parent: 'None', productsCount: 14, order: 1, status: 'Published' },
+    { id: '2', name: 'Clay Kulhads & Cups', slug: 'clay-kulhads', parent: 'None', productsCount: 8, order: 2, status: 'Published' },
+    { id: '3', name: 'Earthen Planters & Vases', slug: 'earthen-planters', parent: 'None', productsCount: 12, order: 3, status: 'Published' },
+    { id: '4', name: 'Festive Diyas & Mandir Art', slug: 'festive-diyas', parent: 'None', productsCount: 19, order: 4, status: 'Published' },
+    { id: '5', name: 'Heritage Lac Bangles', slug: 'lac-bangles', parent: 'None', productsCount: 22, order: 5, status: 'Published' },
+    { id: '6', name: 'Royal Safas & Turbans', slug: 'royal-safas', parent: 'None', productsCount: 16, order: 6, status: 'Published' }
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Name', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
+    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
+    { header: 'Parent', accessor: 'parent' },
+    { header: 'Products', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
+    { header: 'Order', accessor: 'order' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT CATEGORIES']}>
+      <AdminDataTable
+        columns={columns}
+        data={categories}
+        createLabel="Create Category"
+        searchPlaceholder="Search categories..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductCategories;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductTags.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceProductTags = () => {
+  const [tags, setTags] = useState([
+    { id: '1', name: 'Terracotta', slug: 'terracotta', productsCount: 24, status: 'Published', createdAt: '2026-08-01' },
+    { id: '2', name: 'Handmade Clay', slug: 'handmade-clay', productsCount: 31, status: 'Published', createdAt: '2026-08-01' },
+    { id: '3', name: 'Cooling Pot', slug: 'cooling-pot', productsCount: 9, status: 'Published', createdAt: '2026-08-05' },
+    { id: '4', name: 'Diwali Festive', slug: 'diwali-festive', productsCount: 18, status: 'Published', createdAt: '2026-08-10' },
+    { id: '5', name: 'Jaipur Blue Pottery', slug: 'jaipur-blue-pottery', productsCount: 15, status: 'Published', createdAt: '2026-08-12' },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Tag Name', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
+    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
+    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Created At', accessor: 'createdAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT TAGS']}>
+      <AdminDataTable
+        columns={columns}
+        data={tags}
+        createLabel="Create Tag"
+        searchPlaceholder="Search tags..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductTags;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductAttributeSets.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceProductAttributeSets = () => {
+  const [attributes, setAttributes] = useState([
+    { id: '1', title: 'Clay Material Grade', slug: 'clay-material-grade', displayLayout: 'Dropdown list', isSearchable: 'Yes', isComparable: 'Yes', isUseInProductListing: 'Yes', order: 1 },
+    { id: '2', title: 'Volume / Capacity', slug: 'volume-capacity', displayLayout: 'Visual Swatch', isSearchable: 'Yes', isComparable: 'Yes', isUseInProductListing: 'Yes', order: 2 },
+    { id: '3', title: 'Art Style / Origin', slug: 'art-style-origin', displayLayout: 'Text Swatch', isSearchable: 'Yes', isComparable: 'No', isUseInProductListing: 'Yes', order: 3 },
+    { id: '4', title: 'Color Palette', slug: 'color-palette', displayLayout: 'Color Swatch', isSearchable: 'Yes', isComparable: 'Yes', isUseInProductListing: 'Yes', order: 4 },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Title', accessor: 'title', cell: (row) => <span className="font-semibold text-slate-800">{row.title}</span> },
+    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
+    { header: 'Display Layout', accessor: 'displayLayout' },
+    { header: 'Searchable', accessor: 'isSearchable' },
+    { header: 'Comparable', accessor: 'isComparable' },
+    { header: 'Used in Listing', accessor: 'isUseInProductListing' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT ATTRIBUTES']}>
+      <AdminDataTable
+        columns={columns}
+        data={attributes}
+        createLabel="Create Attribute"
+        searchPlaceholder="Search product attributes..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductAttributeSets;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductOptions.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceProductOptions = () => {
+  const [options, setOptions] = useState([
+    { id: '1', name: 'Clay Pot Lid Type', optionType: 'Dropdown (Single)', values: 'Clay Lid, Brass Lid, Wooden Lid', required: 'Yes', order: 1 },
+    { id: '2', name: 'Custom Heritage Engraving', optionType: 'Text Field', values: 'Custom Text (Max 30 chars)', required: 'No', order: 2 },
+    { id: '3', name: 'Gift Wrapping & Box', optionType: 'Checkbox', values: 'Eco Jute Box, Royal Velvet Box', required: 'No', order: 3 },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Option Name', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
+    { header: 'Type', accessor: 'optionType' },
+    { header: 'Available Values', accessor: 'values', cell: (row) => <span className="text-slate-600 text-xs">{row.values}</span> },
+    { header: 'Required', accessor: 'required' },
+    { header: 'Order', accessor: 'order' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT OPTIONS']}>
+      <AdminDataTable
+        columns={columns}
+        data={options}
+        createLabel="Create Option"
+        searchPlaceholder="Search product options..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductOptions;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductCollections.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceProductCollections = () => {
+  const [collections, setCollections] = useState([
+    { id: '1', name: 'Summer Earthenware Coolers', slug: 'summer-earthenware-coolers', productsCount: 16, isFeatured: 'Yes', status: 'Published', createdAt: '2026-07-20' },
+    { id: '2', name: 'Royal Mandir & Temple Decor', slug: 'royal-mandir-temple-decor', productsCount: 28, isFeatured: 'Yes', status: 'Published', createdAt: '2026-08-01' },
+    { id: '3', name: 'Jaipur Blue Pottery Masterpieces', slug: 'jaipur-blue-pottery-masterpieces', productsCount: 12, isFeatured: 'Yes', status: 'Published', createdAt: '2026-08-10' },
+    { id: '4', name: 'Authentic Village Terracotta Cookware', slug: 'village-terracotta-cookware', productsCount: 14, isFeatured: 'No', status: 'Published', createdAt: '2026-08-12' },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Collection Name', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
+    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
+    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
+    { header: 'Featured', accessor: 'isFeatured', cell: (row) => <span className={row.isFeatured === 'Yes' ? 'text-blue-600 font-bold' : 'text-slate-400'}>{row.isFeatured}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Created At', accessor: 'createdAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT COLLECTIONS']}>
+      <AdminDataTable
+        columns={columns}
+        data={collections}
+        createLabel="Create Collection"
+        searchPlaceholder="Search collections..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductCollections;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceProductLabels.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceProductLabels = () => {
+  const [labels, setLabels] = useState([
+    { id: '1', name: 'Bestseller', color: '#c2410c', backgroundColor: '#ffedd5', status: 'Published', createdAt: '2026-08-01' },
+    { id: '2', name: 'Heritage Craft', color: '#047857', backgroundColor: '#d1fae5', status: 'Published', createdAt: '2026-08-01' },
+    { id: '3', name: '100% Pure Mitti', color: '#854d0e', backgroundColor: '#fef9c3', status: 'Published', createdAt: '2026-08-05' },
+    { id: '4', name: 'Hot Deal', color: '#b91c1c', backgroundColor: '#fee2e2', status: 'Published', createdAt: '2026-08-10' },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    {
+      header: 'Label Preview',
+      accessor: 'name',
+      cell: (row) => (
+        <span
+          className="px-2.5 py-1 rounded-md text-xs font-bold"
+          style={{ color: row.color, backgroundColor: row.backgroundColor }}
+        >
+          {row.name}
+        </span>
+      )
+    },
+    { header: 'Text Color', accessor: 'color', cell: (row) => <span className="font-mono text-xs">{row.color}</span> },
+    { header: 'Background Color', accessor: 'backgroundColor', cell: (row) => <span className="font-mono text-xs">{row.backgroundColor}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Created At', accessor: 'createdAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT LABELS']}>
+      <AdminDataTable
+        columns={columns}
+        data={labels}
+        createLabel="Create Label"
+        searchPlaceholder="Search product labels..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceProductLabels;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceBrands.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceBrands = () => {
+  const [brands, setBrands] = useState([
+    { id: '1', name: 'Shyam Terracotta Artisans', logo: '🏺', website: 'https://jaipurio.in', productsCount: 24, isFeatured: 'Yes', order: 1, status: 'Published' },
+    { id: '2', name: 'Meera Mitti Works', logo: '🌿', website: 'https://jaipurio.in', productsCount: 18, isFeatured: 'Yes', order: 2, status: 'Published' },
+    { id: '3', name: 'Pushkar Sacred Clay Studio', logo: '🪔', website: 'https://jaipurio.in', productsCount: 30, isFeatured: 'Yes', order: 3, status: 'Published' },
+    { id: '4', name: 'Alwar Heritage Pottery Co.', logo: '🏺', website: 'https://jaipurio.in', productsCount: 12, isFeatured: 'No', order: 4, status: 'Published' },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    {
+      header: 'Brand Name',
+      accessor: 'name',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{row.logo}</span>
+          <span className="font-semibold text-slate-800">{row.name}</span>
+        </div>
+      )
+    },
+    { header: 'Website', accessor: 'website', cell: (row) => <a href={row.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{row.website}</a> },
+    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
+    { header: 'Featured', accessor: 'isFeatured' },
+    { header: 'Order', accessor: 'order' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['BRANDS']}>
+      <AdminDataTable
+        columns={columns}
+        data={brands}
+        createLabel="Create Brand"
+        searchPlaceholder="Search brands..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceBrands;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceReviews.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+import { FiStar } from 'react-icons/fi';
+
+export const AdminEcommerceReviews = () => {
+  const [reviews, setReviews] = useState([
+    {
+      id: 'REV-501',
+      product: 'Rajasthani Design Matka (5L)',
+      customer: 'Sunita Meena',
+      rating: 5,
+      comment: 'Authentic pure clay taste! Water stays incredibly chilled without electricity.',
+      status: 'Approved',
+      createdAt: '2026-09-08'
+    },
+    {
+      id: 'REV-502',
+      product: 'Kulhad (Pack of 6)',
+      customer: 'Kavita Singh',
+      rating: 5,
+      comment: 'Brings genuine village tea aroma to our morning breakfast. Superb packing!',
+      status: 'Approved',
+      createdAt: '2026-09-04'
+    },
+    {
+      id: 'REV-503',
+      product: 'Decorative Diya Set (8 Pcs)',
+      customer: 'Rahul Agarwal',
+      rating: 4,
+      comment: 'Beautiful gold detailing on the terracotta rim. Highly recommended.',
+      status: 'Approved',
+      createdAt: '2026-09-01'
+    }
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '70px' },
+    { header: 'Product', accessor: 'product', cell: (row) => <span className="font-semibold text-slate-800">{row.product}</span> },
+    { header: 'Customer', accessor: 'customer' },
+    {
+      header: 'Rating',
+      accessor: 'rating',
+      cell: (row) => (
+        <div className="flex items-center text-amber-500 font-bold gap-1">
+          <span>{row.rating}</span>
+          <FiStar size={13} className="fill-amber-400 text-amber-500" />
+        </div>
+      )
+    },
+    { header: 'Comment', accessor: 'comment', cell: (row) => <span className="text-slate-600 line-clamp-1">{row.comment}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Created At', accessor: 'createdAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Approve</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['REVIEWS']}>
+      <AdminDataTable
+        columns={columns}
+        data={reviews}
+        showCreate={false}
+        searchPlaceholder="Search reviews..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceReviews;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceFlashSales.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceFlashSales = () => {
+  const [sales, setSales] = useState([
+    { id: '1', name: 'Summer Mitti Utsav 2026', productsCount: 8, discountPercent: '25% OFF', startDate: '2026-09-01', endDate: '2026-09-20', status: 'Active' },
+    { id: '2', name: 'Grand Diwali Diya Fest', productsCount: 14, discountPercent: '30% OFF', startDate: '2026-10-15', endDate: '2026-11-05', status: 'Scheduled' },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    { header: 'Flash Sale Title', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
+    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
+    { header: 'Discount', accessor: 'discountPercent', cell: (row) => <span className="text-red-600 font-bold">{row.discountPercent}</span> },
+    { header: 'Start Date', accessor: 'startDate' },
+    { header: 'End Date', accessor: 'endDate' },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+          row.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+        }`}>
+          {row.status}
+        </span>
+      )
+    },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['FLASH SALES']}>
+      <AdminDataTable
+        columns={columns}
+        data={sales}
+        createLabel="Create Flash Sale"
+        searchPlaceholder="Search flash sales..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceFlashSales;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceDiscounts.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceDiscounts = () => {
+  const [coupons, setCoupons] = useState([
+    { id: '1', code: 'JAIPURIO10', title: '10% Off on First Mitti Order', type: 'Percentage', value: '10%', usedCount: 142, minOrder: '₹499.0', status: 'Active', expiresAt: '2026-12-31' },
+    { id: '2', code: 'FESTIVE50', title: 'Flat ₹50 Off on Festive Diyas', type: 'Fixed Amount', value: '₹50.0', usedCount: 88, minOrder: '₹399.0', status: 'Active', expiresAt: '2026-11-15' },
+    { id: '3', code: 'FREESHIP', title: 'Free Express Fragile Shipping', type: 'Free Shipping', value: '100% Off Shipping', usedCount: 310, minOrder: '₹999.0', status: 'Active', expiresAt: '2026-12-31' },
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    {
+      header: 'Coupon Code',
+      accessor: 'code',
+      cell: (row) => <span className="font-mono font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-sm border border-blue-200">{row.code}</span>
+    },
+    { header: 'Discount Title', accessor: 'title', cell: (row) => <span className="font-medium text-slate-800">{row.title}</span> },
+    { header: 'Type', accessor: 'type' },
+    { header: 'Value', accessor: 'value', cell: (row) => <span className="font-bold text-slate-800">{row.value}</span> },
+    { header: 'Min Order', accessor: 'minOrder' },
+    { header: 'Used Times', accessor: 'usedCount', cell: (row) => <span className="font-semibold">{row.usedCount}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Expires At', accessor: 'expiresAt' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['DISCOUNTS']}>
+      <AdminDataTable
+        columns={columns}
+        data={coupons}
+        createLabel="Create Coupon"
+        searchPlaceholder="Search discount codes or promotions..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceDiscounts;
+
+
+################################################################################
+FILE: frontend/src/components/admin/ecommerce/AdminEcommerceCustomers.jsx
+################################################################################
+import React, { useState } from 'react';
+import EcommerceLayout from './EcommerceLayout';
+import AdminDataTable from './AdminDataTable';
+
+export const AdminEcommerceCustomers = () => {
+  const [customers, setCustomers] = useState([
+    { id: '1', name: 'Aarav Sharma', email: 'aarav.sharma@gmail.com', phone: '9829012345', ordersCount: 3, totalSpent: '₹4,940.0', status: 'Active', joinedDate: '2026-08-01' },
+    { id: '2', name: 'Singh', email: 'vaibhavsingh8032@gmail.com', phone: '8839665405', ordersCount: 1, totalSpent: '₹1,700.0', status: 'Active', joinedDate: '2026-08-14' },
+    { id: '3', name: 'Pooja Verma', email: 'pooja.verma@yahoo.com', phone: '9414055678', ordersCount: 2, totalSpent: '₹2,380.0', status: 'Active', joinedDate: '2026-08-19' },
+    { id: '4', name: 'Sunita Meena', email: 'sunita.meena@gmail.com', phone: '9928123456', ordersCount: 4, totalSpent: '₹6,150.0', status: 'Active', joinedDate: '2026-08-25' },
+    { id: '5', name: 'Jitusinh Rajput', email: 'jitu.rajput@rediffmail.com', phone: '9782012987', ordersCount: 1, totalSpent: '₹1,799.0', status: 'Active', joinedDate: '2026-08-31' },
+    { id: '6', name: 'Rahul Agarwal', email: 'rahul.agarwal@outlook.com', phone: '9829988776', ordersCount: 2, totalSpent: '₹3,200.0', status: 'Active', joinedDate: '2026-09-02' },
+    { id: '7', name: 'Kavita Singh', email: 'kavita.singh@gmail.com', phone: '9414123490', ordersCount: 1, totalSpent: '₹890.0', status: 'Active', joinedDate: '2026-09-06' }
+  ]);
+
+  const columns = [
+    { header: 'ID', accessor: 'id', width: '60px' },
+    {
+      header: 'Customer',
+      accessor: 'name',
+      cell: (row) => (
+        <div>
+          <div className="font-semibold text-slate-800">{row.name}</div>
+          <div className="text-[11px] text-blue-600 hover:underline">{row.email}</div>
+        </div>
+      )
+    },
+    { header: 'Phone Number', accessor: 'phone', cell: (row) => <span className="text-slate-600">{row.phone}</span> },
+    { header: 'Orders Placed', accessor: 'ordersCount', cell: (row) => <span className="font-bold">{row.ordersCount}</span> },
+    { header: 'Total Spent', accessor: 'totalSpent', cell: (row) => <span className="font-bold text-slate-800">{row.totalSpent}</span> },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+          {row.status}
+        </span>
+      )
+    },
+    { header: 'Joined At', accessor: 'joinedDate' },
+    {
+      header: 'Operations',
+      sortable: false,
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <button className="text-blue-600 hover:underline text-[11px] font-medium">View</button>
+          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <EcommerceLayout breadcrumb={['CUSTOMERS']}>
+      <AdminDataTable
+        columns={columns}
+        data={customers}
+        createLabel="Add Customer"
+        searchPlaceholder="Search customers by name, phone or email..."
+      />
+    </EcommerceLayout>
+  );
+};
+
+export default AdminEcommerceCustomers;
+
+

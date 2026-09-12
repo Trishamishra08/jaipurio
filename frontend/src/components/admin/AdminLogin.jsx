@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 import { ADMIN_DEMO, isAdminAuthenticated, loginAdmin } from '../../utils/adminAuth';
 import './admin.css';
 
@@ -35,7 +36,7 @@ const AdminLogin = () => {
     <div className="admin-login-page">
       <div className="admin-login-card">
         <Link to="/home" className="admin-login-logo">
-          <img src="/jaipurio_logo.png" alt="Jaipurio" />
+          <img src={mediaUrl('/jaipurio_logo.png')} alt="Jaipurio" />
         </Link>
 
         <h1>Sign In Below</h1>
@@ -93,7 +94,7 @@ const AdminLogin = () => {
       </div>
 
       <footer className="admin-login-footer">
-        Copyright {new Date().getFullYear()} © Jaipurio. Version 1.22.1
+        Copyright {new Date().getFullYear()} Â© Jaipurio. Version 1.22.1
       </footer>
     </div>
   );
