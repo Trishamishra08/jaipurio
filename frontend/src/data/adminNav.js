@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Store,
-  Users,
   FileText,
   Newspaper,
   CreditCard,
@@ -17,12 +16,10 @@ import {
   Wrench,
   Settings,
   Shield,
-  Server,
-  BadgePercent,
-  Search,
   ListChecks,
 } from 'lucide-react';
 
+/** Sidebar structure mirrored from https://jaipurio.in/admin */
 export const adminNav = [
   { id: 'dashboard', title: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   {
@@ -32,24 +29,35 @@ export const adminNav = [
     badgeKey: 'pendingActions',
     children: [
       { title: 'Report', path: '/admin/ecommerce/reports' },
-      { title: 'Orders', path: '/admin/orders' },
-      { title: 'Incomplete Orders', path: '/admin/ecommerce/incomplete-orders' },
-      { title: 'Order Returns', path: '/admin/returns' },
+      { title: 'Orders', path: '/admin/ecommerce/orders', badgeKey: 'pendingOrders' },
+      { title: 'Incomplete orders', path: '/admin/ecommerce/incomplete-orders' },
+      { title: 'Order returns', path: '/admin/ecommerce/order-returns' },
       { title: 'Shipments', path: '/admin/ecommerce/shipments' },
       { title: 'Invoices', path: '/admin/ecommerce/invoices' },
-      { title: 'Products', path: '/admin/products', badgeKey: 'pendingProducts' },
+      { title: 'Products', path: '/admin/ecommerce/products', badgeKey: 'pendingProducts' },
       { title: 'Product Prices', path: '/admin/ecommerce/product-prices' },
-      { title: 'Product Inventory', path: '/admin/inventory' },
-      { title: 'Product Categories', path: '/admin/categories' },
-      { title: 'Product Tags', path: '/admin/ecommerce/tags' },
-      { title: 'Product Attributes', path: '/admin/ecommerce/attribute-sets' },
-      { title: 'Product Options', path: '/admin/ecommerce/options' },
-      { title: 'Product Collections', path: '/admin/ecommerce/collections' },
-      { title: 'Product Labels', path: '/admin/ecommerce/labels' },
+      { title: 'Product Inventory', path: '/admin/ecommerce/product-inventory' },
+      { title: 'Product categories', path: '/admin/ecommerce/product-categories' },
+      { title: 'Product tags', path: '/admin/ecommerce/product-tags' },
+      { title: 'Product attributes', path: '/admin/ecommerce/product-attribute-sets' },
+      { title: 'Product options', path: '/admin/ecommerce/options' },
+      { title: 'Product collections', path: '/admin/ecommerce/product-collections' },
+      { title: 'Product labels', path: '/admin/ecommerce/product-labels' },
       { title: 'Brands', path: '/admin/ecommerce/brands' },
-      { title: 'Reviews', path: '/admin/reviews' },
-      { title: 'Flash Sales', path: '/admin/offers' },
-      { title: 'Discounts', path: '/admin/coupons' },
+      { title: 'Reviews', path: '/admin/ecommerce/reviews' },
+      { title: 'Flash sales', path: '/admin/ecommerce/flash-sales' },
+      { title: 'Discounts', path: '/admin/ecommerce/discounts' },
+      { title: 'Customers', path: '/admin/customers' },
+    ],
+  },
+  {
+    id: 'product-specification',
+    title: 'Product Specification',
+    icon: ListChecks,
+    children: [
+      { title: 'Specification Groups', path: '/admin/product-specification/groups' },
+      { title: 'Specification Attributes', path: '/admin/product-specification/attributes' },
+      { title: 'Specification Tables', path: '/admin/product-specification/tables' },
     ],
   },
   {
@@ -57,21 +65,30 @@ export const adminNav = [
     title: 'Marketplace',
     icon: Store,
     children: [
-      { title: 'Vendors', path: '/admin/vendors' },
-      { title: 'Product Specification', path: '/admin/product-specification/groups' },
+      { title: 'Stores', path: '/admin/vendors' },
+      { title: 'Unverified vendors', path: '/admin/marketplace/unverified-vendors' },
+      { title: 'Withdrawals', path: '/admin/payouts' },
+      { title: 'Settings', path: '/admin/marketplace/settings' },
     ],
   },
-  { id: 'customers', title: 'Customers', path: '/admin/customers', icon: Users },
   { id: 'pages', title: 'Pages', path: '/admin/pages', icon: FileText },
-  { id: 'blog', title: 'Blog', path: '/admin/blogs', icon: Newspaper },
+  {
+    id: 'blog',
+    title: 'Blog',
+    icon: Newspaper,
+    children: [
+      { title: 'Posts', path: '/admin/blogs' },
+      { title: 'Categories', path: '/admin/blog/categories' },
+      { title: 'Tags', path: '/admin/blog/tags' },
+    ],
+  },
   {
     id: 'payments',
     title: 'Payments',
     icon: CreditCard,
     children: [
-      { title: 'Payments', path: '/admin/payments' },
+      { title: 'Transactions', path: '/admin/payments' },
       { title: 'Payment methods', path: '/admin/payments/methods' },
-      { title: 'Commission & Payouts', path: '/admin/payouts' },
     ],
   },
   {
@@ -93,7 +110,7 @@ export const adminNav = [
       { title: 'Contact Forms', path: '/admin/contact/forms' },
     ],
   },
-  { id: 'slides', title: 'Simple Slides', path: '/admin/sliders', icon: Images },
+  { id: 'slides', title: 'Simple Sliders', path: '/admin/simple-sliders', icon: Images },
   {
     id: 'faqs',
     title: 'FAQs',
@@ -103,7 +120,7 @@ export const adminNav = [
       { title: 'FAQ Categories', path: '/admin/faqs/categories' },
     ],
   },
-  { id: 'newsletter', title: 'Newsletter', path: '/admin/newsletters', icon: Send },
+  { id: 'newsletter', title: 'Newsletters', path: '/admin/newsletters', icon: Send },
   {
     id: 'locations',
     title: 'Locations',
@@ -134,38 +151,14 @@ export const adminNav = [
     id: 'tools',
     title: 'Tools',
     icon: Wrench,
-    children: [{ title: 'Export/Import Data', path: '/admin/tools/import-export' }],
-  },
-  { id: 'settings', title: 'Settings', path: '/admin/settings', icon: Settings },
-  { id: 'platform', title: 'Platform Administration', path: '/admin/platform', icon: Shield },
-  {
-    id: 'system',
-    title: 'System',
-    icon: Server,
     children: [
-      { title: 'Users', path: '/admin/platform/users' },
-      { title: 'Roles And Permissions', path: '/admin/system/roles' },
-      { title: 'Activities Log', path: '/admin/platform/activity-logs' },
-      { title: 'Backup', path: '/admin/system/backup' },
-      { title: 'Cronjob', path: '/admin/system/cronjob' },
-      { title: 'Cache Management', path: '/admin/system/cache' },
-      { title: 'Cleanup System', path: '/admin/system/cleanup' },
+      { title: 'Plugins', path: '/admin/tools/plugins' },
+      { title: 'Export/Import Data', path: '/admin/tools/import-export' },
       { title: 'System Information', path: '/admin/tools/system-info' },
     ],
   },
-  { id: 'affiliate', title: 'Affiliate Program', path: '/admin/affiliates', icon: BadgePercent },
-  { id: 'seo', title: 'SEO Redirect Mapping', path: '/admin/seo/redirects', icon: Search },
-  {
-    id: 'spec',
-    title: 'Spec templates',
-    icon: ListChecks,
-    hidden: true,
-    children: [
-      { title: 'Specification Groups', path: '/admin/product-specification/groups' },
-      { title: 'Specification Attributes', path: '/admin/product-specification/attributes' },
-      { title: 'Specification Tables', path: '/admin/product-specification/tables' },
-    ],
-  },
+  { id: 'settings', title: 'Settings', path: '/admin/settings', icon: Settings },
+  { id: 'platform', title: 'Platform Administration', path: '/admin/system', icon: Shield },
 ];
 
 export function flattenAdminNav() {
@@ -180,8 +173,17 @@ export function flattenAdminNav() {
 }
 
 export function isNavItemActive(item, pathname) {
-  if (item.path) return pathname === item.path;
+  if (item.path) {
+    if (item.path === '/admin') return pathname === '/admin';
+    return pathname === item.path || pathname.startsWith(`${item.path}/`);
+  }
   return (item.children || []).some(
     (child) => pathname === child.path || pathname.startsWith(`${child.path}/`)
   );
+}
+
+export function isChildNavActive(path, pathname) {
+  if (!path) return false;
+  if (path === '/admin') return pathname === '/admin';
+  return pathname === path || pathname.startsWith(`${path}/`);
 }

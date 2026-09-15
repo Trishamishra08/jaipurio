@@ -1,41 +1,66 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiEdit, FiTrash2 } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
+import { PRODUCT_TAGS } from '../../../data/productTags';
 
 export const AdminEcommerceProductTags = () => {
-  const [tags, setTags] = useState([
-    { id: '1', name: 'Terracotta', slug: 'terracotta', productsCount: 24, status: 'Published', createdAt: '2026-08-01' },
-    { id: '2', name: 'Handmade Clay', slug: 'handmade-clay', productsCount: 31, status: 'Published', createdAt: '2026-08-01' },
-    { id: '3', name: 'Cooling Pot', slug: 'cooling-pot', productsCount: 9, status: 'Published', createdAt: '2026-08-05' },
-    { id: '4', name: 'Diwali Festive', slug: 'diwali-festive', productsCount: 18, status: 'Published', createdAt: '2026-08-10' },
-    { id: '5', name: 'Jaipur Blue Pottery', slug: 'jaipur-blue-pottery', productsCount: 15, status: 'Published', createdAt: '2026-08-12' },
-  ]);
+  const navigate = useNavigate();
+  const [tags, setTags] = useState(PRODUCT_TAGS);
 
   const columns = [
-    { header: 'ID', accessor: 'id', width: '60px' },
-    { header: 'Tag Name', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
-    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
-    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
+    { header: 'ID', accessor: 'id', width: '70px' },
+    {
+      header: 'Name',
+      accessor: 'name',
+      cell: (row) => (
+        <Link
+          to={`/admin/ecommerce/product-tags/edit/${row.id}`}
+          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.name}
+        </Link>
+      ),
+    },
+    { header: 'Created At', accessor: 'createdAt' },
     {
       header: 'Status',
       accessor: 'status',
       cell: (row) => (
-        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
           {row.status}
         </span>
-      )
+      ),
     },
-    { header: 'Created At', accessor: 'createdAt' },
     {
       header: 'Operations',
       sortable: false,
-      cell: () => (
-        <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
-          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+      cell: (row) => (
+        <div className="flex items-center gap-2.5">
+          <Link
+            to={`/admin/ecommerce/product-tags/edit/${row.id}`}
+            className="text-blue-600 hover:text-blue-800 hover:underline text-[11px] font-medium flex items-center gap-0.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <FiEdit size={12} />
+            <span>Edit</span>
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setTags((prev) => prev.filter((tag) => tag.id !== row.id));
+            }}
+            className="text-red-500 hover:text-red-700 hover:underline text-[11px] font-medium flex items-center gap-0.5"
+          >
+            <FiTrash2 size={12} />
+            <span>Delete</span>
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -43,8 +68,11 @@ export const AdminEcommerceProductTags = () => {
       <AdminDataTable
         columns={columns}
         data={tags}
-        createLabel="Create Tag"
+        createLabel="Create"
+        onCreate={() => navigate('/admin/ecommerce/product-tags/create')}
+        onRowClick={(row) => navigate(`/admin/ecommerce/product-tags/edit/${row.id}`)}
         searchPlaceholder="Search tags..."
+        showExport={false}
       />
     </EcommerceLayout>
   );

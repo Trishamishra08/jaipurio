@@ -1,33 +1,76 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
+import {
+  PRODUCT_ATTRIBUTE_SETS,
+  displayLayoutLabel,
+} from '../../../data/productAttributeSets';
 
 export const AdminEcommerceProductAttributeSets = () => {
-  const [attributes, setAttributes] = useState([
-    { id: '1', title: 'Clay Material Grade', slug: 'clay-material-grade', displayLayout: 'Dropdown list', isSearchable: 'Yes', isComparable: 'Yes', isUseInProductListing: 'Yes', order: 1 },
-    { id: '2', title: 'Volume / Capacity', slug: 'volume-capacity', displayLayout: 'Visual Swatch', isSearchable: 'Yes', isComparable: 'Yes', isUseInProductListing: 'Yes', order: 2 },
-    { id: '3', title: 'Art Style / Origin', slug: 'art-style-origin', displayLayout: 'Text Swatch', isSearchable: 'Yes', isComparable: 'No', isUseInProductListing: 'Yes', order: 3 },
-    { id: '4', title: 'Color Palette', slug: 'color-palette', displayLayout: 'Color Swatch', isSearchable: 'Yes', isComparable: 'Yes', isUseInProductListing: 'Yes', order: 4 },
-  ]);
+  const navigate = useNavigate();
+  const [attributes, setAttributes] = useState(
+    PRODUCT_ATTRIBUTE_SETS.map((row) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      displayLayout: displayLayoutLabel(row.displayLayout),
+      isSearchable: row.isSearchable ? 'Yes' : 'No',
+      isComparable: row.isComparable ? 'Yes' : 'No',
+      isUseInProductListing: row.isUseInProductListing ? 'Yes' : 'No',
+      order: row.order,
+    }))
+  );
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },
-    { header: 'Title', accessor: 'title', cell: (row) => <span className="font-semibold text-slate-800">{row.title}</span> },
-    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
+    {
+      header: 'Title',
+      accessor: 'title',
+      cell: (row) => (
+        <Link
+          to={`/admin/ecommerce/product-attribute-sets/edit/${row.id}`}
+          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.title}
+        </Link>
+      ),
+    },
+    {
+      header: 'Slug',
+      accessor: 'slug',
+      cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span>,
+    },
     { header: 'Display Layout', accessor: 'displayLayout' },
     { header: 'Searchable', accessor: 'isSearchable' },
     { header: 'Comparable', accessor: 'isComparable' },
-    { header: 'Used in Listing', accessor: 'isUseInProductListing' },
+    { header: 'Listing', accessor: 'isUseInProductListing' },
     {
       header: 'Operations',
       sortable: false,
-      cell: () => (
+      cell: (row) => (
         <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
-          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+          <Link
+            to={`/admin/ecommerce/product-attribute-sets/edit/${row.id}`}
+            className="text-blue-600 hover:underline text-[11px] font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Edit
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setAttributes((prev) => prev.filter((item) => item.id !== row.id));
+            }}
+            className="text-red-500 hover:underline text-[11px] font-medium"
+          >
+            Delete
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -35,8 +78,11 @@ export const AdminEcommerceProductAttributeSets = () => {
       <AdminDataTable
         columns={columns}
         data={attributes}
-        createLabel="Create Attribute"
+        createLabel="Create"
+        onCreate={() => navigate('/admin/ecommerce/product-attribute-sets/create')}
+        onRowClick={(row) => navigate(`/admin/ecommerce/product-attribute-sets/edit/${row.id}`)}
         searchPlaceholder="Search product attributes..."
+        showExport={false}
       />
     </EcommerceLayout>
   );
