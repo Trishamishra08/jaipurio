@@ -1,41 +1,92 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
+import { PRODUCT_COLLECTIONS } from '../../../data/productCollections';
 
 export const AdminEcommerceProductCollections = () => {
-  const [collections, setCollections] = useState([
-    { id: '1', name: 'Summer Earthenware Coolers', slug: 'summer-earthenware-coolers', productsCount: 16, isFeatured: 'Yes', status: 'Published', createdAt: '2026-07-20' },
-    { id: '2', name: 'Royal Mandir & Temple Decor', slug: 'royal-mandir-temple-decor', productsCount: 28, isFeatured: 'Yes', status: 'Published', createdAt: '2026-08-01' },
-    { id: '3', name: 'Jaipur Blue Pottery Masterpieces', slug: 'jaipur-blue-pottery-masterpieces', productsCount: 12, isFeatured: 'Yes', status: 'Published', createdAt: '2026-08-10' },
-    { id: '4', name: 'Authentic Village Terracotta Cookware', slug: 'village-terracotta-cookware', productsCount: 14, isFeatured: 'No', status: 'Published', createdAt: '2026-08-12' },
-  ]);
+  const navigate = useNavigate();
+  const [collections, setCollections] = useState(
+    PRODUCT_COLLECTIONS.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      productsCount: row.productIds?.length || 0,
+      isFeatured: row.isFeatured ? 'Yes' : 'No',
+      status: row.status,
+      createdAt: row.createdAt,
+    }))
+  );
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },
-    { header: 'Collection Name', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
-    { header: 'Slug', accessor: 'slug', cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span> },
-    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
-    { header: 'Featured', accessor: 'isFeatured', cell: (row) => <span className={row.isFeatured === 'Yes' ? 'text-blue-600 font-bold' : 'text-slate-400'}>{row.isFeatured}</span> },
+    {
+      header: 'Name',
+      accessor: 'name',
+      cell: (row) => (
+        <Link
+          to={`/admin/ecommerce/product-collections/edit/${row.id}`}
+          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.name}
+        </Link>
+      ),
+    },
+    {
+      header: 'Slug',
+      accessor: 'slug',
+      cell: (row) => <span className="text-slate-400 font-mono text-[11px]">{row.slug}</span>,
+    },
+    {
+      header: 'Products',
+      accessor: 'productsCount',
+      cell: (row) => <span className="font-bold">{row.productsCount}</span>,
+    },
+    {
+      header: 'Featured',
+      accessor: 'isFeatured',
+      cell: (row) => (
+        <span className={row.isFeatured === 'Yes' ? 'text-blue-600 font-bold' : 'text-slate-400'}>
+          {row.isFeatured}
+        </span>
+      ),
+    },
     {
       header: 'Status',
       accessor: 'status',
       cell: (row) => (
-        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
           {row.status}
         </span>
-      )
+      ),
     },
     { header: 'Created At', accessor: 'createdAt' },
     {
       header: 'Operations',
       sortable: false,
-      cell: () => (
+      cell: (row) => (
         <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
-          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+          <Link
+            to={`/admin/ecommerce/product-collections/edit/${row.id}`}
+            className="text-blue-600 hover:underline text-[11px] font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Edit
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCollections((prev) => prev.filter((item) => item.id !== row.id));
+            }}
+            className="text-red-500 hover:underline text-[11px] font-medium"
+          >
+            Delete
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -43,8 +94,11 @@ export const AdminEcommerceProductCollections = () => {
       <AdminDataTable
         columns={columns}
         data={collections}
-        createLabel="Create Collection"
+        createLabel="Create"
+        onCreate={() => navigate('/admin/ecommerce/product-collections/create')}
+        onRowClick={(row) => navigate(`/admin/ecommerce/product-collections/edit/${row.id}`)}
         searchPlaceholder="Search collections..."
+        showExport={false}
       />
     </EcommerceLayout>
   );

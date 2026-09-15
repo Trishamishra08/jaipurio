@@ -1,50 +1,97 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
+import { PRODUCT_BRANDS } from '../../../data/productBrands';
 
 export const AdminEcommerceBrands = () => {
-  const [brands, setBrands] = useState([
-    { id: '1', name: 'Shyam Terracotta Artisans', logo: '🏺', website: 'https://jaipurio.in', productsCount: 24, isFeatured: 'Yes', order: 1, status: 'Published' },
-    { id: '2', name: 'Meera Mitti Works', logo: '🌿', website: 'https://jaipurio.in', productsCount: 18, isFeatured: 'Yes', order: 2, status: 'Published' },
-    { id: '3', name: 'Pushkar Sacred Clay Studio', logo: '🪔', website: 'https://jaipurio.in', productsCount: 30, isFeatured: 'Yes', order: 3, status: 'Published' },
-    { id: '4', name: 'Alwar Heritage Pottery Co.', logo: '🏺', website: 'https://jaipurio.in', productsCount: 12, isFeatured: 'No', order: 4, status: 'Published' },
-  ]);
+  const navigate = useNavigate();
+  const [brands, setBrands] = useState(PRODUCT_BRANDS);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },
     {
-      header: 'Brand Name',
+      header: 'Name',
       accessor: 'name',
       cell: (row) => (
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{row.logo}</span>
-          <span className="font-semibold text-slate-800">{row.name}</span>
-        </div>
-      )
+        <Link
+          to={`/admin/ecommerce/brands/edit/${row.id}`}
+          className="flex items-center gap-2.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="w-8 h-8 rounded-md border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+            {row.logo ? (
+              <img src={row.logo} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-[10px] text-slate-400">—</span>
+            )}
+          </span>
+          <span className="font-semibold text-blue-600 hover:underline">{row.name}</span>
+        </Link>
+      ),
     },
-    { header: 'Website', accessor: 'website', cell: (row) => <a href={row.website} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{row.website}</a> },
-    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
-    { header: 'Featured', accessor: 'isFeatured' },
+    {
+      header: 'Website',
+      accessor: 'website',
+      cell: (row) =>
+        row.website ? (
+          <a
+            href={row.website}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {row.website}
+          </a>
+        ) : (
+          <span className="text-slate-400">—</span>
+        ),
+    },
+    {
+      header: 'Featured',
+      accessor: 'isFeatured',
+      cell: (row) => (
+        <span className={row.isFeatured ? 'text-blue-600 font-bold' : 'text-slate-400'}>
+          {row.isFeatured ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
     { header: 'Order', accessor: 'order' },
     {
       header: 'Status',
       accessor: 'status',
       cell: (row) => (
-        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
           {row.status}
         </span>
-      )
+      ),
     },
     {
       header: 'Operations',
       sortable: false,
-      cell: () => (
+      cell: (row) => (
         <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
-          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+          <Link
+            to={`/admin/ecommerce/brands/edit/${row.id}`}
+            className="text-blue-600 hover:underline text-[11px] font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Edit
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setBrands((prev) => prev.filter((item) => item.id !== row.id));
+            }}
+            className="text-red-500 hover:underline text-[11px] font-medium"
+          >
+            Delete
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -52,8 +99,11 @@ export const AdminEcommerceBrands = () => {
       <AdminDataTable
         columns={columns}
         data={brands}
-        createLabel="Create Brand"
+        createLabel="Create"
+        onCreate={() => navigate('/admin/ecommerce/brands/create')}
+        onRowClick={(row) => navigate(`/admin/ecommerce/brands/edit/${row.id}`)}
         searchPlaceholder="Search brands..."
+        showExport={false}
       />
     </EcommerceLayout>
   );

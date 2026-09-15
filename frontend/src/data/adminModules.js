@@ -498,9 +498,9 @@ export const ADMIN_MODULES = [
     ],
   },
   {
-    path: '/admin/sliders',
+    path: '/admin/simple-sliders',
     id: 'sliders',
-    title: 'Simple sliders',
+    title: 'Simple Sliders',
     columns: [
       { key: 'name', label: 'Name' },
       { key: 'key', label: 'Key' },

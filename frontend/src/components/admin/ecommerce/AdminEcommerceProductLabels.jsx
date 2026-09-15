@@ -1,51 +1,81 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
+import { PRODUCT_LABELS } from '../../../data/productLabels';
 
 export const AdminEcommerceProductLabels = () => {
-  const [labels, setLabels] = useState([
-    { id: '1', name: 'Bestseller', color: '#c2410c', backgroundColor: '#ffedd5', status: 'Published', createdAt: '2026-08-01' },
-    { id: '2', name: 'Heritage Craft', color: '#047857', backgroundColor: '#d1fae5', status: 'Published', createdAt: '2026-08-01' },
-    { id: '3', name: '100% Pure Mitti', color: '#854d0e', backgroundColor: '#fef9c3', status: 'Published', createdAt: '2026-08-05' },
-    { id: '4', name: 'Hot Deal', color: '#b91c1c', backgroundColor: '#fee2e2', status: 'Published', createdAt: '2026-08-10' },
-  ]);
+  const navigate = useNavigate();
+  const [labels, setLabels] = useState(PRODUCT_LABELS);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },
     {
-      header: 'Label Preview',
+      header: 'Name',
       accessor: 'name',
       cell: (row) => (
-        <span
-          className="px-2.5 py-1 rounded-md text-xs font-bold"
-          style={{ color: row.color, backgroundColor: row.backgroundColor }}
+        <Link
+          to={`/admin/ecommerce/product-labels/edit/${row.id}`}
+          className="inline-flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
         >
-          {row.name}
-        </span>
-      )
+          <span
+            className="px-2.5 py-1 rounded-md text-xs font-bold text-white"
+            style={{ backgroundColor: row.color }}
+          >
+            {row.name}
+          </span>
+        </Link>
+      ),
     },
-    { header: 'Text Color', accessor: 'color', cell: (row) => <span className="font-mono text-xs">{row.color}</span> },
-    { header: 'Background Color', accessor: 'backgroundColor', cell: (row) => <span className="font-mono text-xs">{row.backgroundColor}</span> },
+    {
+      header: 'Color',
+      accessor: 'color',
+      cell: (row) => (
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-block w-4 h-4 rounded-sm border border-slate-200"
+            style={{ backgroundColor: row.color }}
+          />
+          <span className="font-mono text-xs text-slate-600">{row.color}</span>
+        </div>
+      ),
+    },
     {
       header: 'Status',
       accessor: 'status',
       cell: (row) => (
-        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
           {row.status}
         </span>
-      )
+      ),
     },
     { header: 'Created At', accessor: 'createdAt' },
     {
       header: 'Operations',
       sortable: false,
-      cell: () => (
+      cell: (row) => (
         <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
-          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
+          <Link
+            to={`/admin/ecommerce/product-labels/edit/${row.id}`}
+            className="text-blue-600 hover:underline text-[11px] font-medium"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Edit
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLabels((prev) => prev.filter((item) => item.id !== row.id));
+            }}
+            className="text-red-500 hover:underline text-[11px] font-medium"
+          >
+            Delete
+          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -53,8 +83,11 @@ export const AdminEcommerceProductLabels = () => {
       <AdminDataTable
         columns={columns}
         data={labels}
-        createLabel="Create Label"
+        createLabel="Create"
+        onCreate={() => navigate('/admin/ecommerce/product-labels/create')}
+        onRowClick={(row) => navigate(`/admin/ecommerce/product-labels/edit/${row.id}`)}
         searchPlaceholder="Search product labels..."
+        showExport={false}
       />
     </EcommerceLayout>
   );

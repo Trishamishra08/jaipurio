@@ -39,7 +39,6 @@ import VendorNotifications from './components/vendor/VendorNotifications';
 import VendorAnalytics from './components/vendor/VendorAnalytics';
 import VendorSupport from './components/vendor/VendorSupport';
 import VendorSettings from './components/vendor/VendorSettings';
-import AdminDashboard from './components/admin/AdminDashboard';
 import AdminEcommerceReports from './components/admin/ecommerce/AdminEcommerceReports';
 import AdminEcommerceOrders from './components/admin/ecommerce/AdminEcommerceOrders';
 import AdminEcommerceOrderEdit from './components/admin/ecommerce/AdminEcommerceOrderEdit';
@@ -53,15 +52,26 @@ import AdminEcommerceProductPrices from './components/admin/ecommerce/AdminEcomm
 import AdminEcommerceProductInventory from './components/admin/ecommerce/AdminEcommerceProductInventory';
 import AdminEcommerceProductCategories from './components/admin/ecommerce/AdminEcommerceProductCategories';
 import AdminEcommerceProductTags from './components/admin/ecommerce/AdminEcommerceProductTags';
+import AdminEcommerceProductTagEdit from './components/admin/ecommerce/AdminEcommerceProductTagEdit';
 import AdminEcommerceProductAttributeSets from './components/admin/ecommerce/AdminEcommerceProductAttributeSets';
+import AdminEcommerceProductAttributeSetEdit from './components/admin/ecommerce/AdminEcommerceProductAttributeSetEdit';
 import AdminEcommerceProductOptions from './components/admin/ecommerce/AdminEcommerceProductOptions';
+import AdminEcommerceProductOptionEdit from './components/admin/ecommerce/AdminEcommerceProductOptionEdit';
 import AdminEcommerceProductCollections from './components/admin/ecommerce/AdminEcommerceProductCollections';
+import AdminEcommerceProductCollectionEdit from './components/admin/ecommerce/AdminEcommerceProductCollectionEdit';
 import AdminEcommerceProductLabels from './components/admin/ecommerce/AdminEcommerceProductLabels';
+import AdminEcommerceProductLabelEdit from './components/admin/ecommerce/AdminEcommerceProductLabelEdit';
 import AdminEcommerceBrands from './components/admin/ecommerce/AdminEcommerceBrands';
+import AdminEcommerceBrandEdit from './components/admin/ecommerce/AdminEcommerceBrandEdit';
 import AdminEcommerceReviews from './components/admin/ecommerce/AdminEcommerceReviews';
+import AdminEcommerceReviewCreate from './components/admin/ecommerce/AdminEcommerceReviewCreate';
 import AdminEcommerceFlashSales from './components/admin/ecommerce/AdminEcommerceFlashSales';
+import AdminEcommerceFlashSaleEdit from './components/admin/ecommerce/AdminEcommerceFlashSaleEdit';
 import AdminEcommerceDiscounts from './components/admin/ecommerce/AdminEcommerceDiscounts';
+import AdminEcommerceDiscountEdit from './components/admin/ecommerce/AdminEcommerceDiscountEdit';
 import AdminEcommerceCustomers from './components/admin/ecommerce/AdminEcommerceCustomers';
+import AdminEcommerceCustomerEdit from './components/admin/ecommerce/AdminEcommerceCustomerEdit';
+import AdminRoutes from './components/admin/AdminRoutes';
 
 const PublicLayout = () => {
   const { pathname } = useLocation();
@@ -211,7 +221,6 @@ function App() {
               <Route path="settings" element={<VendorSettings />} />
             </Route>
           </Route>
-          <Route path="/admin" element={<Navigate to="/admin/ecommerce/reports" replace />} />
           <Route path="/admin/ecommerce" element={<Navigate to="/admin/ecommerce/reports" replace />} />
           <Route path="/admin/ecommerce/reports" element={<AdminEcommerceReports />} />
           <Route path="/admin/ecommerce/orders" element={<AdminEcommerceOrders />} />
@@ -229,15 +238,35 @@ function App() {
           <Route path="/admin/ecommerce/product-inventory" element={<AdminEcommerceProductInventory />} />
           <Route path="/admin/ecommerce/product-categories" element={<AdminEcommerceProductCategories />} />
           <Route path="/admin/ecommerce/product-tags" element={<AdminEcommerceProductTags />} />
+          <Route path="/admin/ecommerce/product-tags/create" element={<AdminEcommerceProductTagEdit />} />
+          <Route path="/admin/ecommerce/product-tags/edit/:id" element={<AdminEcommerceProductTagEdit />} />
           <Route path="/admin/ecommerce/product-attribute-sets" element={<AdminEcommerceProductAttributeSets />} />
+          <Route path="/admin/ecommerce/product-attribute-sets/create" element={<AdminEcommerceProductAttributeSetEdit />} />
+          <Route path="/admin/ecommerce/product-attribute-sets/edit/:id" element={<AdminEcommerceProductAttributeSetEdit />} />
           <Route path="/admin/ecommerce/options" element={<AdminEcommerceProductOptions />} />
+          <Route path="/admin/ecommerce/options/create" element={<AdminEcommerceProductOptionEdit />} />
+          <Route path="/admin/ecommerce/options/edit/:id" element={<AdminEcommerceProductOptionEdit />} />
           <Route path="/admin/ecommerce/product-collections" element={<AdminEcommerceProductCollections />} />
+          <Route path="/admin/ecommerce/product-collections/create" element={<AdminEcommerceProductCollectionEdit />} />
+          <Route path="/admin/ecommerce/product-collections/edit/:id" element={<AdminEcommerceProductCollectionEdit />} />
           <Route path="/admin/ecommerce/product-labels" element={<AdminEcommerceProductLabels />} />
+          <Route path="/admin/ecommerce/product-labels/create" element={<AdminEcommerceProductLabelEdit />} />
+          <Route path="/admin/ecommerce/product-labels/edit/:id" element={<AdminEcommerceProductLabelEdit />} />
           <Route path="/admin/ecommerce/brands" element={<AdminEcommerceBrands />} />
+          <Route path="/admin/ecommerce/brands/create" element={<AdminEcommerceBrandEdit />} />
+          <Route path="/admin/ecommerce/brands/edit/:id" element={<AdminEcommerceBrandEdit />} />
           <Route path="/admin/ecommerce/reviews" element={<AdminEcommerceReviews />} />
+          <Route path="/admin/ecommerce/reviews/create" element={<AdminEcommerceReviewCreate />} />
           <Route path="/admin/ecommerce/flash-sales" element={<AdminEcommerceFlashSales />} />
+          <Route path="/admin/ecommerce/flash-sales/create" element={<AdminEcommerceFlashSaleEdit />} />
+          <Route path="/admin/ecommerce/flash-sales/edit/:id" element={<AdminEcommerceFlashSaleEdit />} />
           <Route path="/admin/ecommerce/discounts" element={<AdminEcommerceDiscounts />} />
+          <Route path="/admin/ecommerce/discounts/create" element={<AdminEcommerceDiscountEdit />} />
+          <Route path="/admin/ecommerce/discounts/edit/:id" element={<AdminEcommerceDiscountEdit />} />
           <Route path="/admin/customers" element={<AdminEcommerceCustomers />} />
+          <Route path="/admin/customers/create" element={<AdminEcommerceCustomerEdit />} />
+          <Route path="/admin/customers/edit/:id" element={<AdminEcommerceCustomerEdit />} />
+          <Route path="/admin/*" element={<AdminRoutes />} />
 
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

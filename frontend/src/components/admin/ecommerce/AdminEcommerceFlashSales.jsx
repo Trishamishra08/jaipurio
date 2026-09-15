@@ -1,50 +1,76 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
+import { FLASH_SALES } from '../../../data/flashSales';
 
 export const AdminEcommerceFlashSales = () => {
-  const [sales, setSales] = useState([
-    { id: '1', name: 'Summer Mitti Utsav 2026', productsCount: 8, discountPercent: '25% OFF', startDate: '2026-09-01', endDate: '2026-09-20', status: 'Active' },
-    { id: '2', name: 'Grand Diwali Diya Fest', productsCount: 14, discountPercent: '30% OFF', startDate: '2026-10-15', endDate: '2026-11-05', status: 'Scheduled' },
-  ]);
+  const navigate = useNavigate();
+  const [sales] = useState(FLASH_SALES);
 
-  const columns = [
-    { header: 'ID', accessor: 'id', width: '60px' },
-    { header: 'Flash Sale Title', accessor: 'name', cell: (row) => <span className="font-semibold text-slate-800">{row.name}</span> },
-    { header: 'Products Count', accessor: 'productsCount', cell: (row) => <span className="font-bold">{row.productsCount}</span> },
-    { header: 'Discount', accessor: 'discountPercent', cell: (row) => <span className="text-red-600 font-bold">{row.discountPercent}</span> },
-    { header: 'Start Date', accessor: 'startDate' },
-    { header: 'End Date', accessor: 'endDate' },
-    {
-      header: 'Status',
-      accessor: 'status',
-      cell: (row) => (
-        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-          row.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
-        }`}>
-          {row.status}
-        </span>
-      )
-    },
-    {
-      header: 'Operations',
-      sortable: false,
-      cell: () => (
-        <div className="flex items-center gap-2">
-          <button className="text-blue-600 hover:underline text-[11px] font-medium">Edit</button>
-          <button className="text-red-500 hover:underline text-[11px] font-medium">Delete</button>
-        </div>
-      )
-    }
-  ];
+  const columns = useMemo(
+    () => [
+      { header: 'ID', accessor: 'id', width: '60px' },
+      {
+        header: 'Name',
+        accessor: 'name',
+        cell: (row) => (
+          <Link
+            to={`/admin/ecommerce/flash-sales/edit/${row.id}`}
+            className="font-semibold text-blue-600 hover:underline"
+          >
+            {row.name}
+          </Link>
+        ),
+      },
+      { header: 'End date', accessor: 'endDate' },
+      { header: 'Created At', accessor: 'createdAt' },
+      {
+        header: 'Status',
+        accessor: 'status',
+        cell: (row) => (
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+              row.status === 'Published'
+                ? 'bg-emerald-100 text-emerald-700'
+                : row.status === 'Draft'
+                  ? 'bg-slate-100 text-slate-600'
+                  : 'bg-amber-100 text-amber-700'
+            }`}
+          >
+            {row.status}
+          </span>
+        ),
+      },
+      {
+        header: 'Operations',
+        sortable: false,
+        cell: (row) => (
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/admin/ecommerce/flash-sales/edit/${row.id}`}
+              className="text-blue-600 hover:underline text-[11px] font-medium"
+            >
+              Edit
+            </Link>
+            <button type="button" className="text-red-500 hover:underline text-[11px] font-medium">
+              Delete
+            </button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <EcommerceLayout breadcrumb={['FLASH SALES']}>
       <AdminDataTable
         columns={columns}
         data={sales}
-        createLabel="Create Flash Sale"
-        searchPlaceholder="Search flash sales..."
+        createLabel="Create"
+        searchPlaceholder="Search..."
+        onCreate={() => navigate('/admin/ecommerce/flash-sales/create')}
       />
     </EcommerceLayout>
   );
