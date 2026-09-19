@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 const { PRODUCT_LIFECYCLE, lifecycleToLegacyStatus, stockStatusFromQty } = require('../constants/flow');
+const { seoFields } = require('../utils/seoFields');
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   title: { type: String },
+  slug: { type: String, trim: true, index: true },
   price: { type: Number, required: true },
   oldPrice: { type: Number },
   salePrice: { type: Number },
@@ -40,6 +42,17 @@ const productSchema = new mongoose.Schema({
   noRefund: { type: Boolean, default: false },
   codAvailable: { type: Boolean, default: true },
   tags: { type: String },
+  tagList: [{ type: String }],
+  collections: {
+    newArrival: { type: Boolean, default: false },
+    bestSellers: { type: Boolean, default: false },
+    specialOffer: { type: Boolean, default: false },
+  },
+  labels: {
+    hot: { type: Boolean, default: false },
+    new: { type: Boolean, default: false },
+    sale: { type: Boolean, default: false },
+  },
   bestseller: { type: Boolean, default: false },
   recommended: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false },
@@ -66,6 +79,7 @@ const productSchema = new mongoose.Schema({
   maxQty: { type: Number },
   seoTitle: { type: String, default: '' },
   seoDescription: { type: String, default: '' },
+  seo: seoFields,
 }, {
   timestamps: true
 });

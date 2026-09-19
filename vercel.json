@@ -8,7 +8,8 @@
   "build": {
     "env": {
       "VITE_API_URL": "https://jaipurio-ysbo.onrender.com/api",
-      "VITE_API_BASE_URL": "https://jaipurio-ysbo.onrender.com"
+      "VITE_API_BASE_URL": "https://jaipurio-ysbo.onrender.com",
+      "VITE_SITE_URL": "https://jaipurio-one.vercel.app"
     }
   }
 }

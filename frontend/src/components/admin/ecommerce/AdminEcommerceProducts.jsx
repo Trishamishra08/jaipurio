@@ -1,60 +1,95 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { initialProducts } from '../../../data/products';
+import { fetchAdminProducts } from '../../../utils/marketplaceApi';
 import { FiPlus, FiEdit, FiTrash2, FiExternalLink } from 'react-icons/fi';
+
+const mapProductRow = (p, idx = 0) => ({
+  id: String(p._id || p.id || idx),
+  name: p.title || p.name,
+  type: 'Physical',
+  image: p.image || (Array.isArray(p.images) ? p.images[0] : '') || '/planter.png',
+  price: `₹${Number(p.salePrice || p.price || 0).toLocaleString('en-IN')}.0`,
+  oldPrice: p.oldPrice ? `₹${Number(p.oldPrice).toLocaleString('en-IN')}.0` : null,
+  stockStatus: p.stockStatus || 'In stock',
+  quantity: p.stock ?? p.quantity ?? 0,
+  sku: p.sku || '',
+  sortOrder: 0,
+  createdAt: p.createdAt ? String(p.createdAt).slice(0, 10) : '',
+  status: p.lifecycle || (p.published ? 'Published' : 'Draft'),
+  store: p.store || p.storeName || '—',
+});
+
+const fallbackProducts = [
+  {
+    id: '7878',
+    name: 'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio',
+    type: 'Physical',
+    image: '/planter.png',
+    price: '₹9,500.0',
+    oldPrice: '₹14,000.0',
+    stockStatus: 'In stock',
+    quantity: 9,
+    sku: 'JAI-HD-MTP-001',
+    sortOrder: 0,
+    createdAt: '2025-03-09',
+    status: 'Published',
+    store: '—'
+  },
+  {
+    id: '7877',
+    name: 'Marble Tulsi Pot White Inlay - Buy Premium Handcrafted Sacred Planter | Jaipurio',
+    type: 'Physical',
+    image: '/planter.png',
+    price: '₹12,500.0',
+    oldPrice: '₹19,000.0',
+    stockStatus: 'In stock',
+    quantity: 9,
+    sku: 'JAI-HD-MTP-002',
+    sortOrder: 0,
+    createdAt: '2025-03-09',
+    status: 'Published',
+    store: '—'
+  },
+  ...initialProducts.map((p, idx) => ({
+    id: String(7876 - idx),
+    name: p.name,
+    type: 'Physical',
+    image: p.image || '/planter.png',
+    price: `₹${p.price.toLocaleString('en-IN')}.0`,
+    oldPrice: p.oldPrice ? `₹${p.oldPrice.toLocaleString('en-IN')}.0` : null,
+    stockStatus: 'In stock',
+    quantity: p.stock || 25,
+    sku: `JAI-MIT-00${idx + 3}`,
+    sortOrder: 0,
+    createdAt: '2025-03-09',
+    status: 'Published',
+    store: '—'
+  }))
+];
 
 export const AdminEcommerceProducts = () => {
   const navigate = useNavigate();
+  const [products, setProducts] = useState(fallbackProducts);
 
-  const [products, setProducts] = useState([
-    {
-      id: '7878',
-      name: 'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio',
-      type: 'Physical',
-      image: '/planter.png',
-      price: '₹9,500.0',
-      oldPrice: '₹14,000.0',
-      stockStatus: 'In stock',
-      quantity: 9,
-      sku: 'JAI-HD-MTP-001',
-      sortOrder: 0,
-      createdAt: '2025-03-09',
-      status: 'Published',
-      store: '—'
-    },
-    {
-      id: '7877',
-      name: 'Marble Tulsi Pot White Inlay - Buy Premium Handcrafted Sacred Planter | Jaipurio',
-      type: 'Physical',
-      image: '/planter.png',
-      price: '₹12,500.0',
-      oldPrice: '₹19,000.0',
-      stockStatus: 'In stock',
-      quantity: 9,
-      sku: 'JAI-HD-MTP-002',
-      sortOrder: 0,
-      createdAt: '2025-03-09',
-      status: 'Published',
-      store: '—'
-    },
-    ...initialProducts.map((p, idx) => ({
-      id: String(7876 - idx),
-      name: p.name,
-      type: 'Physical',
-      image: p.image || '/planter.png',
-      price: `₹${p.price.toLocaleString('en-IN')}.0`,
-      oldPrice: p.oldPrice ? `₹${p.oldPrice.toLocaleString('en-IN')}.0` : null,
-      stockStatus: 'In stock',
-      quantity: p.stock || 25,
-      sku: `JAI-MIT-00${idx + 3}`,
-      sortOrder: 0,
-      createdAt: '2025-03-09',
-      status: 'Published',
-      store: '—'
-    }))
-  ]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await fetchAdminProducts();
+        if (!cancelled && Array.isArray(rows) && rows.length) {
+          setProducts(rows.map(mapProductRow));
+        }
+      } catch {
+        /* keep fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '65px' },
@@ -157,7 +192,7 @@ export const AdminEcommerceProducts = () => {
         columns={columns}
         data={products}
         createLabel="Create"
-        onCreate={() => navigate('/admin/ecommerce/products/edit/7878')}
+        onCreate={() => navigate('/admin/ecommerce/products/create')}
         onRowClick={(row) => navigate(`/admin/ecommerce/products/edit/${row.id}`)}
         searchPlaceholder="Search products..."
       />

@@ -48,6 +48,10 @@ const serializeProduct = (product, inventory) => {
     stockStatus: p.stockStatus || stockStatusFromQty(stock, trackQuantity),
     lowStock: trackQuantity && stock > 0 && stock < LOW_STOCK_THRESHOLD,
     material: materialAttr?.value || '',
+    slug: p.slug || p.seo?.general?.slug || '',
+    seo: p.seo || null,
+    seoTitle: p.seoTitle || p.seo?.general?.metaTitle || '',
+    seoDescription: p.seoDescription || p.seo?.general?.metaDescription || '',
   };
 };
 

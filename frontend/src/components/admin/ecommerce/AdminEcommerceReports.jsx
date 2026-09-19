@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import {
@@ -25,6 +25,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import { fetchEcommerceReports } from '../../../utils/ecommerceApi';
 
 const salesData = [
   { date: '14 Aug', sales: 0, orders: 0 },
@@ -52,21 +53,45 @@ const customerGrowthData = [
   { date: '11 Sep', customers: 7 },
 ];
 
-const trendingProducts = [
+const trendingProductsFallback = [
   { id: '860', name: 'Shakha with Blue Chudiyan | Traditional Bengali Jewelry Set', views: 249 },
   { id: '7463', name: 'Pure Brass Standing Trishul Carved - Sacred Shiva Trident Temple Art | Jaipurio', views: 216 },
   { id: '7872', name: 'Surya Marble Mandir Hexa - Buy Compact Hexagonal Sun Temple Online | Jaipurio', views: 188 },
-  { id: '1265', name: 'Rajasthani Bur Bangles | Traditional Lac Chudiya | Heritage Design | Ethnic Craft', views: 183 },
-  { id: '7431', name: 'Pure Brass Standing Nandi 14" Fully Engraved - Sacred Temple Sculpture | Jaipurio', views: 174 },
-  { id: '7878', name: 'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio', views: 168 },
-  { id: '5184', name: "Personalized Premium Men's Classic Taupe Breeches - Buy Custom Riding Pants", views: 168 },
-  { id: '5992', name: 'Lehariya Kesariya Traditional Safa - Buy Premium Wave Pattern Groom Headgear', views: 166 },
-  { id: '5983', name: 'Golden Check Silk Safa Opulent Turban Men - Luxury Rajasthani Pagri', views: 166 },
-  { id: '7559', name: 'Brass Radha Krishna Arch Idol 4.5 Inches - Temple Grade Divine Love Murti', views: 165 },
 ];
 
 const AdminEcommerceReports = () => {
-  const [dateRange, setDateRange] = useState('From 2026-08-14 to 2026-09-12');
+  const [dateRange] = useState('From 2026-08-14 to 2026-09-12');
+  const [summary, setSummary] = useState({
+    revenue: 0,
+    productsCount: 0,
+    customersCount: 0,
+    ordersTotal: 0,
+    revenueChange: 0,
+    paidOrders: 0,
+  });
+  const [trendingProducts, setTrendingProducts] = useState(trendingProductsFallback);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchEcommerceReports();
+        if (data?.summary) setSummary(data.summary);
+        if (Array.isArray(data?.topProducts) && data.topProducts.length) {
+          setTrendingProducts(
+            data.topProducts.map((p, i) => ({
+              id: String(p._id || i),
+              name: p.name || 'Product',
+              views: p.qty || 0,
+            }))
+          );
+        }
+      } catch {
+        /* keep defaults */
+      }
+    })();
+  }, []);
+
+  const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}.0`;
 
   return (
     <EcommerceLayout breadcrumb={['REPORT']}>
@@ -84,16 +109,16 @@ const AdminEcommerceReports = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
           <div className="text-xs text-slate-500 font-medium">Revenue</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">₹0.0</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">{fmt(summary.revenue)}</div>
           <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
             <FiDollarSign size={12} />
-            <span>0% from last month</span>
+            <span>{summary.revenueChange || 0}% from last month</span>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
           <div className="text-xs text-slate-500 font-medium">Products</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">0</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">{summary.productsCount || 0}</div>
           <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
             <FiBox size={12} />
             <span>Active catalog items</span>
@@ -102,19 +127,19 @@ const AdminEcommerceReports = () => {
 
         <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
           <div className="text-xs text-slate-500 font-medium">Customers</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">7</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">{summary.customersCount || 0}</div>
           <div className="mt-2 text-[11px] text-emerald-600 font-medium flex items-center gap-1">
             <FiArrowUpRight size={12} />
-            <span>7 increase</span>
+            <span>{summary.customersCount || 0} total</span>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
           <div className="text-xs text-slate-500 font-medium">Orders</div>
-          <div className="text-2xl font-bold text-slate-800 mt-1">0</div>
+          <div className="text-2xl font-bold text-slate-800 mt-1">{summary.ordersTotal || 0}</div>
           <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-1">
             <FiShoppingBag size={12} />
-            <span>Completed orders</span>
+            <span>{summary.paidOrders || 0} paid</span>
           </div>
         </div>
       </div>
@@ -173,7 +198,7 @@ const AdminEcommerceReports = () => {
           <div className="flex flex-col justify-center border-l border-slate-100 pl-6 space-y-4 text-xs">
             <div>
               <div className="text-slate-400">Total Earnings</div>
-              <div className="text-2xl font-bold text-slate-800">₹0.0</div>
+              <div className="text-2xl font-bold text-slate-800">{fmt(summary.revenue)}</div>
             </div>
             <div className="flex items-center justify-between py-2 border-t border-slate-100">
               <span className="text-slate-500 flex items-center gap-1.5">

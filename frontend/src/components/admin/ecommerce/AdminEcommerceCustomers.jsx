@@ -1,12 +1,34 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { CUSTOMERS, customerInitials } from '../../../data/customers';
+import { fetchEcommerceCustomers } from '../../../utils/ecommerceApi';
 
 export const AdminEcommerceCustomers = () => {
   const navigate = useNavigate();
-  const [customers] = useState(CUSTOMERS);
+  const [customers, setCustomers] = useState(CUSTOMERS);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const rows = await fetchEcommerceCustomers();
+        if (Array.isArray(rows) && rows.length) {
+          setCustomers(
+            rows.map((r) => ({
+              ...r,
+              id: String(r._id || r.id),
+              phone: r.mobile || r.phone || '',
+              status: r.isBlocked ? 'Blocked' : 'Activated',
+              createdAt: r.createdAt ? String(r.createdAt).slice(0, 10) : '',
+            }))
+          );
+        }
+      } catch {
+        /* keep fallback */
+      }
+    })();
+  }, []);
 
   const columns = useMemo(
     () => [

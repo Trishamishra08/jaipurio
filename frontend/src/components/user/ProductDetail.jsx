@@ -27,7 +27,10 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const { products, vendors, reviews, addToCart, toggleWishlist, isInWishlist, setIsCartDrawerOpen } = useShop();
   const [remoteProduct, setRemoteProduct] = useState(null);
-  const product = products.find((p) => String(p._id) === String(id)) || remoteProduct;
+  const product =
+    products.find((p) => String(p._id) === String(id)) ||
+    products.find((p) => p.slug && String(p.slug) === String(id)) ||
+    remoteProduct;
   const vendor = vendors.find((v) => v._id === product?.vendorId) || vendors.find((v) => v.name === product?.vendor) || vendors[0];
   const related = products.filter((p) => String(p._id) !== String(product?._id) && p.vendor === product?.vendor).slice(0, 6);
   const together = related.slice(0, 4);

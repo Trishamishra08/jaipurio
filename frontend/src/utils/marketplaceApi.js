@@ -80,6 +80,18 @@ export const saveProduct = async (record, role = 'vendor') => {
   return unwrap(res);
 };
 
+export const duplicateProduct = async (recordOrId) => {
+  const id =
+    typeof recordOrId === 'string' || typeof recordOrId === 'number'
+      ? recordOrId
+      : resolveProductId(recordOrId);
+  if (!id || !isMongoId(id)) {
+    throw new Error('Save the product first before duplicating.');
+  }
+  const res = await api.post(`/products/${id}/duplicate`);
+  return unwrap(res);
+};
+
 export const submitProductForReview = async (record) => {
   const id = resolveProductId(record);
   if (!id) {

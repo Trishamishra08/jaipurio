@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
@@ -6,21 +6,28 @@ import {
   PRODUCT_ATTRIBUTE_SETS,
   displayLayoutLabel,
 } from '../../../data/productAttributeSets';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
+
+const mapAttr = (row) => ({
+  id: String(row._id || row.id || row.legacyId),
+  title: row.title || row.name,
+  slug: row.slug,
+  displayLayout: displayLayoutLabel(row.displayLayout) || row.displayLayout || '—',
+  isSearchable: row.isSearchable ? 'Yes' : 'No',
+  isComparable: row.isComparable ? 'Yes' : 'No',
+  isUseInProductListing: row.isUseInProductListing ? 'Yes' : 'No',
+  order: row.order ?? 0,
+});
 
 export const AdminEcommerceProductAttributeSets = () => {
   const navigate = useNavigate();
-  const [attributes, setAttributes] = useState(
-    PRODUCT_ATTRIBUTE_SETS.map((row) => ({
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      displayLayout: displayLayoutLabel(row.displayLayout),
-      isSearchable: row.isSearchable ? 'Yes' : 'No',
-      isComparable: row.isComparable ? 'Yes' : 'No',
-      isUseInProductListing: row.isUseInProductListing ? 'Yes' : 'No',
-      order: row.order,
-    }))
-  );
+  const [attributes, setAttributes] = useState(PRODUCT_ATTRIBUTE_SETS.map(mapAttr));
+
+  useEffect(() => {
+    liveEcommerceList('product-attribute-sets', PRODUCT_ATTRIBUTE_SETS).then((rows) => {
+      setAttributes(rows.map(mapAttr));
+    });
+  }, []);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },

@@ -1,45 +1,43 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
+import AdminCkEditor from './AdminCkEditor';
+import MediaGalleryModal from './MediaGalleryModal';
+import MediaUrlInsertModal from './MediaUrlInsertModal';
+import { fetchAdminProducts, fetchProductById, isMongoId, saveProduct, duplicateProduct } from '../../../utils/marketplaceApi';
+import { productPublicBase, productPublicUrl } from '../../../utils/siteUrl';
 import {
   FiSave,
   FiCheck,
   FiCopy,
   FiPlus,
   FiTrash2,
-  FiGlobe,
-  FiImage,
-  FiVideo,
-  FiHelpCircle,
   FiSearch,
-  FiExternalLink,
-  FiChevronDown,
   FiChevronRight,
-  FiBold,
-  FiItalic,
-  FiUnderline,
-  FiLink,
-  FiList,
-  FiAlignLeft,
-  FiAlignCenter,
-  FiAlignRight,
-  FiCode,
-  FiMaximize2,
   FiRotateCcw,
-  FiRotateCw,
-  FiGrid,
-  FiFileText,
-  FiX,
-  FiAlertCircle,
   FiInfo
 } from 'react-icons/fi';
+
+const parseMoney = (v) => Number(String(v ?? '').replace(/,/g, '').replace(/[^\d.]/g, '')) || 0;
+
+const slugify = (text = '') =>
+  String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
 
 export const AdminEcommerceProductEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const productId = id || '7878';
+  const productId = id || 'create';
+  const isCreate = !id || id === 'create';
 
   // State management for product details
+  const [mongoId, setMongoId] = useState(null);
   const [name, setName] = useState(
     'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio'
   );
@@ -98,6 +96,55 @@ export const AdminEcommerceProductEdit = () => {
 
   const [tax, setTax] = useState('none');
 
+  const [seo, setSeo] = useState(() =>
+    normalizeSeoState({
+      general: {
+        slug: 'white-marble-tulsi-pot-33-inch-handcrafted-sacred-plant-container-traditional-kyara',
+        metaTitle: 'White Marble Tulsi Pot | 33" Handcrafted Planter | Holy Basil Stand | Jaipurio',
+        metaDescription:
+          'Looking for authentic White Marble Tulsi Pot? Get 33-inch handcrafted kyara with intricate carvings. Transform your courtyard into sacred space. Order now!',
+        metaKeywords: 'tulsi pot, marble planter, kyara, jaipurio',
+        robots: 'index,follow',
+      },
+    })
+  );
+  const [seoOpen, setSeoOpen] = useState(true);
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [urlPromptOpen, setUrlPromptOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const [descriptionHtml, setDescriptionHtml] = useState(
+    `<p>🌿 <strong>Ready to create a sacred sanctuary in your home?</strong> Our premium White Marble Tulsi Pot is your answer!</p>
+<p><strong>What You'll Receive:</strong></p>
+<ul>
+<li>🏛️ Authentic 33-inch (83.8 cm) marble kyara</li>
+<li>✨ Hand-carved traditional motifs</li>
+<li>💎 Pure Makrana marble construction</li>
+<li>🌱 Perfect drainage system included</li>
+<li>📦 Secure packaging &amp; installation guide</li>
+<li>🙏 Blessed option available for Tulsi Vivah</li>
+</ul>`
+  );
+  const [contentHtml, setContentHtml] = useState(
+    `<p>Elevate your spiritual practice with our exquisite 33-inch White Marble Tulsi Pot. Handcrafted from pure Makrana marble, this traditional kyara features intricate carvings and superior drainage design. Perfect centerpiece for courtyards and temples, bringing sacred energy while showcasing timeless Indian craftsmanship. Trusted by 15,000+ families for authentic quality.</p>
+<h3>🌿 Is Your Plastic Tulsi Pot Ruining Your Home's Sacred Energy? Discover the Divine Difference Pure Marble Makes!</h3>
+<p><strong>Are you embarrassed when guests notice your cheap plastic Tulsi pot that's fading and cracking after just months?</strong> We get it – you've probably bought those lightweight pots thinking they'd last, only to watch them deteriorate while your sacred Tulsi struggles to thrive. That's precisely why 15,000+ traditional families trust Jaipurio's authentic White Marble Tulsi Pot to honor their holy basil properly.</p>
+<figure class="table">
+<table>
+<thead><tr><th>Specification</th><th>Details</th><th>Why It Matters</th></tr></thead>
+<tbody>
+<tr><td>Material</td><td>Pure Makrana Marble</td><td>Same as Taj Mahal - eternal beauty</td></tr>
+<tr><td>Height</td><td>33 inches (83.8 cm)</td><td>Perfect proportion for courtyards</td></tr>
+<tr><td>Top Diameter</td><td>18 inches (45.7 cm)</td><td>Ample space for Tulsi growth</td></tr>
+<tr><td>Weight</td><td>45 kg</td><td>Substantial, permanent placement</td></tr>
+</tbody>
+</table>
+</figure>
+<h3>💰 Investment Analysis: Why Premium Marble Saves Money</h3>
+<p><strong>Result:</strong> Our marble pot costs 85% LESS over 10 years compared to regular ceramic or plastic replacements!</p>`
+  );
   // Product Images Gallery
   const [images, setImages] = useState([
     '/planter.png',
@@ -159,14 +206,153 @@ export const AdminEcommerceProductEdit = () => {
   // Toast / Save State
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const handleSave = (andExit = false) => {
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      if (andExit) {
-        navigate('/admin/ecommerce/products');
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (isCreate) return;
+      try {
+        let product = null;
+        if (isMongoId(productId)) {
+          product = await fetchProductById(productId);
+        } else {
+          const list = await fetchAdminProducts();
+          product =
+            list.find((p) => String(p._id) === String(productId) || String(p.sku) === String(sku)) ||
+            list.find((p) => String(p.sku) === 'JAI-HD-MTP-001') ||
+            list[0];
+        }
+        if (!product || cancelled) return;
+        setMongoId(product._id || product.id);
+        setName(product.title || product.name || '');
+        setPermalink(product.slug || product.seo?.general?.slug || slugify(product.name || ''));
+        setStatus(product.lifecycle || (product.published ? 'Published' : 'Draft'));
+        setStore(product.store || product.storeName || '');
+        setIsFeatured(Boolean(product.isFeatured || product.bestseller));
+        setBrand(product.brand || 'Jaipurio');
+        setSku(product.sku || '');
+        setPrice(String(product.oldPrice || product.price || '').replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+        setSalePrice(String(product.salePrice || product.price || '').replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+        setCostPerItem(String(product.costPerItem || ''));
+        setBarcode(product.barcode || '');
+        setQuantity(String(product.stock ?? product.quantity ?? ''));
+        setWeight(String(product.weight ?? ''));
+        setLength(String(product.length ?? ''));
+        setWidth(String(product.width ?? ''));
+        setHeight(String(product.height ?? ''));
+        setMinOrderQty(String(product.minQty ?? 0));
+        setMaxOrderQty(String(product.maxQty ?? 0));
+        if (Array.isArray(product.tagList) && product.tagList.length) setTags(product.tagList);
+        else if (typeof product.tags === 'string' && product.tags) setTags(product.tags.split(',').map((t) => t.trim()).filter(Boolean));
+        if (product.collections) setCollections((prev) => ({ ...prev, ...product.collections }));
+        if (product.labels) setLabels((prev) => ({ ...prev, ...product.labels }));
+        if (product.images?.length) {
+          setImages(product.images);
+          setFeaturedImage(product.image || product.images[0]);
+        } else if (product.image) {
+          setImages([product.image]);
+          setFeaturedImage(product.image);
+        }
+        setSeo(
+          normalizeSeoState(product.seo, {
+            slug: product.slug,
+            seoTitle: product.seoTitle,
+            seoDescription: product.seoDescription,
+          })
+        );
+        if (product.description) setDescriptionHtml(product.description);
+        if (product.content) setContentHtml(product.content);
+        else if (product.description && !product.content) setContentHtml(product.description);
+      } catch {
+        /* keep defaults when API unavailable */
       }
-    }, 1200);
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, isCreate]);
+
+  const handleSave = async (andExit = false) => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const nextSlug = seo.general?.slug || permalink || slugify(name);
+      const payload = {
+        _id: mongoId,
+        title: name,
+        name,
+        slug: nextSlug,
+        sku,
+        brand,
+        store,
+        storeName: store,
+        category:
+          Object.keys(selectedCategories).find((k) => selectedCategories[k]) || 'Planters',
+        price: parseMoney(salePrice) || parseMoney(price),
+        oldPrice: parseMoney(price),
+        salePrice: parseMoney(salePrice) || parseMoney(price),
+        costPerItem: parseMoney(costPerItem),
+        barcode,
+        stock: Number(quantity) || 0,
+        trackQuantity: storehouseManagement,
+        weight: parseMoney(weight),
+        length: Number(length) || 0,
+        width: Number(width) || 0,
+        height: Number(height) || 0,
+        minQty: Number(minOrderQty) || 0,
+        maxQty: Number(maxOrderQty) || 0,
+        isFeatured,
+        lifecycle: status,
+        images,
+        image: featuredImage || images[0] || '',
+        tagList: tags,
+        tags: tags.join(', '),
+        collections,
+        labels,
+        description: descriptionHtml,
+        content: contentHtml,
+        faqs: JSON.stringify(faqs),
+        seo: {
+          ...seo,
+          general: { ...seo.general, slug: nextSlug },
+        },
+        seoTitle: seo.general?.metaTitle || '',
+        seoDescription: seo.general?.metaDescription || '',
+      };
+      const saved = await saveProduct(payload, 'admin');
+      if (saved?._id) setMongoId(saved._id);
+      setPermalink(nextSlug);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        if (andExit) navigate('/admin/ecommerce/products');
+      }, 900);
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save product');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    setSaveError('');
+    try {
+      const copied = await duplicateProduct(mongoId);
+      setDuplicateOpen(false);
+      const newId = copied?._id || copied?.id;
+      if (newId) {
+        navigate(`/admin/ecommerce/products/edit/${newId}`);
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 1200);
+      }
+    } catch (err) {
+      setSaveError(err?.message || 'Duplicate failed');
+      setDuplicateOpen(false);
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   const handleRemoveTag = (tagToRemove) => {
@@ -223,6 +409,62 @@ export const AdminEcommerceProductEdit = () => {
         </div>
       )}
 
+      <MediaUrlInsertModal
+        open={urlPromptOpen}
+        onClose={() => setUrlPromptOpen(false)}
+        onInsertUrl={(url) => {
+          setImages((prev) => (prev.includes(url) ? prev : [...prev, url]));
+          if (!featuredImage) setFeaturedImage(url);
+        }}
+        onOpenGallery={() => setGalleryOpen(true)}
+      />
+
+      <MediaGalleryModal
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        onInsert={(asset) => {
+          if (!asset?.url) return;
+          setImages((prev) => (prev.includes(asset.url) ? prev : [...prev, asset.url]));
+          if (!featuredImage) setFeaturedImage(asset.url);
+        }}
+      />
+
+      {duplicateOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/45 p-4">
+          <div className="bg-white rounded-md shadow-xl w-full max-w-sm p-6 text-center relative">
+            <button
+              type="button"
+              onClick={() => setDuplicateOpen(false)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-700"
+            >
+              ×
+            </button>
+            <div className="mx-auto w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+              <FiInfo size={20} />
+            </div>
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Duplicate product</h3>
+            <p className="text-xs text-slate-500 mb-5">Are you sure you want to duplicate this product?</p>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                disabled={duplicating}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md disabled:opacity-60"
+              >
+                {duplicating ? 'Duplicating…' : 'Duplicate'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDuplicateOpen(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 text-xs font-medium rounded-md hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Language Version Alert Banner */}
       <div className="bg-[#EBF5FB] border border-[#D4E6F1] text-[#2471A3] rounded-md p-3 mb-5 flex items-center gap-2.5 text-xs">
         <FiInfo size={16} className="text-[#2980B9] shrink-0" />
@@ -275,7 +517,7 @@ export const AdminEcommerceProductEdit = () => {
 
               <div className="flex items-center rounded-md border border-slate-300 bg-slate-50 overflow-hidden text-xs">
                 <span className="px-2.5 py-1.5 text-slate-500 bg-slate-100 border-r border-slate-300 select-none text-[11px]">
-                  https://jaipurio.in/products/
+                  {productPublicBase()}
                 </span>
                 <input
                   type="text"
@@ -288,178 +530,38 @@ export const AdminEcommerceProductEdit = () => {
               <div className="mt-1.5 text-[11px] text-slate-500 flex items-center gap-1">
                 <span>Preview:</span>
                 <a
-                  href={`https://jaipurio.in/products/${permalink}`}
+                  href={productPublicUrl(permalink || mongoId || productId)}
                   target="_blank"
                   rel="noreferrer"
                   className="text-blue-600 hover:underline break-all"
                 >
-                  https://jaipurio.in/products/{permalink}
+                  {productPublicUrl(permalink || mongoId || productId)}
                 </a>
               </div>
             </div>
 
             {/* Description Editor */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700">Description</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="text-[11px] text-slate-600 hover:text-slate-900 border border-slate-200 px-2 py-0.5 rounded-sm bg-slate-50"
-                  >
-                    Show/Hide Editor
-                  </button>
-                  <button
-                    type="button"
-                    className="text-[11px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                  >
-                    <FiImage size={12} /> Add media
-                  </button>
-                </div>
-              </div>
-
-              {/* Rich text mock toolbar */}
-              <div className="border border-slate-300 rounded-md overflow-hidden">
-                <div className="bg-slate-100/90 border-b border-slate-200 p-1.5 flex flex-wrap items-center gap-1 text-slate-600 text-xs select-none">
-                  <select className="bg-white border border-slate-300 text-[11px] rounded-sm py-0.5 px-1.5">
-                    <option>Paragraph</option>
-                    <option>Heading 1</option>
-                    <option>Heading 2</option>
-                    <option>Heading 3</option>
-                  </select>
-                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm font-bold"><FiBold size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm italic"><FiItalic size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm underline"><FiUnderline size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiLink size={13} /></button>
-                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiList size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiAlignLeft size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiAlignCenter size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiAlignRight size={13} /></button>
-                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiCode size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiMaximize2 size={13} /></button>
-                </div>
-                <div className="p-3 text-xs text-slate-700 bg-white min-h-[110px] space-y-2">
-                  <p className="font-medium">
-                    🌿 <strong>Ready to create a sacred sanctuary in your home?</strong> Our premium White Marble Tulsi Pot is your answer!
-                  </p>
-                  <p className="font-semibold text-slate-800">What You'll Receive:</p>
-                  <ul className="list-disc pl-5 space-y-0.5 text-slate-600">
-                    <li>🏛️ Authentic 33-inch (83.8 cm) marble kyara</li>
-                    <li>✨ Hand-carved traditional motifs</li>
-                    <li>💎 Pure Makrana marble construction</li>
-                    <li>🌱 Perfect drainage system included</li>
-                    <li>📦 Secure packaging & installation guide</li>
-                    <li>🙏 Blessed option available for Tulsi Vivah</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+            <AdminCkEditor
+              label="Description"
+              value={descriptionHtml}
+              onChange={setDescriptionHtml}
+              minHeight={120}
+              placeholder="Short product description…"
+              editorKey={`desc-${mongoId || productId}`}
+              defaultVisible
+            />
 
             {/* In-depth Content Editor */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700">Content</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="text-[11px] text-slate-600 hover:text-slate-900 border border-slate-200 px-2 py-0.5 rounded-sm bg-slate-50"
-                  >
-                    Show/Hide Editor
-                  </button>
-                  <button
-                    type="button"
-                    className="text-[11px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                  >
-                    <FiImage size={12} /> Add media
-                  </button>
-                  <button
-                    type="button"
-                    className="text-[11px] text-slate-600 hover:text-slate-900 border border-slate-200 px-2 py-0.5 rounded-sm bg-slate-50"
-                  >
-                    UI Blocks
-                  </button>
-                </div>
-              </div>
-
-              {/* Rich Editor Box */}
-              <div className="border border-slate-300 rounded-md overflow-hidden">
-                <div className="bg-slate-100/90 border-b border-slate-200 p-1.5 flex flex-wrap items-center gap-1 text-slate-600 text-xs select-none">
-                  <select className="bg-white border border-slate-300 text-[11px] rounded-sm py-0.5 px-1.5">
-                    <option>Paragraph</option>
-                    <option>Heading 1</option>
-                    <option>Heading 2</option>
-                    <option>Heading 3</option>
-                  </select>
-                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm font-bold"><FiBold size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm italic"><FiItalic size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm underline"><FiUnderline size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiLink size={13} /></button>
-                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiList size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiGrid size={13} /></button>
-                  <button className="p-1 hover:bg-slate-200 rounded-sm"><FiMaximize2 size={13} /></button>
-                </div>
-                <div className="p-4 text-xs text-slate-700 bg-white max-h-[360px] overflow-y-auto space-y-4">
-                  <p className="leading-relaxed">
-                    Elevate your spiritual practice with our exquisite 33-inch White Marble Tulsi Pot. Handcrafted from pure Makrana marble, this traditional kyara features intricate carvings and superior drainage design. Perfect centerpiece for courtyards and temples, bringing sacred energy while showcasing timeless Indian craftsmanship. Trusted by 15,000+ families for authentic quality.
-                  </p>
-
-                  <h3 className="font-bold text-sm text-slate-800 text-[#3F261B]">
-                    🌿 Is Your Plastic Tulsi Pot Ruining Your Home's Sacred Energy? Discover the Divine Difference Pure Marble Makes!
-                  </h3>
-
-                  <p className="leading-relaxed">
-                    <strong>Are you embarrassed when guests notice your cheap plastic Tulsi pot that's fading and cracking after just months?</strong> We get it – you've probably bought those lightweight pots thinking they'd last, only to watch them deteriorate while your sacred Tulsi struggles to thrive. That's precisely why 15,000+ traditional families trust Jaipurio's authentic White Marble Tulsi Pot to honor their holy basil properly.
-                  </p>
-
-                  {/* Specification Table in Content */}
-                  <div className="border border-slate-200 rounded-md overflow-hidden my-3">
-                    <table className="w-full text-[11px] text-left">
-                      <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
-                        <tr>
-                          <th className="p-2">Specification</th>
-                          <th className="p-2">Details</th>
-                          <th className="p-2">Why It Matters</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        <tr>
-                          <td className="p-2 font-medium">Material</td>
-                          <td className="p-2">Pure Makrana Marble</td>
-                          <td className="p-2 text-slate-500">Same as Taj Mahal - eternal beauty</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 font-medium">Height</td>
-                          <td className="p-2">33 inches (83.8 cm)</td>
-                          <td className="p-2 text-slate-500">Perfect proportion for courtyards</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 font-medium">Top Diameter</td>
-                          <td className="p-2">18 inches (45.7 cm)</td>
-                          <td className="p-2 text-slate-500">Ample space for Tulsi growth</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2 font-medium">Weight</td>
-                          <td className="p-2">45 kg</td>
-                          <td className="p-2 text-slate-500">Substantial, permanent placement</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <h3 className="font-bold text-sm text-slate-800">
-                    💰 Investment Analysis: Why Premium Marble Saves Money
-                  </h3>
-                  <p className="text-slate-600">
-                    <strong>Result:</strong> Our marble pot costs 85% LESS over 10 years compared to regular ceramic or plastic replacements!
-                  </p>
-                </div>
-              </div>
-            </div>
+            <AdminCkEditor
+              label="Content"
+              value={contentHtml}
+              onChange={setContentHtml}
+              minHeight={280}
+              showUiBlocksHint
+              placeholder="Full product content…"
+              editorKey={`content-${mongoId || productId}`}
+              defaultVisible
+            />
           </div>
 
           {/* Card: Images Gallery */}
@@ -485,6 +587,7 @@ export const AdminEcommerceProductEdit = () => {
 
               <button
                 type="button"
+                onClick={() => setUrlPromptOpen(true)}
                 className="w-24 h-24 border-2 border-dashed border-slate-300 rounded-md flex flex-col items-center justify-center text-slate-500 hover:text-blue-600 hover:border-blue-400 transition bg-slate-50/50"
               >
                 <FiPlus size={20} />
@@ -841,23 +944,34 @@ export const AdminEcommerceProductEdit = () => {
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Search Engine Optimize</h4>
-              <button type="button" className="text-xs text-blue-600 hover:underline font-semibold">
-                Edit SEO meta
+              <button
+                type="button"
+                onClick={() => setSeoOpen((v) => !v)}
+                className="text-xs text-blue-600 hover:underline font-semibold"
+              >
+                {seoOpen ? 'Hide SEO meta' : 'Edit SEO meta'}
               </button>
             </div>
 
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
-              <div className="text-sm font-semibold text-blue-800 hover:underline cursor-pointer">
-                White Marble Tulsi Pot | 33" Handcrafted Planter | Holy Basil Stand | Jaipurio
-              </div>
-              <div className="text-emerald-700 text-xs font-mono break-all">
-                https://jaipurio.in/products/{permalink}
-              </div>
-              <div className="text-xs text-slate-600 leading-relaxed">
-                <span className="text-slate-400 font-medium">Mar 09, 2025 - </span>
-                🌿 Looking for authentic White Marble Tulsi Pot? Get 33-inch handcrafted kyara with intricate carvings. Transform your courtyard into sacred space. Order now!
-              </div>
-            </div>
+            {seoOpen && (
+              <SeoEditorPanel
+                value={seo}
+                onChange={setSeo}
+                previewTitle={name}
+                previewUrl={productPublicUrl(seo.general?.slug || permalink || mongoId || productId)}
+                onGenerateSlug={() => {
+                  const s = slugify(name);
+                  setPermalink(s);
+                  setSeo((prev) => ({
+                    ...prev,
+                    general: { ...prev.general, slug: s },
+                  }));
+                }}
+              />
+            )}
+            {saveError ? (
+              <div className="text-xs text-red-600 font-medium">{saveError}</div>
+            ) : null}
           </div>
         </div>
 
@@ -874,16 +988,18 @@ export const AdminEcommerceProductEdit = () => {
               <button
                 type="button"
                 onClick={() => handleSave(false)}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition"
+                disabled={saving}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition disabled:opacity-60"
               >
                 <FiSave size={14} />
-                <span>Save</span>
+                <span>{saving ? 'Saving…' : 'Save'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSave(true)}
-                className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 text-white font-semibold py-2 px-3 rounded-md text-xs transition"
+                disabled={saving}
+                className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 text-white font-semibold py-2 px-3 rounded-md text-xs transition disabled:opacity-60"
               >
                 <FiCheck size={14} />
                 <span>Save & Exit</span>
@@ -891,10 +1007,12 @@ export const AdminEcommerceProductEdit = () => {
 
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-1.5 px-3 rounded-md text-xs transition"
+                onClick={() => setDuplicateOpen(true)}
+                disabled={!mongoId || duplicating}
+                className="w-full flex items-center justify-center gap-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-1.5 px-3 rounded-md text-xs transition disabled:opacity-50"
               >
                 <FiCopy size={13} />
-                <span>Duplicate</span>
+                <span>{duplicating ? 'Duplicating…' : 'Duplicate'}</span>
               </button>
             </div>
           </div>

@@ -11,6 +11,9 @@ import {
 } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import { getBrandById } from '../../../data/productBrands';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const isMongoId = (value) => /^[a-f0-9]{24}$/i.test(String(value || ''));
 
 const LANGUAGES = [
   { code: 'fr_FR', label: 'Français', flag: '🇫🇷' },
@@ -38,6 +41,7 @@ export const AdminEcommerceBrandEdit = () => {
   const existing = useMemo(() => (isCreate ? null : getBrandById(id)), [id, isCreate]);
   const seed = existing || emptyBrand;
 
+  const [mongoId, setMongoId] = useState(isMongoId(id) ? id : null);
   const [name, setName] = useState(seed.name);
   const [description, setDescription] = useState(seed.description || '');
   const [website, setWebsite] = useState(seed.website || '');
@@ -47,27 +51,76 @@ export const AdminEcommerceBrandEdit = () => {
   const [logo, setLogo] = useState(seed.logo || '');
   const [savedToast, setSavedToast] = useState(false);
   const [selectedLangs, setSelectedLangs] = useState({});
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    const next = isCreate ? emptyBrand : getBrandById(id) || emptyBrand;
-    setName(next.name);
-    setDescription(next.description || '');
-    setWebsite(next.website || '');
-    setOrder(next.order ?? 0);
-    setStatus(next.status || 'Published');
-    setIsFeatured(Boolean(next.isFeatured));
-    setLogo(next.logo || '');
-    setSelectedLangs({});
+    let cancelled = false;
+    const load = async () => {
+      if (isCreate) {
+        setName('');
+        setDescription('');
+        setWebsite('');
+        setOrder(0);
+        setStatus('Published');
+        setIsFeatured(false);
+        setLogo('');
+        setMongoId(null);
+        return;
+      }
+      try {
+        if (isMongoId(id)) {
+          const row = await ecommerceGet('brands', id);
+          if (cancelled || !row) return;
+          setMongoId(row._id || row.id);
+          setName(row.name || '');
+          setDescription(row.description || '');
+          setWebsite(row.website || '');
+          setOrder(row.order ?? 0);
+          setStatus(row.status || 'Published');
+          setIsFeatured(Boolean(row.isFeatured));
+          setLogo(row.logo || '');
+          return;
+        }
+      } catch {
+        /* fallback local */
+      }
+      const next = getBrandById(id) || emptyBrand;
+      if (cancelled) return;
+      setName(next.name);
+      setDescription(next.description || '');
+      setWebsite(next.website || '');
+      setOrder(next.order ?? 0);
+      setStatus(next.status || 'Published');
+      setIsFeatured(Boolean(next.isFeatured));
+      setLogo(next.logo || '');
+      setSelectedLangs({});
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
   const pageTitle = isCreate
     ? 'Create'
     : `Edit "${name || existing?.name || 'Brand'}"`;
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/ecommerce/brands');
+  const handleSave = async (exit = false) => {
+    setSaveError('');
+    const payload = { name, description, website, order: Number(order) || 0, status, isFeatured, logo };
+    try {
+      if (mongoId) {
+        await ecommerceUpdate('brands', mongoId, payload);
+      } else {
+        const created = await ecommerceCreate('brands', payload);
+        if (created?._id) setMongoId(created._id);
+      }
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) navigate('/admin/ecommerce/brands');
+    } catch (err) {
+      setSaveError(err?.message || 'Save failed');
+    }
   };
 
   return (
@@ -78,6 +131,9 @@ export const AdminEcommerceBrandEdit = () => {
           <span>Brand saved successfully!</span>
         </div>
       )}
+      {saveError ? (
+        <div className="mb-3 text-xs text-red-600 font-medium">{saveError}</div>
+      ) : null}
 
       <div className="bg-[#EBF5FB] border border-[#D4E6F1] text-[#2471A3] rounded-md p-3 mb-5 flex items-center gap-2.5 text-xs">
         <FiInfo size={16} className="text-[#2980B9] shrink-0" />

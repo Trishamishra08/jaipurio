@@ -102,6 +102,10 @@ const payoutRoutes = require('./routes/payoutRoutes');
 app.use('/api/payouts', payoutRoutes);
 const incompleteOrderRoutes = require('./routes/incompleteOrderRoutes');
 app.use('/api/incomplete-orders', incompleteOrderRoutes);
+const ecommerceRoutes = require('./routes/ecommerceRoutes');
+app.use('/api/ecommerce', ecommerceRoutes);
+const mediaRoutes = require('./routes/mediaRoutes');
+app.use('/api/media', mediaRoutes);
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

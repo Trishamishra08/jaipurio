@@ -8,6 +8,7 @@
     "dev:watch": "node scripts/predev.js && nodemon index.js",
     "dev:once": "node scripts/predev.js && node index.js",
     "seed:flow": "node seedMarketplaceFlow.js",
+    "seed:ecommerce": "node seedEcommerceAdmin.js",
     "redis:start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-redis.ps1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

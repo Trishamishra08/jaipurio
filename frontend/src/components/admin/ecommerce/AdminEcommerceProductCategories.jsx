@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
+import AdminCkEditor from './AdminCkEditor';
 import { 
   Info, 
   Plus, 
@@ -13,21 +14,6 @@ import {
   Save, 
   Check, 
   ExternalLink,
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  List,
-  ListOrdered,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Maximize2,
-  Code,
-  Link2,
-  Table,
-  Undo,
-  Redo,
   Upload,
   Globe
 } from 'lucide-react';
@@ -454,77 +440,13 @@ export const AdminEcommerceProductCategories = () => {
               </div>
 
               {/* Description & Rich Text Editor */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Description
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 text-xs border border-slate-300 rounded text-slate-600 hover:bg-slate-50 font-medium"
-                    >
-                      Show/Hide Editor
-                    </button>
-                    <button
-                      type="button"
-                      className="px-2.5 py-1 text-xs border border-slate-300 rounded text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-1"
-                    >
-                      <ImageIcon size={13} />
-                      Add media
-                    </button>
-                  </div>
-                </div>
-
-                {/* Editor Container */}
-                <div className="border border-slate-300 rounded overflow-hidden">
-                  {/* Toolbar */}
-                  <div className="bg-slate-100 border-b border-slate-200 p-1.5 flex flex-wrap items-center gap-1 text-slate-600 text-xs">
-                    <select className="bg-transparent border border-slate-300 rounded px-1.5 py-0.5 text-xs">
-                      <option>Paragraph</option>
-                      <option>Heading 1</option>
-                      <option>Heading 2</option>
-                      <option>Heading 3</option>
-                    </select>
-
-                    <span className="w-px h-4 bg-slate-300 mx-1" />
-
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded font-bold"><Bold size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded italic"><Italic size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded underline"><Underline size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded line-through"><Strikethrough size={13} /></button>
-
-                    <span className="w-px h-4 bg-slate-300 mx-1" />
-
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><List size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><ListOrdered size={13} /></button>
-
-                    <span className="w-px h-4 bg-slate-300 mx-1" />
-
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><AlignLeft size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><AlignCenter size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><AlignRight size={13} /></button>
-
-                    <span className="w-px h-4 bg-slate-300 mx-1" />
-
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><Link2 size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><Table size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><Code size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><Undo size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><Redo size={13} /></button>
-                    <button type="button" className="p-1 hover:bg-slate-200 rounded"><Maximize2 size={13} /></button>
-                  </div>
-
-                  {/* Textarea */}
-                  <textarea
-                    rows={6}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Enter category description..."
-                    className="w-full p-3 text-sm outline-none text-slate-800 resize-y"
-                  />
-                </div>
-              </div>
+              <AdminCkEditor
+                label="Description"
+                value={description}
+                onChange={setDescription}
+                minHeight={140}
+                placeholder="Enter category description..."
+              />
 
               {/* Status */}
               <div>

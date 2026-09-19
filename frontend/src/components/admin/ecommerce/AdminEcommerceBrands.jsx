@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { PRODUCT_BRANDS } from '../../../data/productBrands';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
 
 export const AdminEcommerceBrands = () => {
   const navigate = useNavigate();
   const [brands, setBrands] = useState(PRODUCT_BRANDS);
+
+  useEffect(() => {
+    liveEcommerceList('brands', PRODUCT_BRANDS).then((rows) => {
+      setBrands(
+        rows.map((r) => ({
+          ...r,
+          id: String(r._id || r.id || r.legacyId),
+        }))
+      );
+    });
+  }, []);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },

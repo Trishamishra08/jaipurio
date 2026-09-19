@@ -1,12 +1,26 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { FLASH_SALES } from '../../../data/flashSales';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
 
 export const AdminEcommerceFlashSales = () => {
   const navigate = useNavigate();
-  const [sales] = useState(FLASH_SALES);
+  const [sales, setSales] = useState(FLASH_SALES);
+
+  useEffect(() => {
+    liveEcommerceList('flash-sales', FLASH_SALES).then((rows) => {
+      setSales(
+        rows.map((r) => ({
+          ...r,
+          id: String(r._id || r.id || r.legacyId),
+          endDate: r.endDate ? String(r.endDate).slice(0, 10) : r.endDate,
+          createdAt: r.createdAt ? String(r.createdAt).slice(0, 10) : r.createdAt,
+        }))
+      );
+    });
+  }, []);
 
   const columns = useMemo(
     () => [

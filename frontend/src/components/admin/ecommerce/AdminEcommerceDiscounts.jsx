@@ -1,14 +1,27 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiCopy, FiCheck } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { DISCOUNTS, buildDiscountDetail } from '../../../data/discounts';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
 
 export const AdminEcommerceDiscounts = () => {
   const navigate = useNavigate();
-  const [rows] = useState(DISCOUNTS);
+  const [rows, setRows] = useState(DISCOUNTS);
   const [copiedId, setCopiedId] = useState(null);
+
+  useEffect(() => {
+    liveEcommerceList('discounts', DISCOUNTS).then((list) => {
+      setRows(
+        list.map((r) => ({
+          ...r,
+          id: String(r._id || r.id || r.legacyId),
+          expired: r.expired ?? (r.endDate ? new Date(r.endDate) < new Date() : false),
+        }))
+      );
+    });
+  }, []);
 
   const copyCode = async (row) => {
     try {

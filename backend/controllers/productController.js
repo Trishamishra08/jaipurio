@@ -1,9 +1,11 @@
 const Product = require('../models/productModel');
 const Inventory = require('../models/inventoryModel');
+const mongoose = require('mongoose');
 const { invalidateCatalog } = require('../utils/cache');
 const { optimizeMediaUrls } = require('../utils/imageOptimize');
 const { lifecycleToLegacyStatus, stockStatusFromQty } = require('../constants/flow');
 const { serializeProduct } = require('../utils/marketplace');
+const { normalizeSeo, slugify } = require('../utils/seoFields');
 
 const isUsableImageUrl = (url) =>
   typeof url === 'string' && url.trim() !== '' && !url.startsWith('blob:');
@@ -28,11 +30,15 @@ const applyFlowFields = (body = {}, role) => {
   }
   const stock = Number(body.stock ?? 0);
   const trackQuantity = body.trackQuantity !== false;
+  const seo = normalizeSeo(body, title, body.description || body.content || '');
+  const slug = body.slug || seo.general.slug || slugify(title || '');
+  if (seo.general && !seo.general.slug) seo.general.slug = slug;
   return {
     ...body,
     ...normalizeProductMedia(body),
     name: title,
     title,
+    slug,
     storeName: body.store || body.storeName,
     salePrice: body.salePrice || body.oldPrice,
     oldPrice: body.oldPrice || body.salePrice,
@@ -42,6 +48,9 @@ const applyFlowFields = (body = {}, role) => {
     published: lifecycle === 'Published',
     stockStatus: body.stockStatus || stockStatusFromQty(stock, trackQuantity),
     trackQuantity,
+    seo,
+    seoTitle: seo.general.metaTitle || body.seoTitle || '',
+    seoDescription: seo.general.metaDescription || body.seoDescription || '',
   };
 };
 
@@ -108,9 +117,20 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('vendor', 'storeName fullName')
-      .populate('admin', 'name');
+    const key = String(req.params.id || '').trim();
+    let product = null;
+    if (mongoose.Types.ObjectId.isValid(key) && String(new mongoose.Types.ObjectId(key)) === key) {
+      product = await Product.findById(key)
+        .populate('vendor', 'storeName fullName')
+        .populate('admin', 'name');
+    }
+    if (!product) {
+      product = await Product.findOne({
+        $or: [{ slug: key }, { 'seo.general.slug': key }],
+      })
+        .populate('vendor', 'storeName fullName')
+        .populate('admin', 'name');
+    }
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
     const canSeeHidden = req.user && (req.user.role === 'admin' || (req.user.role === 'vendor' && product.vendor?.toString() === req.user._id.toString()));
     if (product.lifecycle !== 'Published' && product.status !== 'approved' && !canSeeHidden) {
@@ -363,6 +383,57 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const duplicateProduct = async (req, res) => {
+  try {
+    const source = await Product.findById(req.params.id);
+    if (!source) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+    if (req.user.role === 'vendor' && source.vendor?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+    if (req.user.role !== 'admin' && req.user.role !== 'vendor') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const raw = source.toObject();
+    delete raw._id;
+    delete raw.id;
+    delete raw.createdAt;
+    delete raw.updatedAt;
+    delete raw.__v;
+
+    const baseSku = raw.sku || 'COPY';
+    raw.sku = `${baseSku}-COPY-${Date.now().toString().slice(-6)}`;
+    raw.name = `${raw.name || raw.title || 'Product'} (Copy)`;
+    raw.title = raw.name;
+    if (raw.slug) raw.slug = `${raw.slug}-copy-${Date.now().toString().slice(-4)}`;
+    if (req.user.role === 'admin') {
+      raw.admin = req.user._id;
+      raw.lifecycle = raw.lifecycle || 'Published';
+      raw.status = 'approved';
+      raw.published = raw.lifecycle === 'Published';
+    } else {
+      raw.vendor = req.user._id;
+      raw.lifecycle = 'Draft';
+      raw.published = false;
+      raw.status = 'pending';
+    }
+
+    const created = await Product.create(raw);
+    const inv = await Inventory.findOne({ product: source._id }).lean();
+    await syncInventory(created, inv?.stock ?? 0, {
+      trackQuantity: inv?.trackQuantity ?? created.trackQuantity,
+      warehouse: inv?.warehouse || created.warehouse,
+    });
+    const productWithStock = await injectStock(created);
+    invalidateCatalog('products').catch(() => {});
+    res.status(201).json({ success: true, data: productWithStock });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
@@ -372,5 +443,6 @@ module.exports = {
   updateProductStatus,
   submitProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  duplicateProduct,
 };

@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { PRODUCT_COLLECTIONS } from '../../../data/productCollections';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
+
+const mapCollection = (row) => ({
+  id: String(row._id || row.id || row.legacyId),
+  name: row.name,
+  slug: row.slug,
+  productsCount: row.productIds?.length || row.productsCount || 0,
+  isFeatured: row.isFeatured === true || row.isFeatured === 'Yes' ? 'Yes' : 'No',
+  status: row.status || 'Published',
+  image: row.image || '',
+});
 
 export const AdminEcommerceProductCollections = () => {
   const navigate = useNavigate();
-  const [collections, setCollections] = useState(
-    PRODUCT_COLLECTIONS.map((row) => ({
-      id: row.id,
-      name: row.name,
-      slug: row.slug,
-      productsCount: row.productIds?.length || 0,
-      isFeatured: row.isFeatured ? 'Yes' : 'No',
-      status: row.status,
-      createdAt: row.createdAt,
-    }))
-  );
+  const [collections, setCollections] = useState(PRODUCT_COLLECTIONS.map(mapCollection));
+
+  useEffect(() => {
+    liveEcommerceList('product-collections', PRODUCT_COLLECTIONS).then((rows) => {
+      setCollections(rows.map(mapCollection));
+    });
+  }, []);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },

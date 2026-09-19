@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiEdit, FiTrash2 } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { PRODUCT_TAGS } from '../../../data/productTags';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
 
 export const AdminEcommerceProductTags = () => {
   const navigate = useNavigate();
   const [tags, setTags] = useState(PRODUCT_TAGS);
+
+  useEffect(() => {
+    liveEcommerceList('product-tags', PRODUCT_TAGS).then((rows) => {
+      setTags(
+        rows.map((r) => ({
+          ...r,
+          id: String(r._id || r.id || r.legacyId),
+          createdAt: r.createdAt ? String(r.createdAt).slice(0, 10) : r.createdAt,
+        }))
+      );
+    });
+  }, []);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '70px' },

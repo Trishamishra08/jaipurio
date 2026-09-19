@@ -1,21 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import { PRODUCT_OPTIONS, optionTypeLabel } from '../../../data/productOptions';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
+
+const mapOption = (row) => ({
+  id: String(row._id || row.id || row.legacyId),
+  name: row.name,
+  optionType: optionTypeLabel(row.optionType) || row.optionType,
+  values: Array.isArray(row.values)
+    ? row.values.map((v) => (typeof v === 'string' ? v : v.label)).filter(Boolean).join(', ')
+    : '',
+  required: row.required ? 'Yes' : 'No',
+});
 
 export const AdminEcommerceProductOptions = () => {
   const navigate = useNavigate();
-  const [options, setOptions] = useState(
-    PRODUCT_OPTIONS.map((row) => ({
-      id: row.id,
-      name: row.name,
-      optionType: optionTypeLabel(row.optionType),
-      values: row.values.map((v) => v.label).join(', '),
-      required: row.required ? 'Yes' : 'No',
-      order: Number(row.id),
-    }))
-  );
+  const [options, setOptions] = useState(PRODUCT_OPTIONS.map(mapOption));
+
+  useEffect(() => {
+    liveEcommerceList('product-options', PRODUCT_OPTIONS).then((rows) => {
+      setOptions(rows.map(mapOption));
+    });
+  }, []);
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },

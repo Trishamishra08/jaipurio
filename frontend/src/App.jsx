@@ -71,6 +71,8 @@ import AdminEcommerceDiscounts from './components/admin/ecommerce/AdminEcommerce
 import AdminEcommerceDiscountEdit from './components/admin/ecommerce/AdminEcommerceDiscountEdit';
 import AdminEcommerceCustomers from './components/admin/ecommerce/AdminEcommerceCustomers';
 import AdminEcommerceCustomerEdit from './components/admin/ecommerce/AdminEcommerceCustomerEdit';
+import AdminEcommerceSpecificationGroups from './components/admin/ecommerce/AdminEcommerceSpecificationGroups';
+import AdminEcommerceSpecificationGroupEdit from './components/admin/ecommerce/AdminEcommerceSpecificationGroupEdit';
 import AdminRoutes from './components/admin/AdminRoutes';
 
 const PublicLayout = () => {
@@ -120,6 +122,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/vendors" element={<Navigate to="/vendor" replace />} />
             <Route path="/store/:id" element={<VendorPublicStore />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -266,6 +269,12 @@ function App() {
           <Route path="/admin/customers" element={<AdminEcommerceCustomers />} />
           <Route path="/admin/customers/create" element={<AdminEcommerceCustomerEdit />} />
           <Route path="/admin/customers/edit/:id" element={<AdminEcommerceCustomerEdit />} />
+          <Route path="/admin/product-specification/groups" element={<AdminEcommerceSpecificationGroups />} />
+          <Route path="/admin/product-specification/groups/create" element={<AdminEcommerceSpecificationGroupEdit />} />
+          <Route path="/admin/product-specification/groups/edit/:id" element={<AdminEcommerceSpecificationGroupEdit />} />
+          <Route path="/admin/ecommerce/specification-groups" element={<AdminEcommerceSpecificationGroups />} />
+          <Route path="/admin/ecommerce/specification-groups/create" element={<AdminEcommerceSpecificationGroupEdit />} />
+          <Route path="/admin/ecommerce/specification-groups/edit/:id" element={<AdminEcommerceSpecificationGroupEdit />} />
           <Route path="/admin/*" element={<AdminRoutes />} />
 
           <Route path="*" element={<Navigate to="/home" replace />} />
