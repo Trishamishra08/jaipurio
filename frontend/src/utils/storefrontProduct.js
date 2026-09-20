@@ -57,6 +57,8 @@ export function mapApiProductToStorefront(raw) {
     _id: String(raw._id || raw.id),
     name: raw.title || raw.name || '',
     title: raw.title || raw.name || '',
+    slug: raw.slug || raw.seo?.general?.slug || '',
+    seo: raw.seo || null,
     description: raw.content || raw.description || '',
     content: raw.content || raw.description || '',
     price: sellingPrice,

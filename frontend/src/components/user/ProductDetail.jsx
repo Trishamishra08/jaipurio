@@ -27,27 +27,105 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const { products, vendors, reviews, addToCart, toggleWishlist, isInWishlist, setIsCartDrawerOpen } = useShop();
   const [remoteProduct, setRemoteProduct] = useState(null);
+  const [loadState, setLoadState] = useState('idle'); // idle | loading | error | ready
+  const [loadError, setLoadError] = useState('');
+
   const product =
     products.find((p) => String(p._id) === String(id)) ||
     products.find((p) => p.slug && String(p.slug) === String(id)) ||
+    products.find((p) => p.seo?.general?.slug && String(p.seo.general.slug) === String(id)) ||
     remoteProduct;
+
   const vendor = vendors.find((v) => v._id === product?.vendorId) || vendors.find((v) => v.name === product?.vendor) || vendors[0];
   const related = products.filter((p) => String(p._id) !== String(product?._id) && p.vendor === product?.vendor).slice(0, 6);
   const together = related.slice(0, 4);
   const productReviews = (reviews || []).filter((r) => r.productName === product?.name).slice(0, 3);
 
   useEffect(() => {
-    if (!id || product) return;
+    setRemoteProduct(null);
+    setLoadError('');
+    setLoadState('idle');
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return undefined;
+    if (product) {
+      setLoadState('ready');
+      return undefined;
+    }
     let cancelled = false;
-    api.get(`/products/${id}`)
+    setLoadState('loading');
+    api
+      .get(`/products/${encodeURIComponent(id)}`)
       .then((res) => {
-        if (!cancelled && res.data?.success) {
+        if (cancelled) return;
+        if (res.data?.success && res.data?.data) {
           setRemoteProduct(mapApiProductToStorefront(res.data.data));
+          setLoadState('ready');
+        } else {
+          setLoadError(res.data?.message || 'Product not found');
+          setLoadState('error');
         }
       })
-      .catch(() => {});
-    return () => { cancelled = true; };
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(
+          err?.parsedMessage ||
+            err?.response?.data?.message ||
+            err?.message ||
+            'Could not load product'
+        );
+        setLoadState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id, product]);
+
+  // Apply SEO meta from product record (admin SEO panel → live page)
+  useEffect(() => {
+    if (!product) return undefined;
+    const seo = product.seo?.general || {};
+    const title =
+      seo.metaTitle ||
+      product.seo?.social?.ogTitle ||
+      `${product.name || product.title || 'Product'} | Jaipurio`;
+    const description =
+      seo.metaDescription ||
+      product.seo?.social?.ogDescription ||
+      String(product.description || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 160);
+    const prevTitle = document.title;
+    document.title = title;
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    const prevDesc = metaDesc.getAttribute('content') || '';
+    if (description) metaDesc.setAttribute('content', description);
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    const prevCanonical = canonical.getAttribute('href') || '';
+    const slug = product.slug || seo.slug || id;
+    const href = `${window.location.origin}/products/${slug}`;
+    canonical.setAttribute('href', seo.canonicalUrl || href);
+
+    return () => {
+      document.title = prevTitle;
+      metaDesc.setAttribute('content', prevDesc);
+      canonical.setAttribute('href', prevCanonical);
+    };
+  }, [product, id]);
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -104,6 +182,17 @@ const ProductDetail = () => {
   }, [product?._id, product?.material]);
 
   if (!product) {
+    if (loadState === 'error') {
+      return (
+        <div className="heritage-page p-12 text-center space-y-3">
+          <p className="text-sm text-slate-700 font-medium">Product not found</p>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">{loadError}</p>
+          <Link to="/shop" className="inline-block text-xs text-blue-600 hover:underline">
+            Back to shop
+          </Link>
+        </div>
+      );
+    }
     return <div className="heritage-page p-12 text-center text-sm">Loading piece…</div>;
   }
 

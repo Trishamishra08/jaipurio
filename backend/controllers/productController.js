@@ -118,12 +118,23 @@ const getProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   try {
     const key = String(req.params.id || '').trim();
-    let product = null;
-    if (mongoose.Types.ObjectId.isValid(key) && String(new mongoose.Types.ObjectId(key)) === key) {
-      product = await Product.findById(key)
-        .populate('vendor', 'storeName fullName')
-        .populate('admin', 'name');
+    if (!key) {
+      return res.status(400).json({ success: false, message: 'Product id required' });
     }
+
+    let product = null;
+    const looksLikeObjectId = /^[a-fA-F0-9]{24}$/.test(key);
+
+    if (looksLikeObjectId) {
+      try {
+        product = await Product.findById(key)
+          .populate('vendor', 'storeName fullName')
+          .populate('admin', 'name');
+      } catch {
+        product = null;
+      }
+    }
+
     if (!product) {
       product = await Product.findOne({
         $or: [{ slug: key }, { 'seo.general.slug': key }],
@@ -131,11 +142,20 @@ const getProductById = async (req, res) => {
         .populate('vendor', 'storeName fullName')
         .populate('admin', 'name');
     }
-    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
-    const canSeeHidden = req.user && (req.user.role === 'admin' || (req.user.role === 'vendor' && product.vendor?.toString() === req.user._id.toString()));
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const canSeeHidden =
+      req.user &&
+      (req.user.role === 'admin' ||
+        (req.user.role === 'vendor' &&
+          product.vendor?.toString() === req.user._id.toString()));
     if (product.lifecycle !== 'Published' && product.status !== 'approved' && !canSeeHidden) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
+
     const data = await injectStock(product);
     res.status(200).json({ success: true, data });
   } catch (error) {
