@@ -108,7 +108,7 @@ export const AdminEcommerceProductEdit = () => {
       },
     })
   );
-  const [seoOpen, setSeoOpen] = useState(true);
+  const [seoOpen, setSeoOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -942,15 +942,55 @@ export const AdminEcommerceProductEdit = () => {
 
           {/* Card: Search Engine Optimize (SEO) */}
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Search Engine Optimize</h4>
-              <button
-                type="button"
-                onClick={() => setSeoOpen((v) => !v)}
-                className="text-xs text-blue-600 hover:underline font-semibold"
-              >
-                {seoOpen ? 'Hide SEO meta' : 'Edit SEO meta'}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {seoOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setSeoOpen(false)}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Hide SEO meta
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSeo((prev) => {
+                          const next = normalizeSeoState(prev, { slug: permalink || slugify(name) });
+                          if (!next.general.metaTitle && name) {
+                            next.general.metaTitle = `${name} | Jaipurio`.slice(0, 60);
+                          }
+                          if (!next.general.metaDescription && descriptionHtml) {
+                            next.general.metaDescription = String(descriptionHtml)
+                              .replace(/<[^>]+>/g, ' ')
+                              .replace(/\s+/g, ' ')
+                              .trim()
+                              .slice(0, 160);
+                          }
+                          if (!next.general.slug) {
+                            next.general.slug = permalink || slugify(name);
+                          }
+                          return next;
+                        });
+                        setSeoOpen(true);
+                      }}
+                      className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
+                    >
+                      Create
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoOpen(true)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Edit
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {seoOpen && (
