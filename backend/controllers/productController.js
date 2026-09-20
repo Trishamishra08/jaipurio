@@ -6,6 +6,7 @@ const { optimizeMediaUrls } = require('../utils/imageOptimize');
 const { lifecycleToLegacyStatus, stockStatusFromQty } = require('../constants/flow');
 const { serializeProduct } = require('../utils/marketplace');
 const { normalizeSeo, slugify } = require('../utils/seoFields');
+const { ensureRichCopy } = require('../utils/productCopy');
 
 const isUsableImageUrl = (url) =>
   typeof url === 'string' && url.trim() !== '' && !url.startsWith('blob:');
@@ -65,6 +66,13 @@ const injectStock = async (products) => {
   const mapped = prodArray.map(p => {
     const inv = inventories.find(i => i.product.toString() === p._id.toString());
     const serialized = serializeProduct(p, inv);
+    const copy = ensureRichCopy(
+      serialized.title || serialized.name,
+      serialized.description,
+      serialized.content
+    );
+    serialized.description = copy.description;
+    serialized.content = copy.content;
     if (serialized.vendor && typeof serialized.vendor === 'object') {
       serialized.vendor = {
         ...serialized.vendor,

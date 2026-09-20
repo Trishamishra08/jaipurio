@@ -45,7 +45,7 @@ const ProductDetail = () => {
   const productReviews = (reviews || []).filter((r) => r.productName === product?.name).slice(0, 3);
 
   useEffect(() => {
-    setRemoteProduct(null);
+    // Keep prior product visible while the detail request loads (avoids copy flash)
     setLoadError('');
     setLoadState('loading');
   }, [id]);

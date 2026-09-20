@@ -19,33 +19,94 @@ import {
   FiInfo
 } from 'react-icons/fi';
 
-const SEED_DESCRIPTION_HTML = `<p>🌿 <strong>Ready to create a sacred sanctuary in your home?</strong> Our premium White Marble Tulsi Pot is your answer!</p>
+const isStubHtml = (html) => {
+  const plain = String(html || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return !plain || plain.length < 180;
+};
+
+const buildSeedDescription = (productName = 'Jaipurio handmade piece') =>
+  `<p><strong>Ready to bring authentic Jaipur craftsmanship home?</strong> Our ${productName} is handcrafted for everyday beauty and lasting heritage.</p>
 <p><strong>What You'll Receive:</strong></p>
 <ul>
-<li>🏛️ Authentic 33-inch (83.8 cm) marble kyara</li>
-<li>✨ Hand-carved traditional motifs</li>
-<li>💎 Pure Makrana marble construction</li>
-<li>🌱 Perfect drainage system included</li>
-<li>📦 Secure packaging &amp; installation guide</li>
-<li>🙏 Blessed option available for Tulsi Vivah</li>
+<li>Genuine artisan-made piece from Jaipur</li>
+<li>Premium mitti / marble craftsmanship</li>
+<li>Thoughtful design for home and ritual use</li>
+<li>Secure packaging with care guidance</li>
+<li>Trusted by families who choose handmade over factory ware</li>
 </ul>`;
 
-const SEED_CONTENT_HTML = `<p>Elevate your spiritual practice with our exquisite 33-inch White Marble Tulsi Pot. Handcrafted from pure Makrana marble, this traditional kyara features intricate carvings and superior drainage design. Perfect centerpiece for courtyards and temples, bringing sacred energy while showcasing timeless Indian craftsmanship. Trusted by 15,000+ families for authentic quality.</p>
-<h3>🌿 Is Your Plastic Tulsi Pot Ruining Your Home's Sacred Energy? Discover the Divine Difference Pure Marble Makes!</h3>
-<p><strong>Are you embarrassed when guests notice your cheap plastic Tulsi pot that's fading and cracking after just months?</strong> We get it – you've probably bought those lightweight pots thinking they'd last, only to watch them deteriorate while your sacred Tulsi struggles to thrive. That's precisely why 15,000+ traditional families trust Jaipurio's authentic White Marble Tulsi Pot to honor their holy basil properly.</p>
+const buildSeedContent = (productName = 'Jaipurio handmade piece') =>
+  `<p>Elevate your space with our ${productName}. Each piece is finished by hand so small variations in tone and texture are a mark of authenticity — not factory moulds.</p>
+<h3>Why families choose Jaipurio</h3>
+<p><strong>Mass-produced décor fades fast.</strong> Our artisans work with traditional methods so your piece stays beautiful for years of daily use, gifting, and festive rituals.</p>
 <figure class="table">
 <table>
-<thead><tr><th>Specification</th><th>Details</th><th>Why It Matters</th></tr></thead>
+<thead><tr><th>Detail</th><th>What you get</th><th>Why it matters</th></tr></thead>
 <tbody>
-<tr><td>Material</td><td>Pure Makrana Marble</td><td>Same as Taj Mahal - eternal beauty</td></tr>
-<tr><td>Height</td><td>33 inches (83.8 cm)</td><td>Perfect proportion for courtyards</td></tr>
-<tr><td>Top Diameter</td><td>18 inches (45.7 cm)</td><td>Ample space for Tulsi growth</td></tr>
-<tr><td>Weight</td><td>45 kg</td><td>Substantial, permanent placement</td></tr>
+<tr><td>Origin</td><td>Jaipur artisan workshops</td><td>Real heritage craft</td></tr>
+<tr><td>Make</td><td>Handmade finish</td><td>Unique character in every piece</td></tr>
+<tr><td>Use</td><td>Home, puja and gifting</td><td>Beauty with purpose</td></tr>
+<tr><td>Care</td><td>Simple dry / soft-cloth clean</td><td>Easy everyday maintenance</td></tr>
 </tbody>
 </table>
 </figure>
-<h3>💰 Investment Analysis: Why Premium Marble Saves Money</h3>
-<p><strong>Result:</strong> Our marble pot costs 85% LESS over 10 years compared to regular ceramic or plastic replacements!</p>`;
+<h3>A note from the workshop</h3>
+<p><strong>Result:</strong> When you choose ${productName} from Jaipurio, you support living craft traditions and bring a piece of Rajasthan into your home.</p>`;
+
+/** Local fallback when API catalog is empty (legacy list ids like 7877). */
+const FALLBACK_EDIT_PRODUCTS = [
+  {
+    id: '7878',
+    sku: 'JAI-HD-MTP-001',
+    name: 'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio',
+    slug: 'white-marble-tulsi-pot-33-inch-handcrafted-sacred-plant-container-traditional-kyara',
+    price: 9500,
+    oldPrice: 14000,
+    salePrice: 9500,
+    brand: 'Jaipurio',
+    category: 'Planters',
+    image: '/planter.png',
+    images: ['/planter.png'],
+    stock: 9,
+    lifecycle: 'Published',
+    isFeatured: true,
+  },
+  {
+    id: '7877',
+    sku: 'JAI-HD-MTP-002',
+    name: 'Marble Tulsi Pot White Inlay - Buy Premium Handcrafted Sacred Planter | Jaipurio',
+    slug: 'marble-tulsi-pot-white-inlay',
+    price: 12500,
+    oldPrice: 19000,
+    salePrice: 12500,
+    brand: 'Jaipurio',
+    category: 'Planters',
+    image: '/planter.png',
+    images: ['/planter.png'],
+    stock: 9,
+    lifecycle: 'Published',
+    isFeatured: true,
+  },
+];
+
+const resolveFallbackProduct = (productId, skuHint = '') =>
+  FALLBACK_EDIT_PRODUCTS.find(
+    (p) =>
+      String(p.id) === String(productId) ||
+      String(p.sku) === String(productId) ||
+      (skuHint && String(p.sku) === String(skuHint))
+  ) || FALLBACK_EDIT_PRODUCTS[0];
+
+const SEED_DESCRIPTION_HTML = buildSeedDescription(
+  'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio'
+);
+const SEED_CONTENT_HTML = buildSeedContent(
+  'White Marble Tulsi Pot 33 Inch - Buy Premium Handcrafted Sacred Kyara | Jaipurio'
+);
 
 const SEED_FAQS = [
   {
@@ -238,16 +299,29 @@ export const AdminEcommerceProductEdit = () => {
       try {
         let product = null;
         if (isMongoId(productId)) {
-          product = await fetchProductById(productId);
-        } else {
-          const list = await fetchAdminProducts();
-          product =
-            list.find((p) => String(p._id) === String(productId) || String(p.sku) === String(sku)) ||
-            list.find((p) => String(p.sku) === 'JAI-HD-MTP-001') ||
-            list[0];
+          try {
+            product = await fetchProductById(productId);
+          } catch {
+            product = null;
+          }
         }
-        if (!product || cancelled) return;
-        setMongoId(product._id || product.id);
+        if (!product) {
+          try {
+            const list = await fetchAdminProducts();
+            product =
+              list.find((p) => String(p._id) === String(productId) || String(p.id) === String(productId)) ||
+              list.find((p) => String(p.sku) === String(sku) || String(p.sku) === String(productId)) ||
+              list.find((p) => String(p.sku) === 'JAI-HD-MTP-001') ||
+              list[0];
+          } catch {
+            product = null;
+          }
+        }
+        if (!product) {
+          product = resolveFallbackProduct(productId, sku);
+        }
+        if (cancelled) return;
+        setMongoId(product._id || (isMongoId(product.id) ? product.id : null));
         setName(product.title || product.name || '');
         setPermalink(product.slug || product.seo?.general?.slug || slugify(product.name || ''));
         setStatus(product.lifecycle || (product.published ? 'Published' : 'Draft'));
@@ -284,27 +358,33 @@ export const AdminEcommerceProductEdit = () => {
             seoDescription: product.seoDescription,
           })
         );
-        // Keep description and content separate — never swap fields into each other
+        // Keep description and content separate. Short one-line stubs get rich seed HTML.
+        const productName = product.title || product.name || 'Jaipurio handmade piece';
         const descRaw = product.description ?? '';
         const contentRaw = product.content ?? '';
-        const plain = (html) =>
-          String(html || '')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-        const descText = plain(descRaw);
-        const contentText = plain(contentRaw);
-        // Only seed when the product truly has no saved copy
-        setDescriptionHtml(descText ? descRaw : SEED_DESCRIPTION_HTML);
-        setContentHtml(contentText ? contentRaw : descText ? descRaw : SEED_CONTENT_HTML);
+        let nextDesc = isStubHtml(descRaw) ? buildSeedDescription(productName) : descRaw;
+        let nextContent = isStubHtml(contentRaw)
+          ? isStubHtml(descRaw)
+            ? buildSeedContent(productName)
+            : descRaw
+          : contentRaw;
+        if (!nextDesc || !nextContent || nextDesc === nextContent) {
+          nextDesc = buildSeedDescription(productName);
+          nextContent = buildSeedContent(productName);
+        }
+        setDescriptionHtml(nextDesc);
+        setContentHtml(nextContent);
         const loadedFaqs = parseFaqsFromProduct(product.faqs);
         setFaqs(loadedFaqs?.length ? loadedFaqs : SEED_FAQS);
         setEditorsReady(true);
       } catch {
         if (!cancelled) {
-          setDescriptionHtml(SEED_DESCRIPTION_HTML);
-          setContentHtml(SEED_CONTENT_HTML);
+          const fallback = resolveFallbackProduct(productId, sku);
+          setName(fallback.name);
+          setSku(fallback.sku);
+          setPermalink(fallback.slug);
+          setDescriptionHtml(buildSeedDescription(fallback.name));
+          setContentHtml(buildSeedContent(fallback.name));
           setFaqs(SEED_FAQS);
           setEditorsReady(true);
         }
@@ -353,8 +433,10 @@ export const AdminEcommerceProductEdit = () => {
         tags: tags.join(', '),
         collections,
         labels,
-        description: descriptionHtml,
-        content: contentHtml,
+        description: isStubHtml(descriptionHtml)
+          ? buildSeedDescription(name)
+          : descriptionHtml,
+        content: isStubHtml(contentHtml) ? buildSeedContent(name) : contentHtml,
         faqs: JSON.stringify(faqs),
         seo: {
           ...seo,

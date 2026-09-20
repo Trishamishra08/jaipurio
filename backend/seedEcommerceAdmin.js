@@ -12,6 +12,7 @@ try {
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { slugify, normalizeSeo } = require('./utils/seoFields');
+const { ensureRichCopy } = require('./utils/productCopy');
 
 const Product = require('./models/productModel');
 const Inventory = require('./models/inventoryModel');
@@ -484,6 +485,7 @@ async function seed() {
         p.name,
         p.description || ''
       );
+    const rich = ensureRichCopy(p.name, p.description, p.content);
     const doc = await Product.findOneAndUpdate(
       { sku: p.sku },
       {
@@ -499,8 +501,8 @@ async function seed() {
           brand: p.brand,
           image: p.image,
           images: p.images,
-          description: p.description,
-          content: p.description,
+          description: rich.description,
+          content: rich.content,
           tagList: p.tagList || [],
           tags: Array.isArray(p.tagList) ? p.tagList.join(', ') : '',
           collections: p.collections,
@@ -573,6 +575,12 @@ async function seed() {
     )
   );
   console.log('Ecommerce seed complete.');
+  try {
+    const { invalidateCatalog } = require('./utils/cache');
+    await invalidateCatalog('products');
+  } catch {
+    /* cache optional */
+  }
   await mongoose.connection.close();
   process.exit(0);
 }

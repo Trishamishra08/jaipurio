@@ -313,12 +313,34 @@ export default function AdminCkEditor({
   const [editorError, setEditorError] = useState('');
   const editorRef = useRef(null);
   const refreshSnapshotRef = useRef(value || '');
+  const suppressChangeRef = useRef(true);
 
   // Always show rich editor when the field remounts (e.g. product load)
   useEffect(() => {
     setVisible(Boolean(defaultVisible));
     setEditorError('');
+    suppressChangeRef.current = true;
   }, [editorKey, defaultVisible]);
+
+  // Keep CKEditor in sync when parent loads seeded HTML after mount
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return undefined;
+    const next = value || '';
+    let current = '';
+    try {
+      current = editor.getData() || '';
+    } catch {
+      return undefined;
+    }
+    if (next === current) return undefined;
+    suppressChangeRef.current = true;
+    editor.setData(next);
+    const t = window.setTimeout(() => {
+      suppressChangeRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [value, editorKey]);
 
   const config = useMemo(
     () => ({
@@ -475,12 +497,24 @@ export default function AdminCkEditor({
             onReady={(editor) => {
               setEditorError('');
               editorRef.current = editor;
-              refreshSnapshotRef.current = value || '';
+              suppressChangeRef.current = true;
+              const initial = value || '';
+              try {
+                if ((editor.getData() || '') !== initial) {
+                  editor.setData(initial);
+                }
+              } catch {
+                /* ignore init race */
+              }
+              refreshSnapshotRef.current = initial;
               editor._adminRefreshSnapshot = refreshSnapshotRef.current;
               const editable = editor.ui.view.editable.element;
               if (editable) {
                 editable.style.minHeight = `${minHeight}px`;
               }
+              window.setTimeout(() => {
+                suppressChangeRef.current = false;
+              }, 0);
             }}
             onError={(err, { willEditorRestart }) => {
               const msg = err?.message || String(err) || 'Unknown CKEditor error';
@@ -488,6 +522,7 @@ export default function AdminCkEditor({
               if (!willEditorRestart) setEditorError(msg);
             }}
             onChange={(_event, editor) => {
+              if (suppressChangeRef.current) return;
               onChange?.(editor.getData());
             }}
           />
