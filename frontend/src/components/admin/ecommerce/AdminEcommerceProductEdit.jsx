@@ -194,8 +194,9 @@ export const AdminEcommerceProductEdit = () => {
   const [urlPromptOpen, setUrlPromptOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [descriptionHtml, setDescriptionHtml] = useState(SEED_DESCRIPTION_HTML);
-  const [contentHtml, setContentHtml] = useState(SEED_CONTENT_HTML);
+  const [descriptionHtml, setDescriptionHtml] = useState(isCreate ? SEED_DESCRIPTION_HTML : '');
+  const [contentHtml, setContentHtml] = useState(isCreate ? SEED_CONTENT_HTML : '');
+  const [editorsReady, setEditorsReady] = useState(Boolean(isCreate));
   // Product Images Gallery
   const [images, setImages] = useState([
     '/planter.png',
@@ -221,7 +222,7 @@ export const AdminEcommerceProductEdit = () => {
   });
 
   // FAQs
-  const [faqs, setFaqs] = useState(SEED_FAQS);
+  const [faqs, setFaqs] = useState(isCreate ? SEED_FAQS : []);
 
   // Toast / Save State
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -229,7 +230,11 @@ export const AdminEcommerceProductEdit = () => {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      if (isCreate) return;
+      if (isCreate) {
+        setEditorsReady(true);
+        return;
+      }
+      setEditorsReady(false);
       try {
         let product = null;
         if (isMongoId(productId)) {
@@ -279,20 +284,30 @@ export const AdminEcommerceProductEdit = () => {
             seoDescription: product.seoDescription,
           })
         );
-        const desc = product.description || product.content || '';
-        const content = product.content || product.description || '';
-        const looksEmpty = (html) =>
-          !html ||
-          !String(html)
-            .replace(/<[^>]+>/g, '')
+        // Keep description and content separate — never swap fields into each other
+        const descRaw = product.description ?? '';
+        const contentRaw = product.content ?? '';
+        const plain = (html) =>
+          String(html || '')
+            .replace(/<[^>]+>/g, ' ')
             .replace(/&nbsp;/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim();
-        setDescriptionHtml(looksEmpty(desc) ? SEED_DESCRIPTION_HTML : desc);
-        setContentHtml(looksEmpty(content) ? SEED_CONTENT_HTML : content);
+        const descText = plain(descRaw);
+        const contentText = plain(contentRaw);
+        // Only seed when the product truly has no saved copy
+        setDescriptionHtml(descText ? descRaw : SEED_DESCRIPTION_HTML);
+        setContentHtml(contentText ? contentRaw : descText ? descRaw : SEED_CONTENT_HTML);
         const loadedFaqs = parseFaqsFromProduct(product.faqs);
         setFaqs(loadedFaqs?.length ? loadedFaqs : SEED_FAQS);
+        setEditorsReady(true);
       } catch {
-        /* keep defaults when API unavailable */
+        if (!cancelled) {
+          setDescriptionHtml(SEED_DESCRIPTION_HTML);
+          setContentHtml(SEED_CONTENT_HTML);
+          setFaqs(SEED_FAQS);
+          setEditorsReady(true);
+        }
       }
     };
     load();
@@ -570,27 +585,34 @@ export const AdminEcommerceProductEdit = () => {
             </div>
 
             {/* Description Editor */}
-            <AdminCkEditor
-              label="Description"
-              value={descriptionHtml}
-              onChange={setDescriptionHtml}
-              minHeight={120}
-              placeholder="Short product description…"
-              editorKey={`desc-${mongoId || productId}`}
-              defaultVisible
-            />
+            {!editorsReady ? (
+              <div className="text-xs text-slate-500 py-6 border border-dashed border-slate-200 rounded-md text-center">
+                Loading description &amp; content…
+              </div>
+            ) : (
+              <>
+                <AdminCkEditor
+                  label="Description"
+                  value={descriptionHtml}
+                  onChange={setDescriptionHtml}
+                  minHeight={120}
+                  placeholder="Short product description…"
+                  editorKey={`desc-${productId}`}
+                  defaultVisible
+                />
 
-            {/* In-depth Content Editor */}
-            <AdminCkEditor
-              label="Content"
-              value={contentHtml}
-              onChange={setContentHtml}
-              minHeight={280}
-              showUiBlocksHint
-              placeholder="Full product content…"
-              editorKey={`content-${mongoId || productId}`}
-              defaultVisible
-            />
+                <AdminCkEditor
+                  label="Content"
+                  value={contentHtml}
+                  onChange={setContentHtml}
+                  minHeight={280}
+                  showUiBlocksHint
+                  placeholder="Full product content…"
+                  editorKey={`content-${productId}`}
+                  defaultVisible
+                />
+              </>
+            )}
           </div>
 
           {/* Card: Images Gallery */}

@@ -73,7 +73,7 @@ export function mapApiProductToStorefront(raw) {
     title: raw.title || raw.name || '',
     slug: raw.slug || raw.seo?.general?.slug || '',
     seo: raw.seo || null,
-    description: raw.content || raw.description || '',
+    description: raw.description || '',
     content: raw.content || raw.description || '',
     price: sellingPrice,
     oldPrice: comparePrice || undefined,

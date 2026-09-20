@@ -37,7 +37,7 @@ const serializeProduct = (product, inventory) => {
     id: p._id ? String(p._id) : p.id,
     title: p.title || p.name,
     name: p.name || p.title,
-    description: p.content || p.description || '',
+    description: p.description || '',
     content: p.content || p.description || '',
     store: p.storeName || p.vendor?.storeName || '',
     lifecycle,

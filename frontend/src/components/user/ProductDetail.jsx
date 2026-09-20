@@ -30,11 +30,14 @@ const ProductDetail = () => {
   const [loadState, setLoadState] = useState('idle'); // idle | loading | error | ready
   const [loadError, setLoadError] = useState('');
 
-  const product =
+  const contextProduct =
     products.find((p) => String(p._id) === String(id)) ||
     products.find((p) => p.slug && String(p.slug) === String(id)) ||
     products.find((p) => p.seo?.general?.slug && String(p.seo.general.slug) === String(id)) ||
-    remoteProduct;
+    null;
+
+  // Always prefer the full API detail payload over thin shop-list cards
+  const product = remoteProduct || contextProduct;
 
   const vendor = vendors.find((v) => v._id === product?.vendorId) || vendors.find((v) => v.name === product?.vendor) || vendors[0];
   const related = products.filter((p) => String(p._id) !== String(product?._id) && p.vendor === product?.vendor).slice(0, 6);
@@ -44,15 +47,11 @@ const ProductDetail = () => {
   useEffect(() => {
     setRemoteProduct(null);
     setLoadError('');
-    setLoadState('idle');
+    setLoadState('loading');
   }, [id]);
 
   useEffect(() => {
     if (!id) return undefined;
-    if (product) {
-      setLoadState('ready');
-      return undefined;
-    }
     let cancelled = false;
     setLoadState('loading');
     api
@@ -62,13 +61,19 @@ const ProductDetail = () => {
         if (res.data?.success && res.data?.data) {
           setRemoteProduct(mapApiProductToStorefront(res.data.data));
           setLoadState('ready');
-        } else {
+        } else if (!contextProduct) {
           setLoadError(res.data?.message || 'Product not found');
           setLoadState('error');
+        } else {
+          setLoadState('ready');
         }
       })
       .catch((err) => {
         if (cancelled) return;
+        if (contextProduct) {
+          setLoadState('ready');
+          return;
+        }
         setLoadError(
           err?.parsedMessage ||
             err?.response?.data?.message ||
@@ -80,7 +85,7 @@ const ProductDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, product]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps — fetch once per id; context is fallback only
 
   // Apply SEO meta from product record (admin SEO panel → live page)
   useEffect(() => {
