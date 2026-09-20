@@ -220,6 +220,16 @@ const ProductDetail = () => {
 
   return (
     <div className="heritage-page pb-16 md:pb-0">
+      <style>{`
+        .pdp-html { font-size: 14px; line-height: 1.65; color: inherit; }
+        .pdp-html p { margin: 0 0 0.85em; }
+        .pdp-html h3 { font-size: 1.05rem; margin: 1.1em 0 0.5em; font-weight: 700; }
+        .pdp-html ul { margin: 0 0 0.85em; padding-left: 1.2em; list-style: disc; }
+        .pdp-html li { margin-bottom: 0.35em; }
+        .pdp-html table { width: 100%; border-collapse: collapse; margin: 0.75em 0; font-size: 13px; }
+        .pdp-html th, .pdp-html td { border: 1px solid rgba(0,0,0,0.12); padding: 8px 10px; text-align: left; }
+        .pdp-html img { max-width: 100%; height: auto; }
+      `}</style>
       <JharokhaBand />
       <div className="pdp-wrap">
         <div className="breadcrumb">
@@ -391,11 +401,12 @@ const ProductDetail = () => {
             <div className="pdp-accordion">
               {[
                 ['craft', 'Materials & Craftsmanship', (
-                  <ul>
-                    <li>{product.description || product.content}</li>
-                    {product.material ? <li>Material: {product.material}</li> : null}
-                    <li>Named artisan house: {vendor?.name || product.vendor}</li>
-                  </ul>
+                  <div
+                    className="pdp-html"
+                    dangerouslySetInnerHTML={{
+                      __html: product.description || product.content || '<p>Handmade craft from Jaipur artisans.</p>',
+                    }}
+                  />
                 )],
                 ['care', 'Care Instructions', product.careInstructions || 'Wipe with a soft dry cloth. Avoid harsh acids.'],
                 ['ship', 'Shipping & Delivery', product.shippingNotes || 'Hand-packed and dispatched in 3–5 business days. Domestic delivery typically 5–9 days.'],
@@ -405,7 +416,11 @@ const ProductDetail = () => {
                   <button type="button" className="pdp-acc-head" onClick={() => setOpenAcc(openAcc === key ? '' : key)}>
                     {title} <PlusIcon />
                   </button>
-                  <div className="pdp-acc-panel"><div className="pdp-acc-panel-inner">{body}</div></div>
+                  <div className="pdp-acc-panel">
+                    <div className="pdp-acc-panel-inner">
+                      {typeof body === 'string' ? body : body}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -442,13 +457,16 @@ const ProductDetail = () => {
       <section className="pdp-section">
         <div className="pdp-wrap spec-seo-grid">
           <div className="seo-content">
-            <h2>Why this {product.name}</h2>
-            <p>{product.description || product.content}</p>
-            <p>Each piece is made with the same care as temple and household crafts from Rajasthan — weight, finish, and small irregularities tell you it was not poured in a factory mould.</p>
-            <h2>Where it lives in the home</h2>
-            <p>Match size to the shelf or floor first. A common mistake is under-sizing a large room so even a well-made piece looks like an afterthought.</p>
-            <h2>A note on care</h2>
-            <p>Keep acids away from stone. Dust with a soft cloth. Terracotta cooking ware should be seasoned as the artisan recommends.</p>
+            <h2>About {product.name}</h2>
+            <div
+              className="pdp-html"
+              dangerouslySetInnerHTML={{
+                __html:
+                  product.content ||
+                  product.description ||
+                  '<p>Each piece is made with the same care as temple and household crafts from Rajasthan.</p>',
+              }}
+            />
           </div>
           <div>
             <h3 style={{ fontSize: 16, marginBottom: 16 }}>Specifications</h3>

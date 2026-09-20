@@ -19,7 +19,84 @@ import {
   FiInfo
 } from 'react-icons/fi';
 
-const parseMoney = (v) => Number(String(v ?? '').replace(/,/g, '').replace(/[^\d.]/g, '')) || 0;
+const SEED_DESCRIPTION_HTML = `<p>🌿 <strong>Ready to create a sacred sanctuary in your home?</strong> Our premium White Marble Tulsi Pot is your answer!</p>
+<p><strong>What You'll Receive:</strong></p>
+<ul>
+<li>🏛️ Authentic 33-inch (83.8 cm) marble kyara</li>
+<li>✨ Hand-carved traditional motifs</li>
+<li>💎 Pure Makrana marble construction</li>
+<li>🌱 Perfect drainage system included</li>
+<li>📦 Secure packaging &amp; installation guide</li>
+<li>🙏 Blessed option available for Tulsi Vivah</li>
+</ul>`;
+
+const SEED_CONTENT_HTML = `<p>Elevate your spiritual practice with our exquisite 33-inch White Marble Tulsi Pot. Handcrafted from pure Makrana marble, this traditional kyara features intricate carvings and superior drainage design. Perfect centerpiece for courtyards and temples, bringing sacred energy while showcasing timeless Indian craftsmanship. Trusted by 15,000+ families for authentic quality.</p>
+<h3>🌿 Is Your Plastic Tulsi Pot Ruining Your Home's Sacred Energy? Discover the Divine Difference Pure Marble Makes!</h3>
+<p><strong>Are you embarrassed when guests notice your cheap plastic Tulsi pot that's fading and cracking after just months?</strong> We get it – you've probably bought those lightweight pots thinking they'd last, only to watch them deteriorate while your sacred Tulsi struggles to thrive. That's precisely why 15,000+ traditional families trust Jaipurio's authentic White Marble Tulsi Pot to honor their holy basil properly.</p>
+<figure class="table">
+<table>
+<thead><tr><th>Specification</th><th>Details</th><th>Why It Matters</th></tr></thead>
+<tbody>
+<tr><td>Material</td><td>Pure Makrana Marble</td><td>Same as Taj Mahal - eternal beauty</td></tr>
+<tr><td>Height</td><td>33 inches (83.8 cm)</td><td>Perfect proportion for courtyards</td></tr>
+<tr><td>Top Diameter</td><td>18 inches (45.7 cm)</td><td>Ample space for Tulsi growth</td></tr>
+<tr><td>Weight</td><td>45 kg</td><td>Substantial, permanent placement</td></tr>
+</tbody>
+</table>
+</figure>
+<h3>💰 Investment Analysis: Why Premium Marble Saves Money</h3>
+<p><strong>Result:</strong> Our marble pot costs 85% LESS over 10 years compared to regular ceramic or plastic replacements!</p>`;
+
+const SEED_FAQS = [
+  {
+    id: 1,
+    question: 'How do I know this White Marble Tulsi Pot is genuine Makrana marble?',
+    answer:
+      'We understand your concern about authenticity. Each kyara comes with a Makrana Marble Certificate showing the quarry source, extraction date, and quality grade. You can verify genuineness through the unique QR code that traces your specific piece. Additionally, our 45kg weight and translucency test confirm premium quality – cheaper alternatives weigh 30-40% less.',
+  },
+  {
+    id: 2,
+    question: 'Will the white marble turn yellow or grey over time?',
+    answer:
+      'Absolutely not! Pure Makrana marble maintains its pristine white appearance for centuries – just look at the Taj Mahal after 350+ years. Our mirror-polish finish and non-porous surface prevent staining. Simple weekly cleaning with plain water keeps it sparkling white. We guarantee color consistency for your lifetime.',
+  },
+  {
+    id: 3,
+    question: 'Is 33 inches too tall for my courtyard?',
+    answer:
+      'The 33-inch (83.8 cm) height is scientifically designed for optimal Tulsi growth and traditional proportions. It allows comfortable circumambulation (parikrama) while keeping the sacred plant at respectful eye level. For reference, it reaches roughly hip-height on average adults. We also offer 24-inch and 42-inch variants for different spaces.',
+  },
+  {
+    id: 4,
+    question: 'Can I keep this marble Tulsi pot indoors?',
+    answer:
+      "While traditionally placed in courtyards, our White Marble Tulsi Pot works beautifully in spacious indoor areas with adequate sunlight. Many apartment dwellers successfully place it near large windows or in glass-enclosed balconies. The marble's temperature-regulating properties actually help Tulsi adapt better to indoor conditions than plastic pots.",
+  },
+  {
+    id: 5,
+    question: 'How do I clean marble without damaging the carvings?',
+    answer:
+      'Maintenance is surprisingly simple! Use a soft cloth with plain water for weekly cleaning. For deeper cleaning, mix a teaspoon of mild dish soap in a bucket of water. Avoid acidic cleaners (no vinegar or lemon on marble). The carved areas can be cleaned with a soft brush. Our detailed care video guide shows exact techniques.',
+  },
+];
+
+const parseFaqsFromProduct = (raw) => {
+  if (!raw) return null;
+  let rows = raw;
+  if (typeof raw === 'string') {
+    try {
+      rows = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(rows) || !rows.length) return null;
+  return rows.map((f, i) => ({
+    id: f.id || i + 1,
+    question: f.question || f.q || '',
+    answer: f.answer || f.a || '',
+  }));
+};
 
 const slugify = (text = '') =>
   String(text)
@@ -29,6 +106,8 @@ const slugify = (text = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 120);
+
+const parseMoney = (v) => Number(String(v ?? '').replace(/,/g, '').replace(/[^\d.]/g, '')) || 0;
 
 export const AdminEcommerceProductEdit = () => {
   const { id } = useParams();
@@ -115,36 +194,8 @@ export const AdminEcommerceProductEdit = () => {
   const [urlPromptOpen, setUrlPromptOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [descriptionHtml, setDescriptionHtml] = useState(
-    `<p>🌿 <strong>Ready to create a sacred sanctuary in your home?</strong> Our premium White Marble Tulsi Pot is your answer!</p>
-<p><strong>What You'll Receive:</strong></p>
-<ul>
-<li>🏛️ Authentic 33-inch (83.8 cm) marble kyara</li>
-<li>✨ Hand-carved traditional motifs</li>
-<li>💎 Pure Makrana marble construction</li>
-<li>🌱 Perfect drainage system included</li>
-<li>📦 Secure packaging &amp; installation guide</li>
-<li>🙏 Blessed option available for Tulsi Vivah</li>
-</ul>`
-  );
-  const [contentHtml, setContentHtml] = useState(
-    `<p>Elevate your spiritual practice with our exquisite 33-inch White Marble Tulsi Pot. Handcrafted from pure Makrana marble, this traditional kyara features intricate carvings and superior drainage design. Perfect centerpiece for courtyards and temples, bringing sacred energy while showcasing timeless Indian craftsmanship. Trusted by 15,000+ families for authentic quality.</p>
-<h3>🌿 Is Your Plastic Tulsi Pot Ruining Your Home's Sacred Energy? Discover the Divine Difference Pure Marble Makes!</h3>
-<p><strong>Are you embarrassed when guests notice your cheap plastic Tulsi pot that's fading and cracking after just months?</strong> We get it – you've probably bought those lightweight pots thinking they'd last, only to watch them deteriorate while your sacred Tulsi struggles to thrive. That's precisely why 15,000+ traditional families trust Jaipurio's authentic White Marble Tulsi Pot to honor their holy basil properly.</p>
-<figure class="table">
-<table>
-<thead><tr><th>Specification</th><th>Details</th><th>Why It Matters</th></tr></thead>
-<tbody>
-<tr><td>Material</td><td>Pure Makrana Marble</td><td>Same as Taj Mahal - eternal beauty</td></tr>
-<tr><td>Height</td><td>33 inches (83.8 cm)</td><td>Perfect proportion for courtyards</td></tr>
-<tr><td>Top Diameter</td><td>18 inches (45.7 cm)</td><td>Ample space for Tulsi growth</td></tr>
-<tr><td>Weight</td><td>45 kg</td><td>Substantial, permanent placement</td></tr>
-</tbody>
-</table>
-</figure>
-<h3>💰 Investment Analysis: Why Premium Marble Saves Money</h3>
-<p><strong>Result:</strong> Our marble pot costs 85% LESS over 10 years compared to regular ceramic or plastic replacements!</p>`
-  );
+  const [descriptionHtml, setDescriptionHtml] = useState(SEED_DESCRIPTION_HTML);
+  const [contentHtml, setContentHtml] = useState(SEED_CONTENT_HTML);
   // Product Images Gallery
   const [images, setImages] = useState([
     '/planter.png',
@@ -170,38 +221,7 @@ export const AdminEcommerceProductEdit = () => {
   });
 
   // FAQs
-  const [faqs, setFaqs] = useState([
-    {
-      id: 1,
-      question: 'How do I know this White Marble Tulsi Pot is genuine Makrana marble?',
-      answer:
-        'We understand your concern about authenticity. Each kyara comes with a Makrana Marble Certificate showing the quarry source, extraction date, and quality grade. You can verify genuineness through the unique QR code that traces your specific piece. Additionally, our 45kg weight and translucency test confirm premium quality – cheaper alternatives weigh 30-40% less.'
-    },
-    {
-      id: 2,
-      question: 'Will the white marble turn yellow or grey over time?',
-      answer:
-        'Absolutely not! Pure Makrana marble maintains its pristine white appearance for centuries – just look at the Taj Mahal after 350+ years. Our mirror-polish finish and non-porous surface prevent staining. Simple weekly cleaning with plain water keeps it sparkling white. We guarantee color consistency for your lifetime.'
-    },
-    {
-      id: 3,
-      question: 'Is 33 inches too tall for my courtyard?',
-      answer:
-        'The 33-inch (83.8 cm) height is scientifically designed for optimal Tulsi growth and traditional proportions. It allows comfortable circumambulation (parikrama) while keeping the sacred plant at respectful eye level. For reference, it reaches roughly hip-height on average adults. We also offer 24-inch and 42-inch variants for different spaces.'
-    },
-    {
-      id: 4,
-      question: 'Can I keep this marble Tulsi pot indoors?',
-      answer:
-        'While traditionally placed in courtyards, our White Marble Tulsi Pot works beautifully in spacious indoor areas with adequate sunlight. Many apartment dwellers successfully place it near large windows or in glass-enclosed balconies. The marble\'s temperature-regulating properties actually help Tulsi adapt better to indoor conditions than plastic pots.'
-    },
-    {
-      id: 5,
-      question: 'How do I clean marble without damaging the carvings?',
-      answer:
-        'Maintenance is surprisingly simple! Use a soft cloth with plain water for weekly cleaning. For deeper cleaning, mix a teaspoon of mild dish soap in a bucket of water. Avoid acidic cleaners (no vinegar or lemon on marble). The carved areas can be cleaned with a soft brush. Our detailed care video guide shows exact techniques.'
-    }
-  ]);
+  const [faqs, setFaqs] = useState(SEED_FAQS);
 
   // Toast / Save State
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -259,9 +279,18 @@ export const AdminEcommerceProductEdit = () => {
             seoDescription: product.seoDescription,
           })
         );
-        if (product.description) setDescriptionHtml(product.description);
-        if (product.content) setContentHtml(product.content);
-        else if (product.description && !product.content) setContentHtml(product.description);
+        const desc = product.description || product.content || '';
+        const content = product.content || product.description || '';
+        const looksEmpty = (html) =>
+          !html ||
+          !String(html)
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+        setDescriptionHtml(looksEmpty(desc) ? SEED_DESCRIPTION_HTML : desc);
+        setContentHtml(looksEmpty(content) ? SEED_CONTENT_HTML : content);
+        const loadedFaqs = parseFaqsFromProduct(product.faqs);
+        setFaqs(loadedFaqs?.length ? loadedFaqs : SEED_FAQS);
       } catch {
         /* keep defaults when API unavailable */
       }
@@ -946,36 +975,43 @@ export const AdminEcommerceProductEdit = () => {
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Search Engine Optimize</h4>
               <div className="flex items-center gap-2 shrink-0">
                 {seoOpen ? (
-                  <button
-                    type="button"
-                    onClick={() => setSeoOpen(false)}
-                    className="text-xs text-blue-600 hover:underline font-semibold"
-                  >
-                    Hide SEO meta
-                  </button>
-                ) : (
                   <>
                     <button
                       type="button"
                       onClick={() => {
-                        setSeo((prev) => {
-                          const next = normalizeSeoState(prev, { slug: permalink || slugify(name) });
-                          if (!next.general.metaTitle && name) {
-                            next.general.metaTitle = `${name} | Jaipurio`.slice(0, 60);
-                          }
-                          if (!next.general.metaDescription && descriptionHtml) {
-                            next.general.metaDescription = String(descriptionHtml)
-                              .replace(/<[^>]+>/g, ' ')
-                              .replace(/\s+/g, ' ')
-                              .trim()
-                              .slice(0, 160);
-                          }
-                          if (!next.general.slug) {
-                            next.general.slug = permalink || slugify(name);
-                          }
-                          return next;
-                        });
-                        setSeoOpen(true);
+                        const metaTitle = name ? `${name} | Jaipurio`.slice(0, 60) : '';
+                        const metaDescription = String(descriptionHtml || '')
+                          .replace(/<[^>]+>/g, ' ')
+                          .replace(/\s+/g, ' ')
+                          .trim()
+                          .slice(0, 160);
+                        const slug = permalink || slugify(name);
+                        setSeo(
+                          normalizeSeoState({
+                            general: {
+                              slug,
+                              metaTitle,
+                              metaDescription,
+                              metaKeywords: '',
+                              robots: 'index,follow',
+                              canonicalUrl: '',
+                            },
+                            social: {
+                              ogTitle: metaTitle,
+                              ogDescription: metaDescription,
+                              ogImage: featuredImage || images[0] || '',
+                              twitterTitle: metaTitle,
+                              twitterDescription: metaDescription,
+                              twitterImage: featuredImage || images[0] || '',
+                            },
+                            advanced: {
+                              schemaMarkup: '',
+                              customHead: '',
+                              noIndex: false,
+                              noFollow: false,
+                            },
+                          })
+                        );
                       }}
                       className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
                     >
@@ -983,12 +1019,39 @@ export const AdminEcommerceProductEdit = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSeoOpen(true)}
+                      onClick={() => setSeoOpen(false)}
                       className="text-xs text-blue-600 hover:underline font-semibold"
                     >
-                      Edit
+                      Hide SEO meta
                     </button>
                   </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      // Prefer latest saved SEO from API when editing existing product
+                      if (mongoId && isMongoId(mongoId)) {
+                        try {
+                          const product = await fetchProductById(mongoId);
+                          if (product?.seo) {
+                            setSeo(
+                              normalizeSeoState(product.seo, {
+                                slug: product.slug || permalink,
+                                seoTitle: product.seoTitle,
+                                seoDescription: product.seoDescription,
+                              })
+                            );
+                          }
+                        } catch {
+                          /* keep in-memory seo */
+                        }
+                      }
+                      setSeoOpen(true);
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Edit
+                  </button>
                 )}
               </div>
             </div>

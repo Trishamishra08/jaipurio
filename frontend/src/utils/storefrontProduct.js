@@ -5,10 +5,24 @@ import { mediaUrl } from '../data/cloudinaryMedia';
 
 export function parseProductFaqs(faqs) {
   if (!faqs) return [];
-  if (Array.isArray(faqs)) return faqs;
+  if (Array.isArray(faqs)) {
+    return faqs
+      .map((item) => ({
+        q: item.q || item.question || '',
+        a: item.a || item.answer || '',
+      }))
+      .filter((row) => row.q);
+  }
   try {
     const parsed = JSON.parse(faqs);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((item) => ({
+          q: item.q || item.question || '',
+          a: item.a || item.answer || '',
+        }))
+        .filter((row) => row.q);
+    }
   } catch {
     /* plain text format */
   }
