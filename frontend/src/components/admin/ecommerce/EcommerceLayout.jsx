@@ -13,6 +13,41 @@ import {
 } from 'react-icons/fi';
 import { adminNav, isNavItemActive, isChildNavActive } from '../../../data/adminNav';
 
+/** Default destinations for common breadcrumb labels (last crumb stays plain text). */
+const DEFAULT_CRUMB_LINKS = {
+  DASHBOARD: '/admin',
+  BLOG: '/admin/blogs',
+  POSTS: '/admin/blogs',
+  CATEGORIES: '/admin/blog/categories',
+  PAGES: '/admin/pages',
+  PRODUCTS: '/admin/ecommerce/products',
+  CUSTOMERS: '/admin/ecommerce/customers',
+  ORDERS: '/admin/ecommerce/orders',
+  BRANDS: '/admin/ecommerce/brands',
+  DISCOUNTS: '/admin/ecommerce/discounts',
+  REVIEWS: '/admin/ecommerce/product-reviews',
+  MARKETPLACE: '/admin/marketplaces/stores',
+  STORES: '/admin/marketplaces/stores',
+  WITHDRAWALS: '/admin/marketplaces/withdrawals',
+  MEDIA: '/admin/media',
+  SETTINGS: '/admin/settings',
+};
+
+const normalizeCrumb = (crumb) => {
+  if (crumb && typeof crumb === 'object') {
+    return {
+      label: String(crumb.label || crumb.name || crumb.title || ''),
+      to: crumb.to || crumb.path || null,
+    };
+  }
+  const label = String(crumb || '');
+  const key = label.trim().toUpperCase();
+  return {
+    label,
+    to: DEFAULT_CRUMB_LINKS[key] || null,
+  };
+};
+
 export const ecommerceNavItems = (adminNav.find((item) => item.id === 'ecommerce')?.children || []).map(
   (child, index) => ({
     id: child.path.split('/').pop() || `ecom-${index}`,
@@ -27,6 +62,7 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
   const [openMenus, setOpenMenus] = useState({});
   const [darkMode, setDarkMode] = useState(false);
   const location = useLocation();
+  const crumbs = breadcrumb.map(normalizeCrumb).filter((c) => c.label);
 
   useEffect(() => {
     const parent = adminNav.find(
@@ -45,8 +81,8 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
     location.pathname.startsWith('/admin/ecommerce') || location.pathname === '/admin/customers';
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans ${darkMode ? 'bg-[#181F2C] text-slate-100 dark' : 'bg-[#F4F6F9] text-[#2c384e]'}`}>
-      <header className={`h-14 ${darkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-[#1E293B] text-white border-b border-slate-800'} px-4 flex items-center justify-between sticky top-0 z-50 shadow-xs`}>
+    <div className={`h-screen overflow-hidden flex flex-col font-sans ${darkMode ? 'bg-[#181F2C] text-slate-100 dark' : 'bg-[#F4F6F9] text-[#2c384e]'}`}>
+      <header className={`h-14 shrink-0 ${darkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-[#1E293B] text-white border-b border-slate-800'} px-4 flex items-center justify-between z-50 shadow-xs`}>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -118,8 +154,8 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
         </div>
       </header>
 
-      <div className="flex flex-1">
-        <aside className={`${isSidebarOpen ? 'w-64' : 'w-0 hidden'} shrink-0 ${darkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-[#202938] border-slate-800'} text-slate-300 min-h-[calc(100vh-3.5rem)] transition-all duration-200 shadow-lg select-none overflow-y-auto`}>
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <aside className={`${isSidebarOpen ? 'w-64' : 'w-0 hidden'} shrink-0 h-full ${darkMode ? 'bg-[#1E293B] border-slate-700' : 'bg-[#202938] border-slate-800'} text-slate-300 transition-all duration-200 shadow-lg select-none overflow-y-auto overscroll-contain`}>
           <div className="p-3 space-y-0.5">
             {adminNav.map((item) => {
               const Icon = item.icon;
@@ -218,31 +254,39 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
           </div>
         </aside>
 
-        <main className="flex-1 p-5 md:p-6 overflow-x-hidden">
-          {(breadcrumb.length > 0 || showEcommerceCrumb) && (
+        <main className="flex-1 min-h-0 min-w-0 p-5 md:p-6 overflow-y-auto overflow-x-hidden overscroll-contain">
+          {(crumbs.length > 0 || showEcommerceCrumb) && (
             <div className="flex items-center justify-between mb-4">
-              <nav className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <nav className="flex items-center gap-1.5 text-xs text-slate-500 font-medium flex-wrap">
                 <Link to="/admin" className="text-blue-600 hover:underline uppercase">
                   DASHBOARD
                 </Link>
                 {showEcommerceCrumb && (
                   <>
                     <span>/</span>
-                    <span className="uppercase text-slate-400">ECOMMERCE</span>
+                    <Link to="/admin/ecommerce/products" className="uppercase text-blue-600 hover:underline">
+                      ECOMMERCE
+                    </Link>
                   </>
                 )}
-                {breadcrumb.map((crumb, idx) => (
-                  <React.Fragment key={`${crumb}-${idx}`}>
-                    <span>/</span>
-                    <span
-                      className={`uppercase ${
-                        idx === breadcrumb.length - 1 ? 'text-slate-600 font-semibold' : 'text-blue-600'
-                      }`}
-                    >
-                      {crumb}
-                    </span>
-                  </React.Fragment>
-                ))}
+                {crumbs.map((crumb, idx) => {
+                  const isLast = idx === crumbs.length - 1;
+                  const className = `uppercase ${
+                    isLast ? 'text-slate-600 font-semibold' : 'text-blue-600 hover:underline'
+                  }`;
+                  return (
+                    <React.Fragment key={`${crumb.label}-${idx}`}>
+                      <span>/</span>
+                      {!isLast && crumb.to ? (
+                        <Link to={crumb.to} className={className}>
+                          {crumb.label}
+                        </Link>
+                      ) : (
+                        <span className={className}>{crumb.label}</span>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </nav>
             </div>
           )}

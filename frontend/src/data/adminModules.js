@@ -245,7 +245,7 @@ export const ADMIN_MODULES = [
     ],
   },
   {
-    path: '/admin/product-specification/groups',
+    path: '/admin/ecommerce/specification-groups',
     id: 'spec-groups',
     title: 'Specification Groups',
     columns: [
@@ -256,14 +256,10 @@ export const ADMIN_MODULES = [
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'description', label: 'Description', type: 'textarea' },
     ],
-    seed: [
-      { id: 1, name: 'General', description: 'Core product information' },
-      { id: 2, name: 'Dimensions', description: 'Size, capacity and weight' },
-      { id: 3, name: 'Care', description: 'Usage and maintenance' },
-    ],
+    seed: [],
   },
   {
-    path: '/admin/product-specification/attributes',
+    path: '/admin/ecommerce/specification-attributes',
     id: 'spec-attributes',
     title: 'Specification Attributes',
     columns: [
@@ -274,17 +270,12 @@ export const ADMIN_MODULES = [
     fields: [
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'group', label: 'Group', type: 'text' },
-      { key: 'type', label: 'Type', type: 'select', options: ['Text', 'Number', 'Select'] },
+      { key: 'type', label: 'Type', type: 'select', options: ['Text', 'Textarea', 'Select', 'Checkbox', 'Radio'] },
     ],
-    seed: [
-      { id: 1, name: 'Material', group: 'General', type: 'Text' },
-      { id: 2, name: 'Capacity', group: 'Dimensions', type: 'Text' },
-      { id: 3, name: 'Weight', group: 'Dimensions', type: 'Number' },
-      { id: 4, name: 'Handmade', group: 'General', type: 'Select' },
-    ],
+    seed: [],
   },
   {
-    path: '/admin/product-specification/tables',
+    path: '/admin/ecommerce/specification-tables',
     id: 'spec-tables',
     title: 'Specification Tables',
     columns: [
@@ -297,9 +288,7 @@ export const ADMIN_MODULES = [
       { key: 'groups', label: 'Groups', type: 'text' },
       { key: 'status', label: 'Status', type: 'select', options: ['Published', 'Draft'] },
     ],
-    seed: [
-      { id: 1, name: 'Pottery default', groups: 'General, Dimensions, Care', status: 'Published' },
-    ],
+    seed: [],
   },
   {
     path: '/admin/marketplace/unverified-vendors',
@@ -354,17 +343,11 @@ export const ADMIN_MODULES = [
     ],
     fields: [
       { key: 'name', label: 'Name', type: 'text' },
-      { key: 'template', label: 'Template', type: 'select', options: ['Default', 'Homepage', 'Full width'] },
-      { key: 'status', label: 'Status', type: 'select', options: ['Published', 'Draft'] },
+      { key: 'template', label: 'Template', type: 'select', options: ['Default', 'Homepage', 'Full Width', 'Coming Soon'] },
+      { key: 'status', label: 'Status', type: 'select', options: ['Published', 'Draft', 'Pending'] },
       { key: 'createdAt', label: 'Created at', type: 'date' },
     ],
-    seed: [
-      { id: 1, name: 'Homepage', template: 'Homepage', status: 'Published', createdAt: date('2025-05-06') },
-      { id: 2, name: 'About us', template: 'Default', status: 'Published', createdAt: date('2025-05-06') },
-      { id: 3, name: 'Contact', template: 'Default', status: 'Published', createdAt: date('2025-05-06') },
-      { id: 4, name: 'Privacy Policy', template: 'Default', status: 'Published', createdAt: date('2025-05-06') },
-      { id: 5, name: 'Terms & Conditions', template: 'Default', status: 'Published', createdAt: date('2025-05-06') },
-    ],
+    seed: [],
   },
   {
     path: '/admin/blog/categories',

@@ -13,8 +13,6 @@ import AdminCoupons from './AdminCoupons';
 import AdminOffers from './AdminOffers';
 import AdminCustomers from './AdminCustomers';
 import AdminVendors from './AdminVendors';
-import AdminPayoutFlow from './AdminPayoutFlow';
-import AdminBlogs from './AdminBlogs';
 import AdminLocations from './AdminLocations';
 import AdminSettings from './AdminSettings';
 import AdminMedia from './AdminMedia';
@@ -57,11 +55,16 @@ const AdminRoutes = () => (
       <Route path="coupons" element={<AdminCoupons />} />
       <Route path="offers" element={<AdminOffers />} />
       <Route path="customers" element={<AdminCustomers />} />
-      <Route path="vendors" element={<AdminVendors />} />
+      <Route path="vendors" element={<Navigate to="/admin/marketplaces/stores" replace />} />
       <Route path="vendors/pending" element={<AdminVendors />} />
       <Route path="vendors/blocked" element={<AdminVendors />} />
-      <Route path="payouts" element={<AdminPayoutFlow />} />
-      <Route path="blogs" element={<AdminBlogs />} />
+      <Route path="marketplace/unverified-vendors" element={<AdminVendors />} />
+      <Route path="marketplaces/reports" element={<Navigate to="/admin/marketplaces/reports" replace />} />
+      <Route path="marketplaces/stores" element={<Navigate to="/admin/marketplaces/stores" replace />} />
+      <Route path="payouts" element={<Navigate to="/admin/marketplaces/withdrawals" replace />} />
+      <Route path="marketplaces/withdrawals" element={<Navigate to="/admin/marketplaces/withdrawals" replace />} />
+      <Route path="blogs" element={<Navigate to="/admin/blogs" replace />} />
+      <Route path="blogs/*" element={<Navigate to="/admin/blogs" replace />} />
       <Route path="locations" element={<AdminLocations />} />
       <Route path="locations/importer" element={<AdminLocationTools />} />
       <Route path="locations/exporter" element={<AdminLocationTools />} />
@@ -79,7 +82,7 @@ const AdminRoutes = () => (
       <Route path="users" element={<AdminUsers />} />
       <Route path="affiliates" element={<AdminAffiliate />} />
       <Route path="seo/redirects" element={<AdminSeoRedirects />} />
-      <Route path="product-specification/:section" element={<AdminCrudPage />} />
+      {/* Product specification pages are mounted in App.jsx under /admin/ecommerce/specification-* */}
       <Route path="simple-sliders" element={<AdminCrudPage />} />
       <Route path="sliders" element={<Navigate to="/admin/simple-sliders" replace />} />
       <Route path="*" element={<AdminCrudPage />} />

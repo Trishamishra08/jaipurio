@@ -218,13 +218,6 @@ const DISCOUNTS = [
   },
 ];
 
-const SPEC_GROUPS = [
-  { legacyId: '1', name: 'General', description: 'Core product information' },
-  { legacyId: '2', name: 'Dimensions', description: 'Size, capacity and weight' },
-  { legacyId: '3', name: 'Care', description: 'Usage and maintenance' },
-  { legacyId: '4', name: 'Material & Finish', description: 'Clay type, glaze and surface finish' },
-];
-
 const CUSTOMERS = [
   { name: 'Aarav Sharma', email: 'aarav.sharma@gmail.com', mobile: '9829012345' },
   { name: 'Priya Mehta', email: 'priya.mehta@gmail.com', mobile: '9811122233' },
@@ -461,11 +454,8 @@ async function seed() {
 
   const flash = await upsertByLegacy(EcommerceFlashSale, FLASH_SALES, (r) => ({ ...r }));
   const discounts = await upsertByLegacy(EcommerceDiscount, DISCOUNTS, (r) => ({ ...r }));
-  const specs = await upsertByLegacy(EcommerceSpecificationGroup, SPEC_GROUPS, (r) => ({
-    ...r,
-    slug: slugify(r.name),
-    status: 'Published',
-  }));
+  // Spec groups/attributes/tables are admin-managed — do not hard-seed catalog rows
+  const specs = await EcommerceSpecificationGroup.countDocuments();
 
   let productsUpserted = 0;
   let adminUser = await User.findOne({ role: 'admin' });

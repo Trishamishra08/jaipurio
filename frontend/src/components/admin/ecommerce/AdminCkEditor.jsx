@@ -54,6 +54,7 @@ import { FiImage } from 'react-icons/fi';
 import api from '../../../utils/api';
 import MediaGalleryModal from './MediaGalleryModal';
 import MediaUrlInsertModal from './MediaUrlInsertModal';
+import UiBlocksModal from './UiBlocksModal';
 
 const uploadFileToApi = async (file) => {
   const formData = new FormData();
@@ -139,7 +140,7 @@ class BrowseFilesPlugin extends Plugin {
   }
 }
 
-/** UI Blocks — insert a shortcode placeholder (Botble-style). */
+/** UI Blocks — opens picker via config callback (Botble-style modal). */
 class UiBlocksPlugin extends Plugin {
   static get pluginName() {
     return 'UiBlocksPlugin';
@@ -156,6 +157,11 @@ class UiBlocksPlugin extends Plugin {
         withText: true,
       });
       view.on('execute', () => {
+        const open = editor.config.get('adminOnUiBlocks');
+        if (typeof open === 'function') {
+          open(editor);
+          return;
+        }
         const name = window.prompt(
           'UI Block shortcode name (e.g. gallery, banner, cta)',
           'gallery'
@@ -310,6 +316,7 @@ export default function AdminCkEditor({
   const [visible, setVisible] = useState(Boolean(defaultVisible));
   const [urlPromptOpen, setUrlPromptOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [uiBlocksOpen, setUiBlocksOpen] = useState(false);
   const [editorError, setEditorError] = useState('');
   const editorRef = useRef(null);
   const refreshSnapshotRef = useRef(value || '');
@@ -351,6 +358,7 @@ export default function AdminCkEditor({
         shouldNotGroupWhenFull: true,
       },
       adminRefreshSnapshot: refreshSnapshotRef.current,
+      adminOnUiBlocks: () => setUiBlocksOpen(true),
       heading: {
         options: [
           { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
@@ -387,7 +395,6 @@ export default function AdminCkEditor({
           'resizeImage',
         ],
         insert: {
-          // Upload only in toolbar — URL + gallery are handled via "Add media"
           integrations: ['upload'],
         },
       },
@@ -440,6 +447,22 @@ export default function AdminCkEditor({
     });
   };
 
+  const insertUiBlockMarkup = (block) => {
+    const editor = editorRef.current;
+    const markup = String(block?.markup || '').trim();
+    if (!editor || !markup) return;
+    const html = markup.includes('<')
+      ? markup
+      : `<p>${markup
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>')}</p>`;
+    const viewFragment = editor.data.processor.toView(html);
+    const modelFragment = editor.data.toModel(viewFragment);
+    editor.model.insertContent(modelFragment, editor.model.document.selection);
+  };
+
   const insertFromGallery = (asset) => {
     insertImageSrc(asset?.url, asset?.alt || asset?.name || '');
   };
@@ -463,6 +486,13 @@ export default function AdminCkEditor({
           >
             <FiImage size={12} /> Add media
           </button>
+          <button
+            type="button"
+            onClick={() => setUiBlocksOpen(true)}
+            className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+          >
+            UI Blocks
+          </button>
         </div>
       </div>
 
@@ -478,6 +508,24 @@ export default function AdminCkEditor({
         onClose={() => setGalleryOpen(false)}
         onInsert={insertFromGallery}
       />
+
+      <UiBlocksModal
+        open={uiBlocksOpen}
+        onClose={() => setUiBlocksOpen(false)}
+        onUse={insertUiBlockMarkup}
+      />
+
+      {showUiBlocksHint ? (
+        <div className="mb-1">
+          <button
+            type="button"
+            onClick={() => setUiBlocksOpen(true)}
+            className="text-[11px] text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+          >
+            UI Blocks
+          </button>
+        </div>
+      ) : null}
 
       {visible ? (
         <div

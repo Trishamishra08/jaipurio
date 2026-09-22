@@ -26,10 +26,15 @@ const RETURN_STATUS = [
 
 const PAYOUT_STATUS = [
   'Pending approval',
+  'Pending',
   'Approved',
+  'Processing',
   'Sent to bank',
   'Settled',
+  'Completed',
   'Rejected',
+  'Refused',
+  'Canceled',
 ];
 
 const EARNING_STATUS = ['Pending', 'Available', 'Cleared', 'Refunded', 'Reversed'];

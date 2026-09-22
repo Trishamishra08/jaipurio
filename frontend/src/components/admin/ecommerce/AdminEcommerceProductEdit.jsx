@@ -6,6 +6,7 @@ import AdminCkEditor from './AdminCkEditor';
 import MediaGalleryModal from './MediaGalleryModal';
 import MediaUrlInsertModal from './MediaUrlInsertModal';
 import { fetchAdminProducts, fetchProductById, isMongoId, saveProduct, duplicateProduct } from '../../../utils/marketplaceApi';
+import { liveEcommerceList } from '../../../utils/ecommerceApi';
 import { productPublicBase, productPublicUrl } from '../../../utils/siteUrl';
 import {
   FiSave,
@@ -209,8 +210,9 @@ export const AdminEcommerceProductEdit = () => {
   const [minOrderQty, setMinOrderQty] = useState('0');
   const [maxOrderQty, setMaxOrderQty] = useState('0');
 
-  // Specification Table
-  const [specTable, setSpecTable] = useState('None');
+  // Specification Table (loaded from API — no hard-coded options)
+  const [specTable, setSpecTable] = useState('');
+  const [specTableOptions, setSpecTableOptions] = useState([]);
 
   // Tags
   const [tags, setTags] = useState([
@@ -289,6 +291,12 @@ export const AdminEcommerceProductEdit = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
+    liveEcommerceList('specification-tables')
+      .then((list) => setSpecTableOptions(Array.isArray(list) ? list : []))
+      .catch(() => setSpecTableOptions([]));
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const load = async () => {
       if (isCreate) {
@@ -340,6 +348,9 @@ export const AdminEcommerceProductEdit = () => {
         setHeight(String(product.height ?? ''));
         setMinOrderQty(String(product.minQty ?? 0));
         setMaxOrderQty(String(product.maxQty ?? 0));
+        setSpecTable(
+          String(product.specificationTable?._id || product.specificationTable || '')
+        );
         if (Array.isArray(product.tagList) && product.tagList.length) setTags(product.tagList);
         else if (typeof product.tags === 'string' && product.tags) setTags(product.tags.split(',').map((t) => t.trim()).filter(Boolean));
         if (product.collections) setCollections((prev) => ({ ...prev, ...product.collections }));
@@ -425,6 +436,7 @@ export const AdminEcommerceProductEdit = () => {
         height: Number(height) || 0,
         minQty: Number(minOrderQty) || 0,
         maxQty: Number(maxOrderQty) || 0,
+        specificationTable: specTable || null,
         isFeatured,
         lifecycle: status,
         images,
@@ -761,9 +773,12 @@ export const AdminEcommerceProductEdit = () => {
               onChange={(e) => setSpecTable(e.target.value)}
               className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs text-slate-700 bg-white focus:outline-hidden focus:border-blue-500"
             >
-              <option value="None">None</option>
-              <option value="Home Decor Specs">Home Decor Specifications</option>
-              <option value="Marble Pots Specs">Marble Pots Specifications</option>
+              <option value="">None</option>
+              {specTableOptions.map((t) => (
+                <option key={t._id || t.id} value={t._id || t.id}>
+                  {t.name}
+                </option>
+              ))}
             </select>
             <p className="text-[11px] text-slate-500 mt-1.5">
               Select the specification table to display in this product

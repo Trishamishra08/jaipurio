@@ -111,6 +111,7 @@ const classify = (req) => {
       '/api/instagram',
       '/api/locations',
       '/api/policies',
+      '/api/pages/public',
     ];
     const isAdminish = path.includes('/admin');
     if (!isAdminish && publicPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {

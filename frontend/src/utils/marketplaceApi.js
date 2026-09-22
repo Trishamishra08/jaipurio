@@ -215,38 +215,46 @@ export const rejectReturn = async (item) => {
   }
 };
 
-export const fetchPayouts = () =>
-  liveApi(async () => unwrap(await api.get('/payouts')), () => platformStore.payouts());
+export const fetchPayouts = async (params = {}) => {
+  const res = await api.get('/payouts', { params });
+  const data = unwrap(res);
+  return Array.isArray(data) ? data : [];
+};
+
+export const fetchPayoutById = async (id) => {
+  const res = await api.get(`/payouts/${encodeURIComponent(id)}`);
+  return unwrap(res);
+};
 
 export const requestPayout = async (amount) => {
-  try {
-    const res = await api.post('/payouts/request', { amount });
-    return unwrap(res);
-  } catch {
-    const row = {
-      id: `PO-${Date.now().toString().slice(-6)}`,
-      vendor: 'Shyam Pottery',
-      amount: amount || 2400,
-      status: 'Pending approval',
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    platformStore.savePayouts([row, ...platformStore.payouts()]);
-    return row;
-  }
+  const res = await api.post('/payouts/request', { amount });
+  return unwrap(res);
+};
+
+export const updatePayout = async (id, payload) => {
+  const res = await api.put(`/payouts/${encodeURIComponent(id)}`, payload);
+  return unwrap(res);
 };
 
 export const advancePayout = async (item) => {
   const id = item._id || item.id;
-  try {
-    const res = await api.put(`/payouts/${id}/advance`);
-    return unwrap(res);
-  } catch {
-    return item;
-  }
+  const res = await api.put(`/payouts/${encodeURIComponent(id)}/advance`, {
+    status: item.nextStatus,
+    note: item.note,
+    transactionId: item.transactionId,
+  });
+  return unwrap(res);
 };
 
-export const fetchEarnings = () =>
-  liveApi(async () => unwrap(await api.get('/payouts/earnings')), null);
+export const deletePayout = async (id) => {
+  const res = await api.delete(`/payouts/${encodeURIComponent(id)}`);
+  return unwrap(res);
+};
+
+export const fetchEarnings = async (params = {}) => {
+  const res = await api.get('/payouts/earnings', { params });
+  return unwrap(res);
+};
 
 export const fetchIncompleteOrders = () =>
   liveApi(async () => unwrap(await api.get('/incomplete-orders')), []);

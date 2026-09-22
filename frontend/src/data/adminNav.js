@@ -55,9 +55,9 @@ export const adminNav = [
     title: 'Product Specification',
     icon: ListChecks,
     children: [
-      { title: 'Specification Groups', path: '/admin/product-specification/groups' },
-      { title: 'Specification Attributes', path: '/admin/product-specification/attributes' },
-      { title: 'Specification Tables', path: '/admin/product-specification/tables' },
+      { title: 'Specification Groups', path: '/admin/ecommerce/specification-groups' },
+      { title: 'Specification Attributes', path: '/admin/ecommerce/specification-attributes' },
+      { title: 'Specification Tables', path: '/admin/ecommerce/specification-tables' },
     ],
   },
   {
@@ -65,10 +65,10 @@ export const adminNav = [
     title: 'Marketplace',
     icon: Store,
     children: [
-      { title: 'Stores', path: '/admin/vendors' },
+      { title: 'Reports', path: '/admin/marketplaces/reports' },
+      { title: 'Stores', path: '/admin/marketplaces/stores' },
+      { title: 'Withdrawals', path: '/admin/marketplaces/withdrawals' },
       { title: 'Unverified vendors', path: '/admin/marketplace/unverified-vendors' },
-      { title: 'Withdrawals', path: '/admin/payouts' },
-      { title: 'Settings', path: '/admin/marketplace/settings' },
     ],
   },
   { id: 'pages', title: 'Pages', path: '/admin/pages', icon: FileText },

@@ -63,6 +63,8 @@ const slugify = (text = '') =>
 
 /**
  * Normalize incoming SEO payloads (flat seoTitle/seoDescription or nested seo).
+ * Clamps meta fields to schema maxlength so long page/product descriptions
+ * used as fallbacks never fail Mongo validation.
  */
 const normalizeSeo = (body = {}, fallbackTitle = '', fallbackDescription = '') => {
   const base = emptySeo();
@@ -91,6 +93,9 @@ const normalizeSeo = (body = {}, fallbackTitle = '', fallbackDescription = '') =
     parts.push(advanced.noFollow ? 'nofollow' : 'follow');
     general.robots = parts.join(',');
   }
+
+  general.metaTitle = String(general.metaTitle || '').slice(0, 70);
+  general.metaDescription = String(general.metaDescription || '').slice(0, 320);
 
   return { general, social, advanced };
 };

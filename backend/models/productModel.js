@@ -77,6 +77,11 @@ const productSchema = new mongoose.Schema({
   faqs: { type: String, default: '' },
   minQty: { type: Number },
   maxQty: { type: Number },
+  specificationTable: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'EcommerceSpecificationTable',
+    default: null,
+  },
   seoTitle: { type: String, default: '' },
   seoDescription: { type: String, default: '' },
   seo: seoFields,

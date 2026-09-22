@@ -34,6 +34,10 @@ const applyFlowFields = (body = {}, role) => {
   const seo = normalizeSeo(body, title, body.description || body.content || '');
   const slug = body.slug || seo.general.slug || slugify(title || '');
   if (seo.general && !seo.general.slug) seo.general.slug = slug;
+  const specificationTable =
+    body.specificationTable === '' || body.specificationTable === 'None'
+      ? null
+      : body.specificationTable;
   return {
     ...body,
     ...normalizeProductMedia(body),
@@ -49,6 +53,7 @@ const applyFlowFields = (body = {}, role) => {
     published: lifecycle === 'Published',
     stockStatus: body.stockStatus || stockStatusFromQty(stock, trackQuantity),
     trackQuantity,
+    specificationTable,
     seo,
     seoTitle: seo.general.metaTitle || body.seoTitle || '',
     seoDescription: seo.general.metaDescription || body.seoDescription || '',

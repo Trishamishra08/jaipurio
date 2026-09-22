@@ -102,11 +102,35 @@ const serializeReturn = (item) => {
 
 const serializePayout = (item) => {
   const p = item.toObject ? item.toObject() : { ...item };
+  const vendorObj = p.vendor && typeof p.vendor === 'object' ? p.vendor : null;
+  const vendorName =
+    vendorObj?.storeName ||
+    vendorObj?.fullName ||
+    vendorObj?.businessName ||
+    (typeof p.vendor === 'string' ? p.vendor : '') ||
+    '';
+  const statusMap = {
+    'Pending approval': 'Pending',
+    Approved: 'Processing',
+    'Sent to bank': 'Processing',
+    Settled: 'Completed',
+    Rejected: 'Refused',
+  };
+  const displayStatus = statusMap[p.status] || p.status || 'Pending';
   return {
     ...p,
-    id: p.payoutNumber,
+    id: p.legacyId != null ? String(p.legacyId) : p.payoutNumber || String(p._id),
     _id: p._id,
-    vendor: p.vendor?.storeName || p.vendor,
+    payoutNumber: p.payoutNumber,
+    vendor: vendorName,
+    vendorId: vendorObj?._id || p.vendor,
+    vendorName,
+    amount: Number(p.amount) || 0,
+    fee: Number(p.fee) || 0,
+    balanceAtRequest: Number(p.balanceAtRequest) || 0,
+    paymentMethod: p.paymentMethod || 'Bank transfer',
+    status: displayStatus,
+    rawStatus: p.status,
     createdAt: p.createdAt ? new Date(p.createdAt).toISOString().slice(0, 10) : '',
   };
 };

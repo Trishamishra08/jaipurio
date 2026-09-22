@@ -104,8 +104,12 @@ const incompleteOrderRoutes = require('./routes/incompleteOrderRoutes');
 app.use('/api/incomplete-orders', incompleteOrderRoutes);
 const ecommerceRoutes = require('./routes/ecommerceRoutes');
 app.use('/api/ecommerce', ecommerceRoutes);
+const pageRoutes = require('./routes/pageRoutes');
+app.use('/api/pages', pageRoutes);
 const mediaRoutes = require('./routes/mediaRoutes');
 app.use('/api/media', mediaRoutes);
+const marketplaceAdminRoutes = require('./routes/marketplaceAdminRoutes');
+app.use('/api/marketplace', marketplaceAdminRoutes);
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

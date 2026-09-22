@@ -46,8 +46,8 @@ const inputClass =
   'w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs text-slate-800 bg-white focus:outline-hidden focus:border-blue-500';
 
 /**
- * Botble-style SEO editor: General / Social / Advanced.
- * Used on product edit — keeps existing page chrome, only replaces SEO card body.
+ * Botble-style SEO editor: Basic / Social / Advanced.
+ * Shared by product + page edit — saves nested seo.general / seo.social / seo.advanced.
  */
 export default function SeoEditorPanel({
   value,
@@ -55,6 +55,8 @@ export default function SeoEditorPanel({
   previewTitle,
   previewUrl,
   onGenerateSlug,
+  showSeoImage = false,
+  onPickSeoImage,
 }) {
   const [tab, setTab] = useState('general');
   const seo = useMemo(() => normalizeSeoState(value), [value]);
@@ -64,10 +66,12 @@ export default function SeoEditorPanel({
   const setAdvanced = (patch) => onChange({ ...seo, advanced: { ...seo.advanced, ...patch } });
 
   const tabs = [
-    { id: 'general', label: 'General' },
+    { id: 'general', label: 'Basic' },
     { id: 'social', label: 'Social' },
     { id: 'advanced', label: 'Advanced' },
   ];
+
+  const seoImage = seo.social?.ogImage || '';
 
   const metaTitleLen = (seo.general.metaTitle || '').length;
   const metaDescLen = (seo.general.metaDescription || '').length;
@@ -177,6 +181,59 @@ export default function SeoEditorPanel({
               className={inputClass}
             />
           </div>
+
+          {showSeoImage ? (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">SEO image</label>
+              <div className="flex items-start gap-3">
+                <div className="relative w-16 h-16 rounded-md border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                  {seoImage ? (
+                    <>
+                      <img src={seoImage} alt="SEO" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSocial({
+                            ogImage: '',
+                            twitterImage: seo.social.twitterImage === seoImage ? '' : seo.social.twitterImage,
+                          })
+                        }
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-slate-200 text-slate-500 text-[10px] leading-none shadow-sm"
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-slate-400">No image</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <input
+                    value={seoImage}
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      setSocial({
+                        ogImage: url,
+                        twitterImage: seo.social.twitterImage || url,
+                      });
+                    }}
+                    placeholder="https://.../image.jpg"
+                    className={inputClass}
+                  />
+                  {typeof onPickSeoImage === 'function' ? (
+                    <button
+                      type="button"
+                      onClick={onPickSeoImage}
+                      className="text-[11px] text-blue-600 hover:underline font-semibold"
+                    >
+                      Choose image
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
             <div className="text-sm font-semibold text-blue-800">

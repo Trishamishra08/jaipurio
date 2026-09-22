@@ -63,13 +63,19 @@ export const syncEcommerceInvoices = async () => {
   return unwrap(res);
 };
 
-/** Load list from API with local fallback (no UI redesign). */
+/** Load list from API. Optional fallback kept for older screens; prefer empty when none. */
 export const liveEcommerceList = async (resource, fallback) => {
   try {
     const rows = await ecommerceList(resource);
     if (rows.length) return rows;
-    return typeof fallback === 'function' ? fallback() : fallback || [];
+    if (fallback !== undefined) {
+      return typeof fallback === 'function' ? fallback() : fallback || [];
+    }
+    return [];
   } catch {
-    return typeof fallback === 'function' ? fallback() : fallback || [];
+    if (fallback !== undefined) {
+      return typeof fallback === 'function' ? fallback() : fallback || [];
+    }
+    return [];
   }
 };

@@ -11,6 +11,8 @@ const EcommerceAttributeSet = require('../models/ecommerceAttributeSetModel');
 const EcommerceFlashSale = require('../models/ecommerceFlashSaleModel');
 const EcommerceDiscount = require('../models/ecommerceDiscountModel');
 const EcommerceSpecificationGroup = require('../models/ecommerceSpecificationGroupModel');
+const EcommerceSpecificationAttribute = require('../models/ecommerceSpecificationAttributeModel');
+const EcommerceSpecificationTable = require('../models/ecommerceSpecificationTableModel');
 const EcommerceInvoice = require('../models/ecommerceInvoiceModel');
 
 const {
@@ -62,7 +64,21 @@ router.use(
 );
 router.use(
   '/specification-groups',
-  createAdminCrudRouter(EcommerceSpecificationGroup, { ...crudOpts, searchFields: ['name', 'slug'] })
+  createAdminCrudRouter(EcommerceSpecificationGroup, { ...crudOpts, searchFields: ['name', 'slug', 'description'] })
+);
+router.use(
+  '/specification-attributes',
+  createAdminCrudRouter(EcommerceSpecificationAttribute, {
+    ...crudOpts,
+    searchFields: ['name', 'slug', 'groupName', 'type'],
+  })
+);
+router.use(
+  '/specification-tables',
+  createAdminCrudRouter(EcommerceSpecificationTable, {
+    ...crudOpts,
+    searchFields: ['name', 'slug', 'description'],
+  })
 );
 router.use(
   '/invoices',

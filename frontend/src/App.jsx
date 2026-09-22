@@ -73,6 +73,20 @@ import AdminEcommerceCustomers from './components/admin/ecommerce/AdminEcommerce
 import AdminEcommerceCustomerEdit from './components/admin/ecommerce/AdminEcommerceCustomerEdit';
 import AdminEcommerceSpecificationGroups from './components/admin/ecommerce/AdminEcommerceSpecificationGroups';
 import AdminEcommerceSpecificationGroupEdit from './components/admin/ecommerce/AdminEcommerceSpecificationGroupEdit';
+import AdminEcommerceSpecificationAttributes from './components/admin/ecommerce/AdminEcommerceSpecificationAttributes';
+import AdminEcommerceSpecificationAttributeEdit from './components/admin/ecommerce/AdminEcommerceSpecificationAttributeEdit';
+import AdminEcommerceSpecificationTables from './components/admin/ecommerce/AdminEcommerceSpecificationTables';
+import AdminEcommerceSpecificationTableEdit from './components/admin/ecommerce/AdminEcommerceSpecificationTableEdit';
+import AdminMarketplaceReports from './components/admin/marketplace/AdminMarketplaceReports';
+import AdminMarketplaceStores from './components/admin/marketplace/AdminMarketplaceStores';
+import AdminMarketplaceStoreEdit from './components/admin/marketplace/AdminMarketplaceStoreEdit';
+import AdminMarketplaceWithdrawals from './components/admin/marketplace/AdminMarketplaceWithdrawals';
+import AdminMarketplaceWithdrawalEdit from './components/admin/marketplace/AdminMarketplaceWithdrawalEdit';
+import AdminPages from './components/admin/AdminPages';
+import AdminPageEdit from './components/admin/AdminPageEdit';
+import AdminBlogs from './components/admin/AdminBlogs';
+import AdminBlogEdit from './components/admin/AdminBlogEdit';
+import AdminBlogCategories from './components/admin/AdminBlogCategories';
 import AdminRoutes from './components/admin/AdminRoutes';
 
 const PublicLayout = () => {
@@ -269,12 +283,47 @@ function App() {
           <Route path="/admin/customers" element={<AdminEcommerceCustomers />} />
           <Route path="/admin/customers/create" element={<AdminEcommerceCustomerEdit />} />
           <Route path="/admin/customers/edit/:id" element={<AdminEcommerceCustomerEdit />} />
-          <Route path="/admin/product-specification/groups" element={<AdminEcommerceSpecificationGroups />} />
-          <Route path="/admin/product-specification/groups/create" element={<AdminEcommerceSpecificationGroupEdit />} />
-          <Route path="/admin/product-specification/groups/edit/:id" element={<AdminEcommerceSpecificationGroupEdit />} />
           <Route path="/admin/ecommerce/specification-groups" element={<AdminEcommerceSpecificationGroups />} />
           <Route path="/admin/ecommerce/specification-groups/create" element={<AdminEcommerceSpecificationGroupEdit />} />
           <Route path="/admin/ecommerce/specification-groups/edit/:id" element={<AdminEcommerceSpecificationGroupEdit />} />
+          <Route path="/admin/ecommerce/specification-attributes" element={<AdminEcommerceSpecificationAttributes />} />
+          <Route path="/admin/ecommerce/specification-attributes/create" element={<AdminEcommerceSpecificationAttributeEdit />} />
+          <Route path="/admin/ecommerce/specification-attributes/edit/:id" element={<AdminEcommerceSpecificationAttributeEdit />} />
+          <Route path="/admin/ecommerce/specification-tables" element={<AdminEcommerceSpecificationTables />} />
+          <Route path="/admin/ecommerce/specification-tables/create" element={<AdminEcommerceSpecificationTableEdit />} />
+          <Route path="/admin/ecommerce/specification-tables/edit/:id" element={<AdminEcommerceSpecificationTableEdit />} />
+          <Route path="/admin/product-specification/groups" element={<Navigate to="/admin/ecommerce/specification-groups" replace />} />
+          <Route path="/admin/product-specification/attributes" element={<Navigate to="/admin/ecommerce/specification-attributes" replace />} />
+          <Route path="/admin/product-specification/tables" element={<Navigate to="/admin/ecommerce/specification-tables" replace />} />
+          <Route path="/admin/product-specification/groups/create" element={<Navigate to="/admin/ecommerce/specification-groups/create" replace />} />
+          <Route path="/admin/product-specification/attributes/create" element={<Navigate to="/admin/ecommerce/specification-attributes/create" replace />} />
+          <Route path="/admin/product-specification/tables/create" element={<Navigate to="/admin/ecommerce/specification-tables/create" replace />} />
+          <Route path="/admin/product-specification/groups/edit/:id" element={<AdminEcommerceSpecificationGroupEdit />} />
+          <Route path="/admin/product-specification/attributes/edit/:id" element={<AdminEcommerceSpecificationAttributeEdit />} />
+          <Route path="/admin/product-specification/tables/edit/:id" element={<AdminEcommerceSpecificationTableEdit />} />
+          <Route path="/admin/marketplaces/reports" element={<AdminMarketplaceReports />} />
+          <Route path="/admin/marketplaces/stores" element={<AdminMarketplaceStores />} />
+          <Route path="/admin/marketplaces/stores/create" element={<AdminMarketplaceStoreEdit />} />
+          <Route path="/admin/marketplaces/stores/edit/:id" element={<AdminMarketplaceStoreEdit />} />
+          <Route path="/admin/marketplaces/withdrawals" element={<AdminMarketplaceWithdrawals />} />
+          <Route
+            path="/admin/marketplaces/withdrawals/edit/:id"
+            element={<AdminMarketplaceWithdrawalEdit />}
+          />
+          <Route path="/admin/pages" element={<AdminPages />} />
+          <Route path="/admin/pages/create" element={<AdminPageEdit />} />
+          <Route path="/admin/pages/edit/:id" element={<AdminPageEdit />} />
+          <Route path="/admin/blogs" element={<AdminBlogs />} />
+          <Route path="/admin/blogs/create" element={<AdminBlogEdit />} />
+          <Route path="/admin/blogs/edit/:id" element={<AdminBlogEdit />} />
+          <Route path="/admin/blog/posts" element={<Navigate to="/admin/blogs" replace />} />
+          <Route path="/admin/blog/posts/create" element={<Navigate to="/admin/blogs/create" replace />} />
+          <Route path="/admin/blog/posts/edit/:id" element={<AdminBlogEdit />} />
+          <Route path="/admin/blog/categories" element={<AdminBlogCategories />} />
+          <Route path="/admin/blog/categories/create" element={<AdminBlogCategories />} />
+          <Route path="/admin/blog/categories/edit/:id" element={<AdminBlogCategories />} />
+          <Route path="/admin/payouts" element={<Navigate to="/admin/marketplaces/withdrawals" replace />} />
+          <Route path="/admin/vendors" element={<Navigate to="/admin/marketplaces/stores" replace />} />
           <Route path="/admin/*" element={<AdminRoutes />} />
 
           <Route path="*" element={<Navigate to="/home" replace />} />
