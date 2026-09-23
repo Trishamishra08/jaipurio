@@ -16,6 +16,9 @@ const {
   reorderCategories,
   listTags,
   createTag,
+  getTagById,
+  updateTag,
+  deleteTag,
   listUiBlocks,
 } = require('../controllers/blogController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
@@ -45,6 +48,13 @@ router
   .route('/tags')
   .get(protect, authorize('admin'), listTags)
   .post(protect, authorize('admin'), createTag);
+
+router
+  .route('/tags/:id')
+  .get(protect, authorize('admin'), getTagById)
+  .put(protect, authorize('admin'), updateTag)
+  .patch(protect, authorize('admin'), updateTag)
+  .delete(protect, authorize('admin'), deleteTag);
 
 router.route('/ui-blocks').get(protect, authorize('admin'), listUiBlocks);
 

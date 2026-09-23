@@ -6,7 +6,7 @@ const { invalidateCatalog } = require('../utils/cache');
 // @access  Private (Admin only - ideally)
 const createCategory = async (req, res, next) => {
   try {
-    const { title, url, parent } = req.body;
+    const { title, url, parent, description, isActive } = req.body;
 
     if (!title) {
       res.status(400);
@@ -26,6 +26,8 @@ const createCategory = async (req, res, next) => {
     const category = await Category.create({
       title,
       url: url || '',
+      description: description || '',
+      isActive: isActive !== false,
       parent: parent || null,
       path: pathLabel,
       slug: title.toLowerCase().replace(/\s+/g, '-'),

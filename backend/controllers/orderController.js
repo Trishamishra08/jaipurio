@@ -6,6 +6,7 @@ const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
 const { computeOrderQuote } = require('../utils/pricing');
 const { nextOrderNumber, serializeOrder } = require('../utils/marketplace');
 const { canAccessOrder } = require('./orderFlowController');
+const { logTransaction } = require('./paymentTransactionController');
 
 const quoteItemsPayload = (items = []) => items.map((item) => ({
   product: item.product || item._id,
@@ -56,6 +57,15 @@ const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, 
   if (quote.coupon?.code) {
     await Coupon.updateOne({ code: quote.coupon.code }, { $inc: { usedCount: 1 } });
   }
+
+  logTransaction({
+    order: order._id,
+    orderNumber: order.orderNumber,
+    gateway: paymentMethod === 'Online' ? 'razorpay' : paymentMethod === 'COD' ? 'cod' : 'other',
+    gatewayPaymentId: paymentResult?.id || '',
+    amount: quote.total,
+    status: isPaid ? 'success' : 'initiated',
+  }).catch(() => {});
 
   return order;
 };
@@ -198,6 +208,13 @@ const verifyRazorpayOrder = async (req, res) => {
         .digest("hex");
 
       if (razorpay_signature !== expectedSign) {
+        logTransaction({
+          gateway: 'razorpay',
+          gatewayOrderId: razorpay_order_id || '',
+          gatewayPaymentId: razorpay_payment_id || '',
+          status: 'failed',
+          errorMessage: 'Signature verification failed',
+        }).catch(() => {});
         return res.status(400).json({ success: false, message: "Invalid signature sent!" });
       }
     }

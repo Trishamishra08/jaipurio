@@ -88,6 +88,7 @@ export const adminNav = [
     icon: CreditCard,
     children: [
       { title: 'Transactions', path: '/admin/payments' },
+      { title: 'Logs', path: '/admin/payments/logs' },
       { title: 'Payment methods', path: '/admin/payments/methods' },
     ],
   },
@@ -107,6 +108,7 @@ export const adminNav = [
     badgeKey: 'contacts',
     children: [
       { title: 'Submissions', path: '/admin/contacts' },
+      { title: 'Custom Fields', path: '/admin/contacts/custom-fields' },
       { title: 'Contact Forms', path: '/admin/contact/forms' },
     ],
   },

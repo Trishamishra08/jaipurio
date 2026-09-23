@@ -1,364 +1,293 @@
-import React, { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Info, Plus, Folder, GripVertical, Minus, Save, Check, Trash2, X } from 'lucide-react';
 import EcommerceLayout from './EcommerceLayout';
 import AdminCkEditor from './AdminCkEditor';
-import { 
-  Info, 
-  Plus, 
-  Folder, 
-  GripVertical, 
-  ChevronDown, 
-  ChevronRight, 
-  Minus, 
-  Image as ImageIcon, 
-  Save, 
-  Check, 
-  ExternalLink,
-  Upload,
-  Globe
-} from 'lucide-react';
+import { categoryService } from '../../../services/categoryService';
+import {
+  liveEcommerceList,
+  fetchCategoryAttributes,
+  assignCategoryAttribute,
+  updateCategoryAttribute,
+  removeCategoryAttribute,
+} from '../../../utils/ecommerceApi';
 
-const INITIAL_TREE = [
-  {
-    id: 121,
-    name: 'Jewellery',
-    count: 0,
-    isOpen: true,
-    children: [
-      { id: 125, name: 'Bangles', count: 27 },
-      { id: 124, name: 'Bracelets', count: 0 },
-      { id: 123, name: 'Rings', count: 13 },
-      { id: 122, name: 'Necklaces', count: 34 },
-      {
-        id: 128,
-        name: 'Gemstone',
-        count: 10,
-        isOpen: true,
-        children: [
-          { id: 129, name: 'Moissanite Stones', count: 10 }
-        ]
-      },
-      { id: 154, name: 'Earrings', count: 34 }
-    ]
-  },
-  {
-    id: 113,
-    name: 'Home & Living',
-    count: 98,
-    isOpen: true,
-    children: [
-      {
-        id: 115,
-        name: 'Spirituality & Religion',
-        count: 98,
-        isOpen: true,
-        children: [
-          {
-            id: 116,
-            name: 'Religious Home & Decor',
-            count: 0,
-            isOpen: false,
-            children: [
-              { id: 119, name: 'Chowkis', count: 0 },
-              { id: 118, name: 'Thali & Thali Sets', count: 5 },
-              { id: 117, name: 'Torans', count: 0 }
-            ]
-          },
-          {
-            id: 86,
-            name: 'Religious Statuary Idols',
-            count: 177,
-            isOpen: true,
-            children: [
-              { id: 126, name: 'Marble Idols', count: 88 },
-              {
-                id: 127,
-                name: 'Brass Idols',
-                count: 265,
-                isOpen: false,
-                children: [
-                  { id: 172, name: 'Kaal Bhairav Idols', count: 0 },
-                  { id: 171, name: 'Saraswati', count: 0 },
-                  { id: 170, name: 'Kaamdhenu Cow', count: 5 },
-                  { id: 169, name: 'Lakshmi', count: 20 },
-                  { id: 168, name: 'Parvati Idols', count: 18 },
-                  { id: 167, name: 'Durga Ma', count: 46 },
-                  { id: 166, name: 'Vishnu', count: 91 },
-                  { id: 165, name: 'Hanuman', count: 76 },
-                  { id: 164, name: 'Rama idols', count: 23 },
-                  { id: 163, name: 'Krishna', count: 30 },
-                  { id: 162, name: 'Ganesha', count: 64 },
-                  { id: 161, name: 'Shiva', count: 63 },
-                  { id: 160, name: 'Buddha', count: 10 }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      { id: 84, name: 'Home Decor', count: 585 },
-      { id: 85, name: 'Handicrafts', count: 717 }
-    ]
-  },
-  {
-    id: 104,
-    name: 'Clothing',
-    count: 0,
-    isOpen: true,
-    children: [
-      {
-        id: 108,
-        name: "Girls' Clothing",
-        count: 0,
-        isOpen: false,
-        children: [
-          { id: 112, name: 'Tops & Tees', count: 0 },
-          { id: 111, name: 'Pajamas & Robes', count: 0 },
-          { id: 110, name: 'Jackets & Coats', count: 10 },
-          { id: 109, name: "Baby Girls' Clothing", count: 0 }
-        ]
-      },
-      {
-        id: 107,
-        name: "Boys' Clothing",
-        count: 0,
-        isOpen: false,
-        children: [
-          { id: 159, name: 'Kids Hunting Jackets', count: 0 }
-        ]
-      },
-      {
-        id: 106,
-        name: "Men's Clothing",
-        count: 1,
-        isOpen: false,
-        children: [
-          { id: 140, name: 'Blazers', count: 21 },
-          { id: 135, name: 'Jodhpuri Breeches (Riding Pants)', count: 25 },
-          { id: 134, name: 'Kurtas', count: 60 },
-          { id: 133, name: 'Suits and Jackets', count: 49 },
-          { id: 132, name: 'Jodhpuri Achkans', count: 98 },
-          { id: 131, name: 'Jodhpuri Waistcoat Sets', count: 4 },
-          { id: 157, name: 'Hunting & Casual Shirt', count: 32 },
-          { id: 156, name: 'Semi Hunting Jackets', count: 63 },
-          { id: 130, name: 'Jodhpuri Bandhgala Suits', count: 17 }
-        ]
-      },
-      {
-        id: 105,
-        name: "Women's Clothing",
-        count: 26,
-        isOpen: false,
-        children: [
-          { id: 139, name: 'Sarees', count: 24 },
-          { id: 138, name: 'Real Silver Saree', count: 5 },
-          { id: 137, name: 'Rajputi Poshak', count: 40 },
-          { id: 136, name: 'Real Silver Poshak', count: 6 },
-          { id: 158, name: 'Kurti & Tops', count: 0 }
-        ]
-      }
-    ]
-  },
-  {
-    id: 87,
-    name: 'Accessories',
-    count: 0,
-    isOpen: false,
-    children: [
-      { id: 88, name: 'Sunglasses & Eyewear', count: 0 },
-      { id: 93, name: 'Gloves & Mittens', count: 9 },
-      { id: 92, name: 'Suit & Tie Accessories', count: 0 },
-      { id: 91, name: 'Hair Accessories', count: 12 },
-      { id: 90, name: 'Hats & Caps', count: 4 },
-      { id: 89, name: 'Scarves & Wraps', count: 0 },
-      {
-        id: 141,
-        name: "Groom's Accessories",
-        count: 0,
-        isOpen: false,
-        children: [
-          { id: 153, name: 'Lapel Pins', count: 8 },
-          { id: 143, name: 'Crossbelt', count: 1 },
-          { id: 152, name: 'Pocket Squares', count: 40 },
-          { id: 151, name: 'Kurta Buttons', count: 15 },
-          { id: 150, name: 'Cufflinks', count: 65 },
-          { id: 149, name: 'Buttons', count: 0 },
-          { id: 148, name: 'Safa / Head Turban', count: 24 },
-          { id: 147, name: 'Woolen Beret Caps', count: 68 },
-          { id: 146, name: 'Kamarbandh', count: 0 },
-          { id: 145, name: 'Monogram', count: 16 },
-          { id: 144, name: 'Kantha / Mala', count: 5 },
-          { id: 142, name: 'Sarpech / Kilangi', count: 2 }
-        ]
-      }
-    ]
-  },
-  {
-    id: 94,
-    name: 'Art & Collectibles',
-    count: 0,
-    isOpen: false,
-    children: [
-      { id: 96, name: 'Sculpture', count: 0 },
-      { id: 95, name: 'Painting', count: 10 }
-    ]
-  },
-  {
-    id: 97,
-    name: 'Bags & Purses',
-    count: 0,
-    isOpen: false,
-    children: [
-      { id: 103, name: 'Top Handle Bags', count: 7 },
-      { id: 102, name: 'Crossbody Bags', count: 5 },
-      { id: 101, name: 'Shoulder Bags', count: 10 },
-      { id: 98, name: 'Handbags', count: 53 },
-      { id: 100, name: 'Clutches & Evening Bags', count: 0 },
-      { id: 99, name: 'Potli Bags', count: 10 }
-    ]
-  }
-];
+const slugify = (value = '') =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
+const buildTree = (flat) => {
+  const byId = new Map(flat.map((c) => [String(c._id), { ...c, children: [] }]));
+  const roots = [];
+  byId.forEach((node) => {
+    const parentId = node.parent ? String(node.parent._id || node.parent) : null;
+    if (parentId && byId.has(parentId)) {
+      byId.get(parentId).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+};
 
 export const AdminEcommerceProductCategories = () => {
   const navigate = useNavigate();
-  const [treeData, setTreeData] = useState(INITIAL_TREE);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [expanded, setExpanded] = useState({});
+  const [selectedId, setSelectedId] = useState(null);
 
-  // Form states
+  // Form state
   const [name, setName] = useState('');
   const [permalink, setPermalink] = useState('');
-  const [parent, setParent] = useState('None');
+  const [parent, setParent] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('Published');
-  const [image, setImage] = useState('');
-  const [fontIcon, setFontIcon] = useState('');
-  const [iconImage, setIconImage] = useState('');
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isActive, setIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [savedToast, setSavedToast] = useState(false);
+
+  // Category → Attributes assignment
+  const [allAttributes, setAllAttributes] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [attrLoading, setAttrLoading] = useState(false);
+  const [attrToAdd, setAttrToAdd] = useState('');
+  const [attrError, setAttrError] = useState('');
+
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const res = await categoryService.getAllCategories();
+      setCategories(Array.isArray(res?.data) ? res.data : []);
+    } catch (err) {
+      setLoadError(err?.response?.data?.message || err?.message || 'Failed to load categories');
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+    liveEcommerceList('specification-attributes')
+      .then((list) => setAllAttributes(Array.isArray(list) ? list : []))
+      .catch(() => setAllAttributes([]));
+  }, [loadCategories]);
+
+  const tree = useMemo(() => buildTree(categories), [categories]);
+
+  const loadAssignments = useCallback(async (categoryId) => {
+    if (!categoryId) {
+      setAssignments([]);
+      return;
+    }
+    setAttrLoading(true);
+    setAttrError('');
+    try {
+      const rows = await fetchCategoryAttributes(categoryId);
+      setAssignments(Array.isArray(rows) ? rows : []);
+    } catch (err) {
+      setAssignments([]);
+      setAttrError(err?.parsedMessage || err?.message || 'Failed to load attributes');
+    } finally {
+      setAttrLoading(false);
+    }
+  }, []);
 
   const toggleNode = (id) => {
-    const updateRecursive = (nodes) => {
-      return nodes.map(node => {
-        if (node.id === id) {
-          return { ...node, isOpen: !node.isOpen };
-        }
-        if (node.children) {
-          return { ...node, children: updateRecursive(node.children) };
-        }
-        return node;
-      });
-    };
-    setTreeData(updateRecursive(treeData));
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const selectCategory = (category) => {
-    setSelectedCategoryId(category.id);
-    setName(category.name);
-    setPermalink(category.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''));
+    const id = String(category._id);
+    setSelectedId(id);
+    setName(category.title || '');
+    setPermalink(category.slug || slugify(category.title || ''));
+    setParent(category.parent ? String(category.parent._id || category.parent) : '');
+    setDescription(category.description || '');
+    setIsActive(category.isActive !== false);
+    setSaveError('');
+    loadAssignments(id);
   };
 
   const handleNameChange = (e) => {
     const val = e.target.value;
     setName(val);
-    if (!selectedCategoryId) {
-      setPermalink(val.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''));
-    }
+    if (!selectedId) setPermalink(slugify(val));
   };
 
   const handleCreateNew = () => {
-    setSelectedCategoryId(null);
+    setSelectedId(null);
     setName('');
     setPermalink('');
-    setParent('None');
+    setParent('');
     setDescription('');
-    setStatus('Published');
-    setImage('');
-    setFontIcon('');
-    setIconImage('');
-    setIsFeatured(false);
+    setIsActive(true);
+    setSaveError('');
+    setAssignments([]);
   };
 
-  const handleSave = (exit = false) => {
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
+  const handleSave = async () => {
+    if (!name.trim()) {
+      setSaveError('Name is required');
+      return;
+    }
+    setSaving(true);
+    setSaveError('');
+    try {
+      const payload = {
+        title: name.trim(),
+        url: permalink || slugify(name),
+        parent: parent || null,
+        description,
+        isActive,
+      };
+      if (selectedId) {
+        await categoryService.updateCategory(selectedId, payload);
+      } else {
+        const created = await categoryService.createCategory(payload);
+        const newId = created?.data?._id;
+        if (newId) setSelectedId(String(newId));
+      }
+      await loadCategories();
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 2000);
+    } catch (err) {
+      setSaveError(err?.response?.data?.message || err?.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const renderTree = (nodes, level = 0) => {
-    return (
-      <div className={`space-y-1 ${level > 0 ? 'ml-6 pl-2 border-l border-slate-200' : ''}`}>
-        {nodes.map(node => {
-          const hasChildren = node.children && node.children.length > 0;
-          const isSelected = selectedCategoryId === node.id;
+  const handleDelete = async (category) => {
+    if (!window.confirm(`Delete category "${category.title}"? This cannot be undone.`)) return;
+    try {
+      await categoryService.deleteCategory(category._id);
+      if (selectedId === String(category._id)) handleCreateNew();
+      await loadCategories();
+    } catch (err) {
+      window.alert(err?.response?.data?.message || err?.message || 'Delete failed');
+    }
+  };
 
-          return (
-            <div key={node.id} className="select-none">
-              <div 
-                className={`flex items-center justify-between px-3 py-2 rounded-md border text-sm transition-colors cursor-pointer ${
-                  isSelected 
-                    ? 'bg-blue-50/80 border-blue-400 text-blue-900 shadow-sm' 
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-                onClick={() => selectCategory(node)}
-              >
-                <div className="flex items-center gap-2 overflow-hidden pr-2">
-                  <GripVertical size={14} className="text-slate-400 cursor-grab flex-shrink-0" />
-                  <Folder size={15} className="text-slate-400 flex-shrink-0" />
-                  <span className="font-medium truncate text-[13px]">{node.name}</span>
-                  <a
-                    href={`/admin/ecommerce/products?category=${node.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate('/admin/ecommerce/products');
-                    }}
-                    className="text-blue-600 hover:underline text-[12px] font-normal flex-shrink-0"
-                  >
-                    ({node.count})
-                  </a>
-                </div>
+  const unassignedAttributes = useMemo(() => {
+    const assignedIds = new Set(assignments.map((a) => String(a.attribute?._id || a.attribute)));
+    return allAttributes.filter((a) => !assignedIds.has(String(a._id || a.id)));
+  }, [allAttributes, assignments]);
 
+  const handleAssignAttribute = async () => {
+    if (!attrToAdd || !selectedId) return;
+    setAttrError('');
+    try {
+      await assignCategoryAttribute(selectedId, {
+        attribute: attrToAdd,
+        sortOrder: assignments.length,
+      });
+      setAttrToAdd('');
+      await loadAssignments(selectedId);
+    } catch (err) {
+      setAttrError(err?.parsedMessage || err?.message || 'Failed to assign attribute');
+    }
+  };
+
+  const handleToggleFlag = async (assignment, field) => {
+    try {
+      await updateCategoryAttribute(selectedId, assignment._id, { [field]: !assignment[field] });
+      await loadAssignments(selectedId);
+    } catch (err) {
+      setAttrError(err?.parsedMessage || err?.message || 'Update failed');
+    }
+  };
+
+  const handleRemoveAssignment = async (assignment) => {
+    try {
+      await removeCategoryAttribute(selectedId, assignment._id);
+      await loadAssignments(selectedId);
+    } catch (err) {
+      setAttrError(err?.parsedMessage || err?.message || 'Remove failed');
+    }
+  };
+
+  const renderTree = (nodes, level = 0) => (
+    <div className={`space-y-1 ${level > 0 ? 'ml-6 pl-2 border-l border-slate-200' : ''}`}>
+      {nodes.map((node) => {
+        const hasChildren = node.children && node.children.length > 0;
+        const isSelected = selectedId === String(node._id);
+        const isOpen = expanded[node._id] !== false;
+
+        return (
+          <div key={node._id} className="select-none">
+            <div
+              className={`flex items-center justify-between px-3 py-2 rounded-md border text-sm transition-colors cursor-pointer ${
+                isSelected
+                  ? 'bg-blue-50/80 border-blue-400 text-blue-900 shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+              onClick={() => selectCategory(node)}
+            >
+              <div className="flex items-center gap-2 overflow-hidden pr-2">
+                <GripVertical size={14} className="text-slate-400 flex-shrink-0" />
+                <Folder size={15} className="text-slate-400 flex-shrink-0" />
+                <span className="font-medium truncate text-[13px]">{node.title}</span>
+                {!node.isActive ? (
+                  <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    Inactive
+                  </span>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(node);
+                  }}
+                  className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50"
+                  title="Delete category"
+                >
+                  <Trash2 size={13} />
+                </button>
                 {hasChildren ? (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleNode(node.id);
+                      toggleNode(node._id);
                     }}
-                    className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center flex-shrink-0"
+                    className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center"
                   >
-                    {node.isOpen ? <Minus size={13} /> : <Plus size={13} />}
+                    {isOpen ? <Minus size={13} /> : <Plus size={13} />}
                   </button>
                 ) : (
                   <div className="w-5" />
                 )}
               </div>
-
-              {hasChildren && node.isOpen && (
-                <div className="mt-1">
-                  {renderTree(node.children, level + 1)}
-                </div>
-              )}
             </div>
-          );
-        })}
-      </div>
-    );
-  };
+
+            {hasChildren && isOpen && <div className="mt-1">{renderTree(node.children, level + 1)}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <EcommerceLayout breadcrumb={['ECOMMERCE', 'PRODUCT CATEGORIES']}>
       <div className="p-6 bg-slate-50 min-h-screen">
-        {/* Top Two Column Layout */}
         <div className="grid grid-cols-12 gap-6">
-          
           {/* LEFT COLUMN: Categories Tree */}
           <div className="col-span-12 lg:col-span-5 space-y-4">
-            {/* Info notice */}
             <div className="bg-sky-50 border-l-4 border-sky-400 p-3.5 rounded-r flex items-start gap-2.5 text-sky-800 text-[13px] leading-relaxed">
               <Info size={16} className="text-sky-500 mt-0.5 flex-shrink-0" />
-              <span>Drag and drop on the left to change the order or parent of the categories.</span>
+              <span>Select a category on the left to edit it and manage which attributes apply to it.</span>
             </div>
 
-            {/* Create Button */}
             <div className="flex justify-end">
               <button
                 type="button"
@@ -370,27 +299,38 @@ export const AdminEcommerceProductCategories = () => {
               </button>
             </div>
 
-            {/* Tree Container */}
-            <div className="bg-transparent">
-              {renderTree(treeData)}
-            </div>
+            {loadError ? (
+              <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-3 py-2">
+                {loadError}
+              </div>
+            ) : null}
+
+            {loading ? (
+              <div className="py-10 text-center text-sm text-slate-500">Loading categories…</div>
+            ) : tree.length === 0 ? (
+              <div className="py-10 text-center text-sm text-slate-400">No categories yet. Create one to get started.</div>
+            ) : (
+              <div className="bg-transparent">{renderTree(tree)}</div>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Edit/Create Form */}
           <div className="col-span-12 lg:col-span-7 space-y-5">
-            {/* Alert */}
-            <div className="bg-sky-50 border-l-4 border-sky-400 p-3.5 rounded-r flex items-center gap-2 text-sky-800 text-[13px]">
-              <Info size={16} className="text-sky-500 flex-shrink-0" />
-              <span>You are editing <strong className="font-semibold text-sky-900">"English"</strong> version</span>
-            </div>
+            {savedToast && (
+              <div className="fixed top-16 right-6 z-50 bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow-lg flex items-center gap-2">
+                <Check size={16} />
+                <span>Category saved successfully!</span>
+              </div>
+            )}
+            {saveError ? (
+              <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-3 py-2">
+                {saveError}
+              </div>
+            ) : null}
 
-            {/* Form Card */}
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
-              {/* Name */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Name
-                </label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Name</label>
                 <input
                   type="text"
                   placeholder="Name"
@@ -400,46 +340,42 @@ export const AdminEcommerceProductCategories = () => {
                 />
               </div>
 
-              {/* Permalink */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Permalink <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center text-sm border border-slate-300 rounded overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
                   <span className="bg-slate-100 text-slate-500 px-3 py-2 text-xs border-r border-slate-200 select-none">
-                    https://jaipurio.in/product-categories/
+                    /product-categories/
                   </span>
                   <input
                     type="text"
                     value={permalink}
-                    onChange={(e) => setPermalink(e.target.value)}
+                    onChange={(e) => setPermalink(slugify(e.target.value))}
                     className="w-full px-3 py-2 text-sm outline-none text-slate-800"
                     placeholder="category-slug"
                   />
                 </div>
               </div>
 
-              {/* Parent */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Parent
-                </label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Parent</label>
                 <select
                   value={parent}
                   onChange={(e) => setParent(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-white text-slate-800 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 >
-                  <option value="None">None</option>
-                  <option value="Jewellery">Jewellery</option>
-                  <option value="Home & Living">Home & Living</option>
-                  <option value="Clothing">Clothing</option>
-                  <option value="Accessories">Accessories</option>
-                  <option value="Art & Collectibles">Art & Collectibles</option>
-                  <option value="Bags & Purses">Bags & Purses</option>
+                  <option value="">None</option>
+                  {categories
+                    .filter((c) => String(c._id) !== String(selectedId))
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.path || c.title}
+                      </option>
+                    ))}
                 </select>
               </div>
 
-              {/* Description & Rich Text Editor */}
               <AdminCkEditor
                 label="Description"
                 value={description}
@@ -448,149 +384,150 @@ export const AdminEcommerceProductCategories = () => {
                 placeholder="Enter category description..."
               />
 
-              {/* Status */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Status <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-white text-slate-800 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="Published">Published</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Pending">Pending</option>
-                </select>
-              </div>
-
-              {/* Image */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Image
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 border border-dashed border-slate-300 rounded bg-slate-50 flex items-center justify-center text-slate-400 overflow-hidden">
-                    {image ? (
-                      <img src={image} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon size={28} className="text-slate-300" />
-                    )}
-                  </div>
-                  <div className="text-xs space-y-1">
-                    <button type="button" className="text-blue-600 hover:underline font-medium block">
-                      Choose image
-                    </button>
-                    <span className="text-slate-400">or</span>
-                    <button type="button" className="text-blue-600 hover:underline font-medium block">
-                      Add from URL
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Font Icon */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Font Icon
-                </label>
-                <input
-                  type="text"
-                  placeholder="-- None --"
-                  value={fontIcon}
-                  onChange={(e) => setFontIcon(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-800"
-                />
-              </div>
-
-              {/* Icon Image */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Icon image
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 border border-dashed border-slate-300 rounded bg-slate-50 flex items-center justify-center text-slate-400 overflow-hidden">
-                    {iconImage ? (
-                      <img src={iconImage} alt="Icon preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon size={24} className="text-slate-300" />
-                    )}
-                  </div>
-                  <div className="text-xs space-y-1">
-                    <button type="button" className="text-blue-600 hover:underline font-medium block">
-                      Choose image
-                    </button>
-                    <span className="text-slate-400">or</span>
-                    <button type="button" className="text-blue-600 hover:underline font-medium block">
-                      Add from URL
-                    </button>
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  It will replace Icon Font if it is present.
-                </p>
-              </div>
-
-              {/* Is Featured */}
               <div className="flex items-center gap-2 pt-2">
                 <input
                   type="checkbox"
-                  id="isFeatured"
-                  checked={isFeatured}
-                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  id="isActive"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
                 />
-                <label htmlFor="isFeatured" className="text-xs font-medium text-slate-700 select-none cursor-pointer">
-                  Is featured?
+                <label htmlFor="isActive" className="text-xs font-medium text-slate-700 select-none cursor-pointer">
+                  Active (visible in storefront navigation)
                 </label>
               </div>
-            </div>
-
-            {/* Search Engine Optimize Card */}
-            <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-slate-800">
-                  Search Engine Optimize
-                </h4>
-                <button type="button" className="text-xs text-blue-600 hover:underline font-medium">
-                  Edit SEO meta
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Setup meta title & description to make your site easy to discovered on search engines such as Google
-              </p>
             </div>
 
             {/* Publish Actions Card */}
             <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
-              <h4 className="text-sm font-semibold text-slate-800">
-                Publish
-              </h4>
+              <h4 className="text-sm font-semibold text-slate-800">Publish</h4>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => handleSave(false)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors"
+                  disabled={saving}
+                  onClick={handleSave}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors disabled:opacity-60"
                 >
                   <Save size={14} />
-                  Save
+                  {saving ? 'Saving…' : selectedId ? 'Save' : 'Create'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleSave(true)}
-                  className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors"
-                >
-                  <Check size={14} />
-                  Save & Exit
-                </button>
-                {isSaved && (
-                  <span className="text-emerald-600 text-xs font-medium">
-                    ✓ Saved successfully
-                  </span>
-                )}
               </div>
             </div>
 
+            {/* Category → Attributes assignment */}
+            {selectedId ? (
+              <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h4 className="text-sm font-semibold text-slate-800">Assigned Attributes</h4>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/ecommerce/specification-attributes/create')}
+                    className="text-xs text-blue-600 hover:underline font-medium"
+                  >
+                    + New attribute
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Attributes assigned here will dynamically appear on products in this category. Mark an attribute
+                  as <strong>Variant</strong> to let it drive product variant generation (SKU/price/stock per
+                  combination).
+                </p>
+
+                {attrError ? (
+                  <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-3 py-2">
+                    {attrError}
+                  </div>
+                ) : null}
+
+                {attrLoading ? (
+                  <div className="py-6 text-center text-xs text-slate-500">Loading attributes…</div>
+                ) : assignments.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-slate-400">
+                    No attributes assigned to this category yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {assignments.map((a) => (
+                      <div
+                        key={a._id}
+                        className="flex flex-wrap items-center justify-between gap-2 border border-slate-200 rounded-md px-3 py-2"
+                      >
+                        <div className="min-w-[140px]">
+                          <div className="text-xs font-semibold text-slate-800">{a.attribute?.name || '—'}</div>
+                          <div className="text-[10px] text-slate-400">
+                            {a.attribute?.group?.name || a.attribute?.groupName || ''} · {a.attribute?.type || ''}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <label className="flex items-center gap-1 text-[11px] text-slate-600 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(a.isRequired)}
+                              onChange={() => handleToggleFlag(a, 'isRequired')}
+                              className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
+                            />
+                            Required
+                          </label>
+                          <label className="flex items-center gap-1 text-[11px] text-slate-600 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(a.isVariantAttribute)}
+                              onChange={() => handleToggleFlag(a, 'isVariantAttribute')}
+                              className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
+                            />
+                            Variant
+                          </label>
+                          <label className="flex items-center gap-1 text-[11px] text-slate-600 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(a.isFilterable)}
+                              onChange={() => handleToggleFlag(a, 'isFilterable')}
+                              className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
+                            />
+                            Filterable
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAssignment(a)}
+                            className="text-slate-400 hover:text-red-600 p-1"
+                            title="Unassign"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <select
+                    value={attrToAdd}
+                    onChange={(e) => setAttrToAdd(e.target.value)}
+                    className="flex-1 border border-slate-300 rounded-md py-1.5 px-3 text-xs"
+                  >
+                    <option value="">Select an attribute to assign…</option>
+                    {unassignedAttributes.map((a) => (
+                      <option key={a._id || a.id} value={a._id || a.id}>
+                        {a.name} ({a.groupName || a.group?.name || 'no group'})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAssignAttribute}
+                    disabled={!attrToAdd}
+                    className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-50"
+                  >
+                    Assign
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white border border-dashed border-slate-300 rounded-lg p-5 text-center text-xs text-slate-400">
+                Save this category first to assign attributes to it.
+              </div>
+            )}
           </div>
         </div>
       </div>

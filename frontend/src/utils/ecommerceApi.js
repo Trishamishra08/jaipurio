@@ -63,6 +63,32 @@ export const syncEcommerceInvoices = async () => {
   return unwrap(res);
 };
 
+export const fetchCategoryAttributes = async (categoryId) => {
+  const res = await api.get(`/ecommerce/categories/${categoryId}/attributes`);
+  const data = unwrap(res);
+  return Array.isArray(data) ? data : [];
+};
+
+export const assignCategoryAttribute = async (categoryId, payload) => {
+  const res = await api.post(`/ecommerce/categories/${categoryId}/attributes`, payload);
+  return unwrap(res);
+};
+
+export const updateCategoryAttribute = async (categoryId, assignmentId, payload) => {
+  const res = await api.put(`/ecommerce/categories/${categoryId}/attributes/${assignmentId}`, payload);
+  return unwrap(res);
+};
+
+export const removeCategoryAttribute = async (categoryId, assignmentId) => {
+  const res = await api.delete(`/ecommerce/categories/${categoryId}/attributes/${assignmentId}`);
+  return unwrap(res);
+};
+
+export const reorderCategoryAttributes = async (categoryId, order) => {
+  const res = await api.post(`/ecommerce/categories/${categoryId}/attributes/reorder`, { order });
+  return unwrap(res);
+};
+
 /** Load list from API. Optional fallback kept for older screens; prefer empty when none. */
 export const liveEcommerceList = async (resource, fallback) => {
   try {

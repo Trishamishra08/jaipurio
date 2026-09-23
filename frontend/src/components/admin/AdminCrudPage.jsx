@@ -5,6 +5,9 @@ import AdminPageHeader from './AdminPageHeader';
 import { findModule } from '../../data/adminModules';
 import { loadCollection, saveCollection, getActivityLogs } from '../../utils/adminAuth';
 import { useShop } from '../../context/ShopContext';
+import api from '../../utils/api';
+
+const unwrap = (res) => res.data?.data ?? res.data;
 
 const badgeClass = (status) => {
   const value = String(status || '').toLowerCase();
@@ -18,6 +21,14 @@ const badgeClass = (status) => {
     return 'admin-badge admin-badge-danger';
   }
   return 'admin-badge admin-badge-info';
+};
+
+const selectDisplayValue = (field, raw) => {
+  if (typeof raw === 'boolean') {
+    if (field.options?.includes('Yes') || field.options?.includes('No')) return raw ? 'Yes' : 'No';
+    if (field.options?.includes('true') || field.options?.includes('false')) return String(raw);
+  }
+  return raw ?? '';
 };
 
 const emptyFromFields = (fields) =>
@@ -35,6 +46,9 @@ const AdminCrudPage = () => {
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const isApiBacked = Boolean(module?.api);
 
   const hydratedSeed = useMemo(() => {
     if (!module) return [];
@@ -60,16 +74,43 @@ const AdminCrudPage = () => {
     return module.seed || [];
   }, [module, products]);
 
+  const reloadFromApi = async () => {
+    if (!module?.api) return;
+    setLoading(true);
+    setLoadError('');
+    try {
+      if (module.kind === 'settings') {
+        const res = await api.get(`/${module.api}`);
+        setSettings(unwrap(res) || module.seed || {});
+      } else {
+        const res = await api.get(`/${module.api}`, { params: module.apiListParams });
+        const rows = unwrap(res);
+        setItems((Array.isArray(rows) ? rows : []).map((r) => ({ ...r, id: r.id || r._id })));
+      }
+    } catch (err) {
+      setLoadError(err?.parsedMessage || err?.message || 'Failed to load data');
+      if (module.kind !== 'settings') setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!module) return;
+    setQuery('');
+    setModal(null);
+    setLoadError('');
+    if (module.api) {
+      reloadFromApi();
+      return;
+    }
     if (module.kind === 'settings') {
       const saved = loadCollection(module.id, null);
       setSettings(saved && !Array.isArray(saved) ? saved : module.seed || {});
       return;
     }
     setItems(loadCollection(module.id, hydratedSeed));
-    setQuery('');
-    setModal(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [module, hydratedSeed]);
 
   if (!module) {
@@ -81,7 +122,22 @@ const AdminCrudPage = () => {
     );
   }
 
-  const persist = (next) => {
+  const persist = async (next, action, payload) => {
+    if (isApiBacked) {
+      try {
+        if (action === 'create') {
+          await api.post(`/${module.api}`, { ...payload, ...module.apiCreateDefaults });
+        } else if (action === 'update') {
+          await api.put(`/${module.api}/${payload.id}`, payload);
+        } else if (action === 'delete') {
+          await api.delete(`/${module.api}/${payload.id}`);
+        }
+        await reloadFromApi();
+      } catch (err) {
+        window.alert(err?.parsedMessage || err?.message || 'Save failed');
+      }
+      return;
+    }
     setItems(next);
     saveCollection(module.id, next);
   };
@@ -102,23 +158,36 @@ const AdminCrudPage = () => {
     setModal('edit');
   };
 
-  const saveRow = (e) => {
+  const saveRow = async (e) => {
     e.preventDefault();
     if (modal === 'create') {
-      persist([{ id: Date.now(), ...form }, ...items]);
+      await persist([{ id: Date.now(), ...form }, ...items], 'create', form);
     } else {
-      persist(items.map((row) => (row.id === form.id ? { ...row, ...form } : row)));
+      await persist(
+        items.map((row) => (row.id === form.id ? { ...row, ...form } : row)),
+        'update',
+        form
+      );
     }
     setModal(null);
   };
 
-  const removeRow = (id) => {
+  const removeRow = async (id) => {
     if (!window.confirm('Do you really want to delete this record?')) return;
-    persist(items.filter((row) => row.id !== id));
+    await persist(items.filter((row) => row.id !== id), 'delete', { id });
   };
 
-  const saveSettings = (e) => {
+  const saveSettings = async (e) => {
     e.preventDefault();
+    if (isApiBacked) {
+      try {
+        await api.put(`/${module.api}`, settings);
+        window.alert('Settings have been saved.');
+      } catch (err) {
+        window.alert(err?.parsedMessage || err?.message || 'Save failed');
+      }
+      return;
+    }
     saveCollection(module.id, settings);
     window.alert('Settings have been saved.');
   };
@@ -133,7 +202,7 @@ const AdminCrudPage = () => {
               <span>{field.label}</span>
               {field.type === 'select' ? (
                 <select
-                  value={settings[field.key] ?? ''}
+                  value={selectDisplayValue(field, settings[field.key])}
                   onChange={(e) => setSettings((prev) => ({ ...prev, [field.key]: e.target.value }))}
                 >
                   {field.options.map((opt) => (
@@ -169,6 +238,12 @@ const AdminCrudPage = () => {
         onAction={module.create === false ? undefined : openCreate}
       />
 
+      {loadError ? (
+        <div className="mb-3 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-3 py-2">
+          {loadError}
+        </div>
+      ) : null}
+
       <div className="admin-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
           <div className="relative">
@@ -198,7 +273,7 @@ const AdminCrudPage = () => {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={module.columns.length + 2} className="text-center text-slate-400 py-10">
-                    No data
+                    {loading ? 'Loading…' : 'No data'}
                   </td>
                 </tr>
               )}

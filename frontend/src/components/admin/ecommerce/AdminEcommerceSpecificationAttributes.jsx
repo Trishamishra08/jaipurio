@@ -16,8 +16,19 @@ const mapRow = (r) => ({
   ...r,
   id: String(r._id || r.id || r.legacyId || ''),
   groupLabel: r.groupName || r.group?.name || '—',
+  valuesCount: Array.isArray(r.options) ? r.options.length : 0,
   createdAt: r.createdAt ? String(r.createdAt).slice(0, 10) : '',
 });
+
+const YesNoBadge = ({ value }) => (
+  <span
+    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+      value ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+    }`}
+  >
+    {value ? 'Yes' : 'No'}
+  </span>
+);
 
 export const AdminEcommerceSpecificationAttributes = () => {
   const navigate = useNavigate();
@@ -61,6 +72,22 @@ export const AdminEcommerceSpecificationAttributes = () => {
       },
       { header: 'Group', accessor: 'groupLabel' },
       { header: 'Type', accessor: 'type' },
+      { header: 'Values', accessor: 'valuesCount' },
+      { header: 'Variant', accessor: 'isVariantAttribute', cell: (row) => <YesNoBadge value={row.isVariantAttribute} /> },
+      { header: 'Filterable', accessor: 'isFilterable', cell: (row) => <YesNoBadge value={row.isFilterable} /> },
+      {
+        header: 'Status',
+        accessor: 'status',
+        cell: (row) => (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+              row.status === 'Published' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
+            }`}
+          >
+            {row.status || 'Published'}
+          </span>
+        ),
+      },
       { header: 'Created At', accessor: 'createdAt' },
       {
         header: 'Operations',

@@ -26,6 +26,12 @@ export const AdminEcommerceSpecificationAttributeEdit = () => {
   const [type, setType] = useState('Text');
   const [defaultValue, setDefaultValue] = useState('');
   const [optionsText, setOptionsText] = useState('');
+  const [unit, setUnit] = useState('');
+  const [isRequired, setIsRequired] = useState(false);
+  const [isFilterable, setIsFilterable] = useState(false);
+  const [isSearchable, setIsSearchable] = useState(false);
+  const [isVariantAttribute, setIsVariantAttribute] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [order, setOrder] = useState(0);
   const [status, setStatus] = useState('Published');
   const [loading, setLoading] = useState(!isCreate);
@@ -56,6 +62,12 @@ export const AdminEcommerceSpecificationAttributeEdit = () => {
         setType(row.type || 'Text');
         setDefaultValue(row.defaultValue || '');
         setOptionsText(Array.isArray(row.options) ? row.options.join(', ') : '');
+        setUnit(row.unit || '');
+        setIsRequired(Boolean(row.isRequired));
+        setIsFilterable(Boolean(row.isFilterable));
+        setIsSearchable(Boolean(row.isSearchable));
+        setIsVariantAttribute(Boolean(row.isVariantAttribute));
+        setIsVisible(row.isVisible !== false);
         setOrder(row.order ?? 0);
         setStatus(row.status || 'Published');
       } catch (err) {
@@ -94,6 +106,12 @@ export const AdminEcommerceSpecificationAttributeEdit = () => {
             .map((s) => s.trim())
             .filter(Boolean)
         : [],
+      unit: unit.trim(),
+      isRequired,
+      isFilterable,
+      isSearchable,
+      isVariantAttribute,
+      isVisible,
       order: Number(order) || 0,
       status,
     };
@@ -218,15 +236,50 @@ export const AdminEcommerceSpecificationAttributeEdit = () => {
                     />
                   </div>
                 ) : null}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Order</label>
-                  <input
-                    type="number"
-                    value={order}
-                    onChange={(e) => setOrder(e.target.value)}
-                    className="w-40 border border-slate-300 rounded-md py-2 px-3 text-xs"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Unit (optional)</label>
+                    <input
+                      type="text"
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      placeholder="e.g. inch, kg, cm"
+                      className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Order</label>
+                    <input
+                      type="number"
+                      value={order}
+                      onChange={(e) => setOrder(e.target.value)}
+                      className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs"
+                    />
+                  </div>
                 </div>
+              </div>
+
+              <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-2.5">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 mb-1">
+                  Behavior
+                </h4>
+                {[
+                  { key: 'isRequired', label: 'Required on products in assigned categories', value: isRequired, set: setIsRequired },
+                  { key: 'isVariantAttribute', label: 'Variant attribute (used to generate product variants)', value: isVariantAttribute, set: setIsVariantAttribute },
+                  { key: 'isFilterable', label: 'Filterable (shown as a storefront filter)', value: isFilterable, set: setIsFilterable },
+                  { key: 'isSearchable', label: 'Searchable', value: isSearchable, set: setIsSearchable },
+                  { key: 'isVisible', label: 'Visible on product page', value: isVisible, set: setIsVisible },
+                ].map((flag) => (
+                  <label key={flag.key} className="flex items-center gap-2 cursor-pointer select-none py-0.5">
+                    <input
+                      type="checkbox"
+                      checked={flag.value}
+                      onChange={(e) => flag.set(e.target.checked)}
+                      className="rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
+                    />
+                    <span className="text-xs text-slate-700">{flag.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
 

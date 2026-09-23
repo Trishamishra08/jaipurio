@@ -505,6 +505,47 @@ const createTag = async (req, res) => {
   }
 };
 
+const getTagById = async (req, res) => {
+  try {
+    const doc = await BlogTag.findById(req.params.id).lean();
+    if (!doc) return res.status(404).json({ success: false, message: 'Tag not found' });
+    res.json({ success: true, data: { ...doc, id: String(doc._id) } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateTag = async (req, res) => {
+  try {
+    const name = req.body.name !== undefined ? String(req.body.name).trim() : undefined;
+    const payload = { ...req.body };
+    if (name) {
+      payload.name = name;
+      if (!payload.slug) payload.slug = slugify(name);
+    }
+    delete payload._id;
+    delete payload.id;
+    const doc = await BlogTag.findByIdAndUpdate(req.params.id, payload, {
+      new: true,
+      runValidators: true,
+    });
+    if (!doc) return res.status(404).json({ success: false, message: 'Tag not found' });
+    res.json({ success: true, data: { ...doc.toObject(), id: String(doc._id) } });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const deleteTag = async (req, res) => {
+  try {
+    const doc = await BlogTag.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ success: false, message: 'Tag not found' });
+    res.json({ success: true, data: { id: String(doc._id) } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const listUiBlocks = async (req, res) => {
   try {
     await ensureDefaultUiBlocks();
@@ -543,5 +584,8 @@ module.exports = {
   reorderCategories,
   listTags,
   createTag,
+  getTagById,
+  updateTag,
+  deleteTag,
   listUiBlocks,
 };

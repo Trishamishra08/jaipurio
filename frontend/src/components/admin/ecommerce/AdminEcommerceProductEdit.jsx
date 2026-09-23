@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
@@ -6,7 +6,8 @@ import AdminCkEditor from './AdminCkEditor';
 import MediaGalleryModal from './MediaGalleryModal';
 import MediaUrlInsertModal from './MediaUrlInsertModal';
 import { fetchAdminProducts, fetchProductById, isMongoId, saveProduct, duplicateProduct } from '../../../utils/marketplaceApi';
-import { liveEcommerceList } from '../../../utils/ecommerceApi';
+import { liveEcommerceList, fetchCategoryAttributes } from '../../../utils/ecommerceApi';
+import { categoryService } from '../../../services/categoryService';
 import { productPublicBase, productPublicUrl } from '../../../utils/siteUrl';
 import {
   FiSave,
@@ -15,7 +16,6 @@ import {
   FiPlus,
   FiTrash2,
   FiSearch,
-  FiChevronRight,
   FiRotateCcw,
   FiInfo
 } from 'react-icons/fi';
@@ -171,6 +171,24 @@ const slugify = (text = '') =>
 
 const parseMoney = (v) => Number(String(v ?? '').replace(/,/g, '').replace(/[^\d.]/g, '')) || 0;
 
+/** Cartesian product of { attributeId, name, values[] } entries into variant attribute combinations. */
+const generateVariantCombinations = (variantAxes) => {
+  const axes = variantAxes.filter((a) => Array.isArray(a.values) && a.values.length);
+  if (!axes.length) return [];
+  return axes.reduce(
+    (combos, axis) =>
+      combos.flatMap((combo) =>
+        axis.values.map((value) => [...combo, { attribute: axis.attributeId, name: axis.name, value }])
+      ),
+    [[]]
+  );
+};
+
+const variantSkuSuffix = (attrs) =>
+  attrs
+    .map((a) => String(a.value).replace(/[^a-zA-Z0-9]+/g, '').slice(0, 4).toUpperCase())
+    .join('-');
+
 export const AdminEcommerceProductEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -268,21 +286,18 @@ export const AdminEcommerceProductEdit = () => {
   ]);
   const [featuredImage, setFeaturedImage] = useState('/planter.png');
 
-  // Categories Tree expansion & selection
-  const [expandedCategories, setExpandedCategories] = useState({
-    'home-living': true,
-    'spirituality': true,
-    'religious-statuary': true,
-    'jewellery': false,
-    'clothing': false,
-    'accessories': false
-  });
+  // Category (single-select, backed by the real Category collection)
+  const [categoryList, setCategoryList] = useState([]);
+  const [categoryRef, setCategoryRef] = useState('');
 
-  const [selectedCategories, setSelectedCategories] = useState({
-    'marble-idols': true,
-    'home-decor': true,
-    'handicrafts': true
-  });
+  // Dynamic, category-driven attributes: assignments come from CategoryAttribute,
+  // non-variant values are stored in `specValues`, variant-flagged attributes let
+  // the admin pick multiple values in `variantValueSelections` to generate variants.
+  const [categoryAttrs, setCategoryAttrs] = useState([]);
+  const [categoryAttrsLoading, setCategoryAttrsLoading] = useState(false);
+  const [specValues, setSpecValues] = useState({});
+  const [variantValueSelections, setVariantValueSelections] = useState({});
+  const [variants, setVariants] = useState([]);
 
   // FAQs
   const [faqs, setFaqs] = useState(isCreate ? SEED_FAQS : []);
@@ -294,7 +309,34 @@ export const AdminEcommerceProductEdit = () => {
     liveEcommerceList('specification-tables')
       .then((list) => setSpecTableOptions(Array.isArray(list) ? list : []))
       .catch(() => setSpecTableOptions([]));
+    categoryService
+      .getAllCategories()
+      .then((res) => setCategoryList(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => setCategoryList([]));
   }, []);
+
+  // Whenever the selected category changes, load which specification attributes apply to it.
+  useEffect(() => {
+    if (!categoryRef) {
+      setCategoryAttrs([]);
+      return;
+    }
+    let cancelled = false;
+    setCategoryAttrsLoading(true);
+    fetchCategoryAttributes(categoryRef)
+      .then((rows) => {
+        if (!cancelled) setCategoryAttrs(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryAttrs([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCategoryAttrsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryRef]);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,6 +393,37 @@ export const AdminEcommerceProductEdit = () => {
         setSpecTable(
           String(product.specificationTable?._id || product.specificationTable || '')
         );
+        setCategoryRef(String(product.categoryRef?._id || product.categoryRef || ''));
+        if (Array.isArray(product.specifications)) {
+          const specMap = {};
+          product.specifications.forEach((s) => {
+            const attrId = String(s.attribute?._id || s.attribute || '');
+            if (attrId) specMap[attrId] = s.value;
+          });
+          setSpecValues(specMap);
+        }
+        if (Array.isArray(product.variants) && product.variants.length) {
+          setVariants(
+            product.variants.map((v) => ({
+              sku: v.sku || '',
+              attributes: Array.isArray(v.attributes)
+                ? v.attributes.map((a) => ({
+                    attribute: String(a.attribute?._id || a.attribute || ''),
+                    name: a.name || '',
+                    value: a.value || '',
+                  }))
+                : [],
+              price: v.price ?? '',
+              oldPrice: v.oldPrice ?? '',
+              salePrice: v.salePrice ?? '',
+              stock: v.stock ?? '',
+              weight: v.weight ?? '',
+              barcode: v.barcode || '',
+              images: Array.isArray(v.images) ? v.images : [],
+              status: v.status || 'Published',
+            }))
+          );
+        }
         if (Array.isArray(product.tagList) && product.tagList.length) setTags(product.tagList);
         else if (typeof product.tags === 'string' && product.tags) setTags(product.tags.split(',').map((t) => t.trim()).filter(Boolean));
         if (product.collections) setCollections((prev) => ({ ...prev, ...product.collections }));
@@ -407,6 +480,15 @@ export const AdminEcommerceProductEdit = () => {
     };
   }, [productId, isCreate]);
 
+  const nonVariantAttrs = useMemo(
+    () => categoryAttrs.filter((ca) => !ca.isVariantAttribute),
+    [categoryAttrs]
+  );
+  const variantAttrs = useMemo(
+    () => categoryAttrs.filter((ca) => ca.isVariantAttribute),
+    [categoryAttrs]
+  );
+
   const handleSave = async (andExit = false) => {
     setSaving(true);
     setSaveError('');
@@ -421,8 +503,27 @@ export const AdminEcommerceProductEdit = () => {
         brand,
         store,
         storeName: store,
-        category:
-          Object.keys(selectedCategories).find((k) => selectedCategories[k]) || 'Planters',
+        category: categoryList.find((c) => String(c._id) === String(categoryRef))?.title || '',
+        categoryRef: categoryRef || null,
+        specifications: nonVariantAttrs
+          .filter((ca) => specValues[String(ca.attribute?._id || ca.attribute)] !== undefined && specValues[String(ca.attribute?._id || ca.attribute)] !== '')
+          .map((ca) => {
+            const attrId = String(ca.attribute?._id || ca.attribute);
+            return { attribute: attrId, name: ca.attribute?.name || '', value: specValues[attrId] };
+          }),
+        hasVariants: variants.length > 0,
+        variants: variants.map((v) => ({
+          sku: v.sku,
+          attributes: v.attributes,
+          price: parseMoney(v.price),
+          oldPrice: parseMoney(v.oldPrice) || parseMoney(v.price),
+          salePrice: parseMoney(v.salePrice) || parseMoney(v.price),
+          stock: Number(v.stock) || 0,
+          weight: parseMoney(v.weight),
+          barcode: v.barcode,
+          images: v.images,
+          status: v.status,
+        })),
         price: parseMoney(salePrice) || parseMoney(price),
         oldPrice: parseMoney(price),
         salePrice: parseMoney(salePrice) || parseMoney(price),
@@ -507,12 +608,62 @@ export const AdminEcommerceProductEdit = () => {
     }
   };
 
-  const toggleCategoryExpand = (key) => {
-    setExpandedCategories((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleSpecValueChange = (attributeId, value) => {
+    setSpecValues((prev) => ({ ...prev, [attributeId]: value }));
   };
 
-  const toggleCategorySelect = (key) => {
-    setSelectedCategories((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleVariantValueToggle = (attributeId, value) => {
+    setVariantValueSelections((prev) => {
+      const current = prev[attributeId] || [];
+      const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+      return { ...prev, [attributeId]: next };
+    });
+  };
+
+  const handleGenerateVariants = () => {
+    const axes = variantAttrs
+      .map((ca) => {
+        const attrId = String(ca.attribute?._id || ca.attribute);
+        return {
+          attributeId: attrId,
+          name: ca.attribute?.name || '',
+          values: variantValueSelections[attrId] || [],
+        };
+      })
+      .filter((axis) => axis.values.length);
+
+    const combinations = generateVariantCombinations(axes);
+    const baseSku = sku || slugify(name).toUpperCase().slice(0, 10) || 'VAR';
+    setVariants(
+      combinations.map((attrs) => {
+        const existing = variants.find(
+          (v) =>
+            v.attributes.length === attrs.length &&
+            v.attributes.every((a, i) => a.attribute === attrs[i].attribute && a.value === attrs[i].value)
+        );
+        if (existing) return existing;
+        return {
+          sku: `${baseSku}-${variantSkuSuffix(attrs)}`,
+          attributes: attrs,
+          price: price,
+          oldPrice: price,
+          salePrice: salePrice,
+          stock: '',
+          weight: '',
+          barcode: '',
+          images: [],
+          status: 'Published',
+        };
+      })
+    );
+  };
+
+  const handleVariantFieldChange = (index, field, value) => {
+    setVariants((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
+  };
+
+  const handleRemoveVariant = (index) => {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleRemoveFaq = (faqId) => {
@@ -935,21 +1086,243 @@ export const AdminEcommerceProductEdit = () => {
             </div>
           </div>
 
-          {/* Card: Attributes */}
-          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Attributes</h4>
-              <button
-                type="button"
-                className="text-xs text-blue-600 hover:text-blue-700 font-semibold border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded-md transition"
-              >
-                Add new attributes
-              </button>
+          {/* Card: Specifications (dynamic, category-driven, non-variant attributes) */}
+          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Specifications</h4>
+              {categoryRef ? (
+                <Link
+                  to="/admin/ecommerce/categories"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+                >
+                  Manage category attributes
+                </Link>
+              ) : null}
             </div>
-            <p className="text-[11px] text-slate-500">
-              Adding new attributes helps the product to have many options, such as size or color.
-            </p>
+            {!categoryRef ? (
+              <p className="text-[11px] text-slate-500">
+                Select a category above to load the attributes that apply to this product.
+              </p>
+            ) : categoryAttrsLoading ? (
+              <p className="text-[11px] text-slate-500">Loading attributes for this category…</p>
+            ) : nonVariantAttrs.length === 0 ? (
+              <p className="text-[11px] text-slate-500">
+                No non-variant attributes assigned to this category yet.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {nonVariantAttrs.map((ca) => {
+                  const attr = ca.attribute || {};
+                  const attrId = String(attr._id || ca.attribute);
+                  const value = specValues[attrId] ?? '';
+                  return (
+                    <div key={attrId} className={attr.type === 'Textarea' ? 'sm:col-span-2' : ''}>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        {attr.name}
+                        {ca.isRequired ? <span className="text-red-500"> *</span> : null}
+                        {attr.unit ? <span className="text-slate-400 font-normal"> ({attr.unit})</span> : null}
+                      </label>
+                      {attr.type === 'Textarea' ? (
+                        <textarea
+                          rows={2}
+                          value={value}
+                          onChange={(e) => handleSpecValueChange(attrId, e.target.value)}
+                          className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs"
+                        />
+                      ) : attr.type === 'Select' ? (
+                        <select
+                          value={value}
+                          onChange={(e) => handleSpecValueChange(attrId, e.target.value)}
+                          className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs bg-white"
+                        >
+                          <option value="">Select…</option>
+                          {(attr.options || []).map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : attr.type === 'Radio' ? (
+                        <div className="flex flex-wrap gap-3 pt-1">
+                          {(attr.options || []).map((opt) => (
+                            <label key={opt} className="flex items-center gap-1 text-xs cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`spec-${attrId}`}
+                                checked={value === opt}
+                                onChange={() => handleSpecValueChange(attrId, opt)}
+                                className="text-blue-600"
+                              />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      ) : attr.type === 'Checkbox' ? (
+                        <div className="flex flex-wrap gap-3 pt-1">
+                          {(attr.options || []).map((opt) => {
+                            const arr = Array.isArray(value) ? value : [];
+                            return (
+                              <label key={opt} className="flex items-center gap-1 text-xs cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={arr.includes(opt)}
+                                  onChange={() =>
+                                    handleSpecValueChange(
+                                      attrId,
+                                      arr.includes(opt) ? arr.filter((v) => v !== opt) : [...arr, opt]
+                                    )
+                                  }
+                                  className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
+                                />
+                                {opt}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) => handleSpecValueChange(attrId, e.target.value)}
+                          placeholder={attr.defaultValue || ''}
+                          className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
+
+          {/* Card: Variants (generated from variant-flagged category attributes) */}
+          {categoryRef && (variantAttrs.length > 0 || variants.length > 0) ? (
+            <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Variants</h4>
+
+              {variantAttrs.length > 0 ? (
+                <div className="space-y-3 border border-slate-200 rounded-md p-3 bg-slate-50/60">
+                  {variantAttrs.map((ca) => {
+                    const attr = ca.attribute || {};
+                    const attrId = String(attr._id || ca.attribute);
+                    const selected = variantValueSelections[attrId] || [];
+                    return (
+                      <div key={attrId}>
+                        <div className="text-xs font-semibold text-slate-700 mb-1">{attr.name}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {(attr.options || []).map((opt) => (
+                            <button
+                              type="button"
+                              key={opt}
+                              onClick={() => handleVariantValueToggle(attrId, opt)}
+                              className={`text-[11px] px-2.5 py-1 rounded-full border transition ${
+                                selected.includes(opt)
+                                  ? 'bg-blue-600 border-blue-600 text-white'
+                                  : 'bg-white border-slate-300 text-slate-600 hover:border-blue-400'
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                          {!(attr.options || []).length ? (
+                            <span className="text-[11px] text-slate-400">
+                              No values defined for this attribute yet.
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={handleGenerateVariants}
+                    className="text-xs bg-slate-800 hover:bg-slate-900 text-white font-semibold px-3 py-1.5 rounded-md"
+                  >
+                    Generate variants
+                  </button>
+                </div>
+              ) : null}
+
+              {variants.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[11px] border border-slate-200 rounded-md overflow-hidden">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="text-left px-2 py-1.5 font-semibold">Combination</th>
+                        <th className="text-left px-2 py-1.5 font-semibold">SKU</th>
+                        <th className="text-left px-2 py-1.5 font-semibold">Price ₹</th>
+                        <th className="text-left px-2 py-1.5 font-semibold">Sale ₹</th>
+                        <th className="text-left px-2 py-1.5 font-semibold">Stock</th>
+                        <th className="text-left px-2 py-1.5 font-semibold">Status</th>
+                        <th className="px-2 py-1.5"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {variants.map((v, index) => (
+                        <tr key={index} className="border-t border-slate-100">
+                          <td className="px-2 py-1.5 text-slate-700">
+                            {v.attributes.map((a) => a.value).join(' / ') || '—'}
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input
+                              type="text"
+                              value={v.sku}
+                              onChange={(e) => handleVariantFieldChange(index, 'sku', e.target.value)}
+                              className="w-28 border border-slate-300 rounded-sm py-1 px-1.5 font-mono"
+                            />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input
+                              type="text"
+                              value={v.price}
+                              onChange={(e) => handleVariantFieldChange(index, 'price', e.target.value)}
+                              className="w-20 border border-slate-300 rounded-sm py-1 px-1.5"
+                            />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input
+                              type="text"
+                              value={v.salePrice}
+                              onChange={(e) => handleVariantFieldChange(index, 'salePrice', e.target.value)}
+                              className="w-20 border border-slate-300 rounded-sm py-1 px-1.5"
+                            />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input
+                              type="text"
+                              value={v.stock}
+                              onChange={(e) => handleVariantFieldChange(index, 'stock', e.target.value)}
+                              className="w-16 border border-slate-300 rounded-sm py-1 px-1.5"
+                            />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <select
+                              value={v.status}
+                              onChange={(e) => handleVariantFieldChange(index, 'status', e.target.value)}
+                              className="border border-slate-300 rounded-sm py-1 px-1 bg-white"
+                            >
+                              <option value="Published">Published</option>
+                              <option value="Draft">Draft</option>
+                            </select>
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(index)}
+                              className="text-slate-400 hover:text-red-600"
+                              title="Remove variant"
+                            >
+                              <FiTrash2 size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* Card: Product Options */}
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
@@ -1306,188 +1679,34 @@ export const AdminEcommerceProductEdit = () => {
             </label>
           </div>
 
-          {/* Card: Categories (Nested Hierarchical Tree) */}
+          {/* Card: Category (single-select, from the real Category collection) */}
           <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs space-y-2">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
-              Categories
+              Category
             </h4>
-            <div className="max-h-64 overflow-y-auto space-y-1 text-xs text-slate-700 pr-1">
-              {/* Jewellery */}
-              <div>
-                <div className="flex items-center gap-1.5 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleCategoryExpand('jewellery')}
-                    className="text-slate-400 hover:text-slate-700"
-                  >
-                    <FiChevronRight
-                      size={12}
-                      className={`transform transition-transform ${expandedCategories['jewellery'] ? 'rotate-90' : ''}`}
-                    />
-                  </button>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" />
-                    <span>Jewellery</span>
-                  </label>
-                </div>
-                {expandedCategories['jewellery'] && (
-                  <div className="pl-5 space-y-1 border-l border-slate-200 ml-2">
-                    {['Bangles', 'Bracelets', 'Rings', 'Necklaces', 'Earrings'].map((sub) => (
-                      <label key={sub} className="flex items-center gap-1.5 cursor-pointer py-0.5">
-                        <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" />
-                        <span>{sub}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Home & Living */}
-              <div>
-                <div className="flex items-center gap-1.5 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleCategoryExpand('home-living')}
-                    className="text-slate-400 hover:text-slate-700"
-                  >
-                    <FiChevronRight
-                      size={12}
-                      className={`transform transition-transform ${expandedCategories['home-living'] ? 'rotate-90' : ''}`}
-                    />
-                  </button>
-                  <label className="flex items-center gap-1.5 cursor-pointer font-medium">
-                    <input type="checkbox" checked className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" readOnly />
-                    <span>Home & Living</span>
-                  </label>
-                </div>
-
-                {expandedCategories['home-living'] && (
-                  <div className="pl-4 space-y-1 border-l border-slate-200 ml-2 py-0.5">
-                    {/* Spirituality & Religion */}
-                    <div>
-                      <div className="flex items-center gap-1.5 py-0.5">
-                        <button
-                          type="button"
-                          onClick={() => toggleCategoryExpand('spirituality')}
-                          className="text-slate-400"
-                        >
-                          <FiChevronRight
-                            size={12}
-                            className={`transform transition-transform ${expandedCategories['spirituality'] ? 'rotate-90' : ''}`}
-                          />
-                        </button>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input type="checkbox" checked className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" readOnly />
-                          <span>Spirituality & Religion</span>
-                        </label>
-                      </div>
-
-                      {expandedCategories['spirituality'] && (
-                        <div className="pl-4 space-y-1 border-l border-slate-200 ml-2 py-0.5">
-                          {/* Statuary Idols */}
-                          <div>
-                            <div className="flex items-center gap-1.5 py-0.5">
-                              <button
-                                type="button"
-                                onClick={() => toggleCategoryExpand('religious-statuary')}
-                                className="text-slate-400"
-                              >
-                                <FiChevronRight
-                                  size={12}
-                                  className={`transform transition-transform ${expandedCategories['religious-statuary'] ? 'rotate-90' : ''}`}
-                                />
-                              </button>
-                              <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input type="checkbox" checked className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" readOnly />
-                                <span>Religious Statuary Idols</span>
-                              </label>
-                            </div>
-
-                            {expandedCategories['religious-statuary'] && (
-                              <div className="pl-4 space-y-0.5 border-l border-slate-200 ml-2">
-                                <label className="flex items-center gap-1.5 cursor-pointer py-0.5 text-blue-700 font-medium">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedCategories['marble-idols']}
-                                    onChange={() => toggleCategorySelect('marble-idols')}
-                                    className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
-                                  />
-                                  <span>Marble Idols</span>
-                                </label>
-                                <label className="flex items-center gap-1.5 cursor-pointer py-0.5">
-                                  <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" />
-                                  <span>Brass Idols</span>
-                                </label>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <label className="flex items-center gap-1.5 cursor-pointer py-0.5 font-medium">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories['home-decor']}
-                        onChange={() => toggleCategorySelect('home-decor')}
-                        className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
-                      />
-                      <span>Home Decor</span>
-                    </label>
-
-                    <label className="flex items-center gap-1.5 cursor-pointer py-0.5 font-medium">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories['handicrafts']}
-                        onChange={() => toggleCategorySelect('handicrafts')}
-                        className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5"
-                      />
-                      <span>Handicrafts</span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Clothing */}
-              <div>
-                <div className="flex items-center gap-1.5 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleCategoryExpand('clothing')}
-                    className="text-slate-400"
-                  >
-                    <FiChevronRight
-                      size={12}
-                      className={`transform transition-transform ${expandedCategories['clothing'] ? 'rotate-90' : ''}`}
-                    />
-                  </button>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" />
-                    <span>Clothing</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Accessories */}
-              <div>
-                <div className="flex items-center gap-1.5 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleCategoryExpand('accessories')}
-                    className="text-slate-400"
-                  >
-                    <FiChevronRight
-                      size={12}
-                      className={`transform transition-transform ${expandedCategories['accessories'] ? 'rotate-90' : ''}`}
-                    />
-                  </button>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 h-3.5 w-3.5" />
-                    <span>Accessories</span>
-                  </label>
-                </div>
-              </div>
-            </div>
+            <select
+              value={categoryRef}
+              onChange={(e) => setCategoryRef(e.target.value)}
+              className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs bg-white text-slate-700 focus:outline-hidden focus:border-blue-500"
+            >
+              <option value="">Select a category…</option>
+              {categoryList.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.path || c.title}
+                </option>
+              ))}
+            </select>
+            {!categoryList.length ? (
+              <p className="text-[11px] text-amber-600">
+                No categories yet —{' '}
+                <Link to="/admin/ecommerce/categories" className="underline">
+                  create one first
+                </Link>
+                .
+              </p>
+            ) : !categoryRef ? (
+              <p className="text-[11px] text-slate-400">Selecting a category loads its dynamic attributes below.</p>
+            ) : null}
           </div>
 
           {/* Card: Brand */}

@@ -24,12 +24,28 @@ const {
   syncInvoicesFromOrders,
 } = require('../controllers/ecommerceController');
 
+const {
+  listForCategory,
+  assignAttribute,
+  updateAssignment,
+  removeAssignment,
+  reorderAssignments,
+} = require('../controllers/categoryAttributeController');
+
 const router = express.Router();
 const crudOpts = { skipAuth: true };
 
 router.use(protect, authorize('admin'));
 
 router.get('/reports', getReports);
+
+const categoryAttributesRouter = express.Router({ mergeParams: true });
+categoryAttributesRouter.get('/', listForCategory);
+categoryAttributesRouter.post('/', assignAttribute);
+categoryAttributesRouter.post('/reorder', reorderAssignments);
+categoryAttributesRouter.put('/:assignmentId', updateAssignment);
+categoryAttributesRouter.delete('/:assignmentId', removeAssignment);
+router.use('/categories/:categoryId/attributes', categoryAttributesRouter);
 router.get('/customers', listCustomers);
 router.get('/customers/:id', getCustomer);
 router.post('/customers', createCustomer);

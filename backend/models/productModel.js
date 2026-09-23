@@ -18,6 +18,12 @@ const productSchema = new mongoose.Schema({
   image: { type: String, default: '' },
   iconImage: { type: String, default: '' },
   category: { type: String, required: true },
+  categoryRef: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null,
+    index: true,
+  },
   packSize: { type: String },
   careInstructions: { type: String, default: '' },
   shippingNotes: { type: String, default: '' },
@@ -30,11 +36,27 @@ const productSchema = new mongoose.Schema({
   disclaimer: { type: String },
   hasVariants: { type: Boolean, default: false },
   variants: [{
-    size: String,
+    sku: String,
+    attributes: [{
+      attribute: { type: mongoose.Schema.Types.ObjectId, ref: 'EcommerceSpecificationAttribute' },
+      name: String,
+      value: String,
+    }],
+    size: String, // legacy, superseded by `attributes`
     price: Number,
     oldPrice: Number,
+    salePrice: Number,
     stock: Number,
-    sku: String
+    weight: Number,
+    barcode: String,
+    images: [{ type: String }],
+    status: { type: String, enum: ['Published', 'Draft'], default: 'Published' },
+  }],
+  // Non-variant attribute values selected for this product (dynamic, category-driven).
+  specifications: [{
+    attribute: { type: mongoose.Schema.Types.ObjectId, ref: 'EcommerceSpecificationAttribute' },
+    name: String,
+    value: mongoose.Schema.Types.Mixed,
   }],
   sku: { type: String },
   images: [{ type: String }],
