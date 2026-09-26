@@ -1,91 +1,18 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import { FiRefreshCw, FiSearch, FiChevronDown } from 'react-icons/fi';
+import { fetchInventory } from '../../../utils/marketplaceApi';
+import api from '../../../utils/api';
 
-// ─── Mock Data matching the live jaipurio.in product inventory ─────────────────
-const initialInventory = [
-  {
-    id: '999',
-    image: '/planter.png',
-    name: '10 Inch Brass Ganesh on Throne: Royal Umbrella Design | Traditional Temple Art | Majestic Sitting Pose | Sacred Home Decor',
-    sku: 'JIP-RL-BGTU-001',
-    storehouseManagement: false,
-    quantity: null
-  },
-  {
-    id: '824',
-    image: '/planter.png',
-    name: '10K Solid Gold Flower Necklace | Real Gold Dainty Women\'s Chain | Elegant Floral Pendant | Perfect Gift for Her | Jaipurio Luxury Jewelry Collection',
-    sku: 'JIP-GFN-10KT-001',
-    storehouseManagement: true,
-    quantity: 10
-  },
-  {
-    id: '914',
-    image: '/planter.png',
-    name: '10K Solid Gold Flower Necklace: Real Gold Dainty Chain | Authentic Women\'s Jewelry | Delicate Floral Design | Perfect Choice',
-    sku: 'JIP-JW-SGFN-001',
-    storehouseManagement: true,
-    quantity: 10
-  },
-  {
-    id: '998',
-    image: '/planter.png',
-    name: '18 Inch Golden Lord Ganesha Idol: Large Temple Grade Murti | Divine Home Pooja Statue | Premium Golden Finish | Sacred Decor Art',
-    sku: 'JIP-RL-GGNS-001',
-    storehouseManagement: false,
-    quantity: null
-  },
-  {
-    id: '829',
-    image: '/planter.png',
-    name: '18Inch Cowhide Leather Backpack for Men | Full Grain Leather Rucksack | Hipster Office Backpack | Birthday Gift Idea | Jaipurio Premium Leather Collection',
-    sku: 'JIP-CLB-FGBP-001',
-    storehouseManagement: true,
-    quantity: 10
-  },
-  {
-    id: '7878',
-    image: '/planter.png',
-    name: 'Comfy White Hunting Style Cotton Shirt - Premium Comfort Style | Jaipurio',
-    sku: 'JAI-CL-CWH-001',
-    storehouseManagement: false,
-    quantity: null
-  },
-  {
-    id: '7877',
-    image: '/planter.png',
-    name: 'Handcrafted Blue Pottery Vase - Traditional Jaipur Art',
-    sku: 'JAI-BP-VAS-002',
-    storehouseManagement: true,
-    quantity: 42
-  },
-  {
-    id: '7876',
-    image: '/planter.png',
-    name: 'Rajasthani Design Matka (5L) - Natural Clay Water Pot',
-    sku: 'JAI-MT-5L-003',
-    storehouseManagement: false,
-    quantity: null
-  },
-  {
-    id: '7875',
-    image: '/planter.png',
-    name: 'Kulhad (Pack of 6) - Traditional Terracotta Chai Cups',
-    sku: 'JAI-KH-PK6-004',
-    storehouseManagement: true,
-    quantity: 50
-  },
-  {
-    id: '7874',
-    image: '/planter.png',
-    name: 'Handmade Mitti Planter - 8 Inch Garden Terracotta Pot',
-    sku: 'JAI-PL-8IN-005',
-    storehouseManagement: true,
-    quantity: 35
-  }
-];
+const mapInventoryRow = (p) => ({
+  id: String(p._id || p.id),
+  image: p.image || (Array.isArray(p.images) ? p.images[0] : '') || '/planter.png',
+  name: p.title || p.name,
+  sku: p.sku || '',
+  storehouseManagement: p.trackQuantity !== false,
+  quantity: Number(p.stock) || 0,
+});
 
 // ─── Storehouse Management Dropdown ────────────────────────────────────────────
 const StorehouseDropdown = ({ value, onChange }) => (
@@ -147,15 +74,43 @@ const QuantityCell = ({ storehouseManagement, quantity, onChangeQty }) => {
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export const AdminEcommerceProductInventory = () => {
-  const [inventory, setInventory] = useState(initialInventory);
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const updateRow = (id, field, value) => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await fetchInventory();
+      setInventory((Array.isArray(rows) ? rows : []).map(mapInventoryRow));
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to load inventory.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const updateRow = async (id, field, value) => {
     setInventory((prev) =>
       prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
     );
+    const row = inventory.find((r) => r.id === id);
+    if (!row) return;
+    const nextTrack = field === 'storehouseManagement' ? value : row.storehouseManagement;
+    const nextQty = field === 'quantity' ? value : row.quantity;
+    try {
+      await api.put(`/inventory/${id}`, { stock: nextQty, trackQuantity: nextTrack });
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to update stock.');
+    }
   };
 
   const filtered = inventory.filter((item) => {
@@ -172,6 +127,11 @@ export const AdminEcommerceProductInventory = () => {
 
   return (
     <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT INVENTORY']}>
+      {loadError && (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      )}
       <div className="bg-white rounded-md border border-slate-200 shadow-2xs">
 
         {/* ── Top Toolbar: Search + Reload ── */}
@@ -187,11 +147,11 @@ export const AdminEcommerceProductInventory = () => {
             <FiSearch className="absolute right-2.5 top-2.5 text-slate-400" size={13} />
           </div>
           <button
-            onClick={() => setSearch('')}
+            onClick={load}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
           >
             <FiRefreshCw size={13} className="text-slate-500" />
-            <span>Reload</span>
+            <span>{loading ? 'Loading…' : 'Reload'}</span>
           </button>
         </div>
 

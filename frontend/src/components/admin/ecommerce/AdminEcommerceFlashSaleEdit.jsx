@@ -13,9 +13,11 @@ import EcommerceLayout from './EcommerceLayout';
 import {
   FLASH_SALE_PRODUCT_CATALOG,
   formatFlashPrice,
-  getFlashSaleById,
   getFlashSaleProduct,
 } from '../../../data/flashSales';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const RESOURCE = 'flash-sales';
 
 const LANGUAGES = [
   { code: 'fr_FR', label: 'Français', flag: '🇫🇷' },
@@ -28,34 +30,78 @@ const LANGUAGES = [
 const emptySale = {
   id: 'new',
   name: '',
+  slug: '',
   endDate: '',
   status: 'Published',
   products: [],
 };
 
+const normalizeProducts = (products) =>
+  Array.isArray(products)
+    ? products.map((p) => ({
+        productId: String(p.productId),
+        price: p.price ?? 0,
+        quantity: p.quantity ?? 1,
+        name: p.name || '',
+      }))
+    : [];
+
 export const AdminEcommerceFlashSaleEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isCreate = !id || id === 'create';
-  const existing = useMemo(() => (isCreate ? null : getFlashSaleById(id)), [id, isCreate]);
-  const seed = existing || emptySale;
 
-  const [name, setName] = useState(seed.name);
-  const [endDate, setEndDate] = useState(seed.endDate || '');
-  const [status, setStatus] = useState(seed.status || 'Published');
-  const [products, setProducts] = useState(seed.products || []);
+  const [name, setName] = useState(emptySale.name);
+  const [endDate, setEndDate] = useState(emptySale.endDate);
+  const [status, setStatus] = useState(emptySale.status);
+  const [products, setProducts] = useState(emptySale.products);
   const [productQuery, setProductQuery] = useState('');
+  const [existing, setExisting] = useState(null);
+  const [loading, setLoading] = useState(!isCreate);
+  const [loadError, setLoadError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [savedToast, setSavedToast] = useState(false);
   const [selectedLangs, setSelectedLangs] = useState({});
 
   useEffect(() => {
-    const next = isCreate ? emptySale : getFlashSaleById(id) || emptySale;
-    setName(next.name);
-    setEndDate(next.endDate || '');
-    setStatus(next.status || 'Published');
-    setProducts(next.products || []);
+    let cancelled = false;
     setProductQuery('');
     setSelectedLangs({});
+    setSaveError('');
+
+    if (isCreate) {
+      setExisting(null);
+      setName(emptySale.name);
+      setEndDate(emptySale.endDate);
+      setStatus(emptySale.status);
+      setProducts(emptySale.products);
+      setLoading(false);
+      return undefined;
+    }
+
+    setLoading(true);
+    setLoadError('');
+    ecommerceGet(RESOURCE, id)
+      .then((record) => {
+        if (cancelled) return;
+        setExisting(record);
+        setName(record?.name || '');
+        setEndDate(record?.endDate ? String(record.endDate).slice(0, 10) : '');
+        setStatus(record?.status || emptySale.status);
+        setProducts(normalizeProducts(record?.products));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(err?.response?.data?.message || err?.message || 'Failed to load flash sale');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
   const selectedProductIds = useMemo(
@@ -77,10 +123,42 @@ export const AdminEcommerceFlashSaleEdit = () => {
     ? 'Create'
     : `Edit "${name || existing?.name || 'Flash sale'}"`;
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/ecommerce/flash-sales');
+  const handleSave = async (exit = false) => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const payload = {
+        name,
+        slug: existing?.slug,
+        endDate,
+        status,
+        products: products.map((p) => ({
+          productId: p.productId,
+          price: Number(p.price) || 0,
+          quantity: Number(p.quantity) || 1,
+          name: p.name || getFlashSaleProduct(p.productId)?.name || '',
+        })),
+      };
+      if (isCreate) {
+        const created = await ecommerceCreate(RESOURCE, payload);
+        setSavedToast(true);
+        window.setTimeout(() => setSavedToast(false), 1800);
+        if (exit) {
+          navigate('/admin/ecommerce/flash-sales');
+        } else if (created?._id) {
+          navigate(`/admin/ecommerce/flash-sales/edit/${created._id}`, { replace: true });
+        }
+      } else {
+        await ecommerceUpdate(RESOURCE, id, payload);
+        setSavedToast(true);
+        window.setTimeout(() => setSavedToast(false), 1800);
+        if (exit) navigate('/admin/ecommerce/flash-sales');
+      }
+    } catch (err) {
+      setSaveError(err?.response?.data?.message || err?.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addProduct = (product) => {
@@ -90,6 +168,7 @@ export const AdminEcommerceFlashSaleEdit = () => {
         productId: String(product.id),
         price: Math.round((Number(product.price) || 0) * 0.7),
         quantity: 1,
+        name: product.name || '',
       },
     ]);
     setProductQuery('');
@@ -125,6 +204,20 @@ export const AdminEcommerceFlashSaleEdit = () => {
         </span>
       </div>
 
+      {loadError ? (
+        <div className="mb-4 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      ) : null}
+      {saveError ? (
+        <div className="mb-4 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {saveError}
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="py-10 text-center text-sm text-slate-500">Loading flash sale…</div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <div className="lg:col-span-8 space-y-5">
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-4">
@@ -262,16 +355,18 @@ export const AdminEcommerceFlashSaleEdit = () => {
             </h4>
             <button
               type="button"
+              disabled={saving}
               onClick={() => handleSave(false)}
-              className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition"
+              className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition disabled:opacity-60"
             >
               <FiSave size={14} />
               Save
             </button>
             <button
               type="button"
+              disabled={saving}
               onClick={() => handleSave(true)}
-              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold py-2 px-3 rounded-md text-xs transition"
+              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold py-2 px-3 rounded-md text-xs transition disabled:opacity-60"
             >
               <FiLogOut size={14} />
               Save & Exit
@@ -343,6 +438,7 @@ export const AdminEcommerceFlashSaleEdit = () => {
           </div>
         </div>
       </div>
+      )}
     </EcommerceLayout>
   );
 };

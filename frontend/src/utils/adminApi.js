@@ -7,6 +7,11 @@ export const fetchAdminPendingCounts = async () => {
   return unwrap(res);
 };
 
+export const fetchAdminDashboardStats = async () => {
+  const res = await api.get('/admins/dashboard-stats');
+  return unwrap(res);
+};
+
 export const loginAdminApi = async (email, password) => {
   const res = await api.post('/users/login', { email, password });
   if (!res.data?.success) {

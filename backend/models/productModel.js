@@ -11,6 +11,8 @@ const productSchema = new mongoose.Schema({
   salePrice: { type: Number },
   discountProductPrice: { type: Number },
   costPerItem: { type: Number },
+  saleStartDate: { type: Date },
+  saleEndDate: { type: Date },
   barcode: { type: String },
   brand: { type: String, default: 'Jaipurio Heritage' },
   rating: { type: Number },

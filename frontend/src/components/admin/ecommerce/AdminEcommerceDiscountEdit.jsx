@@ -1,18 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FiCheck, FiRefreshCw } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
-import { generateCouponCode, getDiscountById } from '../../../data/discounts';
+import { generateCouponCode } from '../../../data/discounts';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const RESOURCE = 'discounts';
 
 const emptyDiscount = {
   type: 'coupon',
   code: '',
   title: '',
+  description: '',
   canUseWithPromotion: false,
   unlimited: true,
+  usageLimit: null,
   applyViaUrl: false,
   displayAtCheckout: false,
-  couponType: 'amount',
+  couponType: 'percentage',
   value: '',
   applyFor: 'all_orders',
   minOrderAmount: '',
@@ -21,6 +26,20 @@ const emptyDiscount = {
   endDate: new Date().toISOString().slice(0, 10),
   endTime: '23:59',
   neverExpired: true,
+  isActive: true,
+};
+
+const COUPON_TYPE_UI_TO_SCHEMA = {
+  amount: 'fixed',
+  percentage: 'percentage',
+  free_shipping: 'free_shipping',
+  same_price: 'fixed',
+};
+
+const COUPON_TYPE_SCHEMA_TO_UI = {
+  fixed: 'amount',
+  percentage: 'percentage',
+  free_shipping: 'free_shipping',
 };
 
 const COUPON_TYPES = [
@@ -45,53 +64,131 @@ export const AdminEcommerceDiscountEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isCreate = !id || id === 'create';
-  const existing = useMemo(() => (isCreate ? null : getDiscountById(id)), [id, isCreate]);
-  const seed = existing || emptyDiscount;
 
-  const [type, setType] = useState(seed.type || 'coupon');
-  const [code, setCode] = useState(seed.code || '');
-  const [title, setTitle] = useState(seed.title || '');
-  const [canUseWithPromotion, setCanUseWithPromotion] = useState(Boolean(seed.canUseWithPromotion));
-  const [unlimited, setUnlimited] = useState(seed.unlimited !== false);
-  const [applyViaUrl, setApplyViaUrl] = useState(Boolean(seed.applyViaUrl));
-  const [displayAtCheckout, setDisplayAtCheckout] = useState(Boolean(seed.displayAtCheckout));
-  const [couponType, setCouponType] = useState(seed.couponType || 'amount');
-  const [value, setValue] = useState(seed.value ?? '');
-  const [applyFor, setApplyFor] = useState(seed.applyFor || 'all_orders');
-  const [minOrderAmount, setMinOrderAmount] = useState(seed.minOrderAmount || '');
-  const [startDate, setStartDate] = useState(seed.startDate || emptyDiscount.startDate);
-  const [startTime, setStartTime] = useState(seed.startTime || '0:00');
-  const [endDate, setEndDate] = useState(seed.endDate || emptyDiscount.endDate);
-  const [endTime, setEndTime] = useState(seed.endTime || '23:59');
-  const [neverExpired, setNeverExpired] = useState(seed.neverExpired !== false);
+  const [type, setType] = useState(emptyDiscount.type);
+  const [code, setCode] = useState(emptyDiscount.code);
+  const [title, setTitle] = useState(emptyDiscount.title);
+  const [canUseWithPromotion, setCanUseWithPromotion] = useState(emptyDiscount.canUseWithPromotion);
+  const [unlimited, setUnlimited] = useState(emptyDiscount.unlimited);
+  const [applyViaUrl, setApplyViaUrl] = useState(emptyDiscount.applyViaUrl);
+  const [displayAtCheckout, setDisplayAtCheckout] = useState(emptyDiscount.displayAtCheckout);
+  const [couponType, setCouponType] = useState('amount');
+  const [value, setValue] = useState(emptyDiscount.value);
+  const [applyFor, setApplyFor] = useState(emptyDiscount.applyFor);
+  const [minOrderAmount, setMinOrderAmount] = useState(emptyDiscount.minOrderAmount);
+  const [startDate, setStartDate] = useState(emptyDiscount.startDate);
+  const [startTime, setStartTime] = useState(emptyDiscount.startTime);
+  const [endDate, setEndDate] = useState(emptyDiscount.endDate);
+  const [endTime, setEndTime] = useState(emptyDiscount.endTime);
+  const [neverExpired, setNeverExpired] = useState(emptyDiscount.neverExpired);
+  const [existing, setExisting] = useState(null);
+  const [loading, setLoading] = useState(!isCreate);
+  const [loadError, setLoadError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [savedToast, setSavedToast] = useState(false);
 
   useEffect(() => {
-    const next = isCreate ? emptyDiscount : getDiscountById(id) || emptyDiscount;
-    setType(next.type || 'coupon');
-    setCode(next.code || '');
-    setTitle(next.title || '');
-    setCanUseWithPromotion(Boolean(next.canUseWithPromotion));
-    setUnlimited(next.unlimited !== false);
-    setApplyViaUrl(Boolean(next.applyViaUrl));
-    setDisplayAtCheckout(Boolean(next.displayAtCheckout));
-    setCouponType(next.couponType || 'amount');
-    setValue(next.value ?? '');
-    setApplyFor(next.applyFor || 'all_orders');
-    setMinOrderAmount(next.minOrderAmount || '');
-    setStartDate(next.startDate || emptyDiscount.startDate);
-    setStartTime(next.startTime || '0:00');
-    setEndDate(next.endDate || emptyDiscount.endDate);
-    setEndTime(next.endTime || '23:59');
-    setNeverExpired(isCreate ? true : Boolean(next.neverExpired));
+    let cancelled = false;
+    setSaveError('');
+
+    if (isCreate) {
+      setExisting(null);
+      setType(emptyDiscount.type);
+      setCode(emptyDiscount.code);
+      setTitle(emptyDiscount.title);
+      setCanUseWithPromotion(emptyDiscount.canUseWithPromotion);
+      setUnlimited(emptyDiscount.unlimited);
+      setApplyViaUrl(emptyDiscount.applyViaUrl);
+      setDisplayAtCheckout(emptyDiscount.displayAtCheckout);
+      setCouponType('amount');
+      setValue(emptyDiscount.value);
+      setApplyFor(emptyDiscount.applyFor);
+      setMinOrderAmount(emptyDiscount.minOrderAmount);
+      setStartDate(emptyDiscount.startDate);
+      setStartTime(emptyDiscount.startTime);
+      setEndDate(emptyDiscount.endDate);
+      setEndTime(emptyDiscount.endTime);
+      setNeverExpired(emptyDiscount.neverExpired);
+      setLoading(false);
+      return undefined;
+    }
+
+    setLoading(true);
+    setLoadError('');
+    ecommerceGet(RESOURCE, id)
+      .then((record) => {
+        if (cancelled) return;
+        setExisting(record);
+        setType(record?.type || emptyDiscount.type);
+        setCode(record?.code || '');
+        setTitle(record?.title || '');
+        setCanUseWithPromotion(Boolean(record?.canUseWithPromotion));
+        setUnlimited(record?.unlimited !== false);
+        setApplyViaUrl(Boolean(record?.applyViaUrl));
+        setDisplayAtCheckout(Boolean(record?.displayAtCheckout));
+        setCouponType(COUPON_TYPE_SCHEMA_TO_UI[record?.couponType] || 'amount');
+        setValue(record?.value ?? '');
+        setApplyFor(record?.applyFor || emptyDiscount.applyFor);
+        setMinOrderAmount(record?.minOrderAmount ?? '');
+        setStartDate((record?.startDate || emptyDiscount.startDate).slice(0, 10));
+        setEndDate((record?.endDate || emptyDiscount.endDate).slice(0, 10));
+        setNeverExpired(Boolean(record?.neverExpired));
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(err?.response?.data?.message || err?.message || 'Failed to load discount');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
   const pageTitle = isCreate ? 'Create discount' : `Edit discount`;
 
-  const handleSave = () => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    navigate('/admin/ecommerce/discounts');
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const payload = {
+        type,
+        code: (code || '').toUpperCase(),
+        title,
+        description: existing?.description || '',
+        couponType: COUPON_TYPE_UI_TO_SCHEMA[couponType] || 'percentage',
+        value: Number(value) || 0,
+        applyFor,
+        minOrderAmount: Number(minOrderAmount) || 0,
+        unlimited,
+        usageLimit: existing?.usageLimit ?? null,
+        canUseWithPromotion,
+        applyViaUrl,
+        displayAtCheckout,
+        startDate,
+        endDate,
+        neverExpired,
+        isActive: existing?.isActive !== false,
+      };
+      if (isCreate) {
+        await ecommerceCreate(RESOURCE, payload);
+        setSavedToast(true);
+        window.setTimeout(() => setSavedToast(false), 1800);
+        navigate('/admin/ecommerce/discounts');
+        return;
+      }
+      await ecommerceUpdate(RESOURCE, id, payload);
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      navigate('/admin/ecommerce/discounts');
+    } catch (err) {
+      setSaveError(err?.response?.data?.message || err?.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -103,6 +200,20 @@ export const AdminEcommerceDiscountEdit = () => {
         </div>
       )}
 
+      {loadError ? (
+        <div className="mb-4 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      ) : null}
+      {saveError ? (
+        <div className="mb-4 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {saveError}
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="py-10 text-center text-sm text-slate-500">Loading discount…</div>
+      ) : (
       <div className="bg-white rounded-md border border-slate-200 shadow-2xs p-4 sm:p-6 space-y-6 max-w-4xl">
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -346,10 +457,11 @@ export const AdminEcommerceDiscountEdit = () => {
         <div className="flex items-center gap-2 pt-1">
           <button
             type="button"
+            disabled={saving}
             onClick={handleSave}
-            className="inline-flex items-center justify-center px-5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition"
+            className="inline-flex items-center justify-center px-5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition disabled:opacity-60"
           >
-            Save
+            {saving ? 'Saving…' : 'Save'}
           </button>
           <Link
             to="/admin/ecommerce/discounts"
@@ -359,6 +471,7 @@ export const AdminEcommerceDiscountEdit = () => {
           </Link>
         </div>
       </div>
+      )}
     </EcommerceLayout>
   );
 };

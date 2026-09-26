@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Info, Plus, Folder, GripVertical, Minus, Save, Check, Trash2, X } from 'lucide-react';
 import EcommerceLayout from './EcommerceLayout';
 import AdminCkEditor from './AdminCkEditor';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
 import { categoryService } from '../../../services/categoryService';
 import {
   liveEcommerceList,
@@ -48,6 +49,8 @@ export const AdminEcommerceProductCategories = () => {
   const [parent, setParent] = useState('');
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [seo, setSeo] = useState(() => normalizeSeoState());
+  const [seoOpen, setSeoOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [savedToast, setSavedToast] = useState(false);
@@ -112,6 +115,14 @@ export const AdminEcommerceProductCategories = () => {
     setParent(category.parent ? String(category.parent._id || category.parent) : '');
     setDescription(category.description || '');
     setIsActive(category.isActive !== false);
+    setSeo(
+      normalizeSeoState(category.seo, {
+        slug: category.slug,
+        seoTitle: category.seoTitle,
+        seoDescription: category.seoDescription,
+      })
+    );
+    setSeoOpen(false);
     setSaveError('');
     loadAssignments(id);
   };
@@ -129,6 +140,8 @@ export const AdminEcommerceProductCategories = () => {
     setParent('');
     setDescription('');
     setIsActive(true);
+    setSeo(normalizeSeoState());
+    setSeoOpen(false);
     setSaveError('');
     setAssignments([]);
   };
@@ -147,6 +160,9 @@ export const AdminEcommerceProductCategories = () => {
         parent: parent || null,
         description,
         isActive,
+        seo,
+        seoTitle: seo.general.metaTitle,
+        seoDescription: seo.general.metaDescription,
       };
       if (selectedId) {
         await categoryService.updateCategory(selectedId, payload);
@@ -396,6 +412,33 @@ export const AdminEcommerceProductCategories = () => {
                   Active (visible in storefront navigation)
                 </label>
               </div>
+            </div>
+
+            {/* SEO Card */}
+            <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-sm font-semibold text-slate-800">Search Engine Optimize</h4>
+                <button
+                  type="button"
+                  onClick={() => setSeoOpen((v) => !v)}
+                  className="text-xs text-blue-600 hover:underline font-semibold"
+                >
+                  {seoOpen ? 'Hide SEO meta' : 'Edit SEO meta'}
+                </button>
+              </div>
+              {seoOpen && (
+                <SeoEditorPanel
+                  value={seo}
+                  onChange={setSeo}
+                  previewTitle={name}
+                  previewUrl={`https://jaipurio.in/product-categories/${seo.general?.slug || permalink || 'slug'}`}
+                  onGenerateSlug={() => {
+                    const s = slugify(name);
+                    setPermalink(s);
+                    setSeo((prev) => ({ ...prev, general: { ...prev.general, slug: s } }));
+                  }}
+                />
+              )}
             </div>
 
             {/* Publish Actions Card */}

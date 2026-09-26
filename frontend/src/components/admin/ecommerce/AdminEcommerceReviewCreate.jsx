@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FiCheck,
@@ -10,11 +10,11 @@ import {
   FiX,
 } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
-import {
-  REVIEW_CUSTOMERS,
-  REVIEW_PRODUCTS,
-  formatNowForReview,
-} from '../../../data/productReviews';
+import { fetchAdminProducts } from '../../../utils/marketplaceApi';
+import { fetchEcommerceCustomers } from '../../../utils/ecommerceApi';
+import { createAdminReview } from '../../../utils/reviewApi';
+
+const formatNowForReview = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
 
 const SearchSelect = ({
   label,
@@ -77,6 +77,18 @@ const SearchSelect = ({
 export const AdminEcommerceReviewCreate = () => {
   const navigate = useNavigate();
 
+  const [allProducts, setAllProducts] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]);
+
+  useEffect(() => {
+    fetchAdminProducts()
+      .then((rows) => setAllProducts(rows.map((p) => ({ id: String(p._id || p.id), name: p.title || p.name }))))
+      .catch(() => {});
+    fetchEcommerceCustomers()
+      .then((rows) => setAllCustomers((Array.isArray(rows) ? rows : []).map((c) => ({ id: String(c._id || c.id), name: c.name, email: c.email }))))
+      .catch(() => {});
+  }, []);
+
   const [productId, setProductId] = useState('');
   const [productQuery, setProductQuery] = useState('');
   const [customerId, setCustomerId] = useState('');
@@ -88,34 +100,61 @@ export const AdminEcommerceReviewCreate = () => {
   const [images, setImages] = useState([]);
   const [createdAt, setCreatedAt] = useState(formatNowForReview());
   const [savedToast, setSavedToast] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const selectedProduct = useMemo(
-    () => REVIEW_PRODUCTS.find((p) => p.id === productId) || null,
-    [productId]
+    () => allProducts.find((p) => p.id === productId) || null,
+    [productId, allProducts]
   );
   const selectedCustomer = useMemo(
-    () => REVIEW_CUSTOMERS.find((c) => c.id === customerId) || null,
-    [customerId]
+    () => allCustomers.find((c) => c.id === customerId) || null,
+    [customerId, allCustomers]
   );
 
   const productOptions = useMemo(() => {
     const q = productQuery.trim().toLowerCase();
     if (!q) return [];
-    return REVIEW_PRODUCTS.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 8);
-  }, [productQuery]);
+    return allProducts.filter((p) => p.name?.toLowerCase().includes(q)).slice(0, 8);
+  }, [productQuery, allProducts]);
 
   const customerOptions = useMemo(() => {
     const q = customerQuery.trim().toLowerCase();
     if (!q) return [];
-    return REVIEW_CUSTOMERS.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+    return allCustomers.filter(
+      (c) => c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)
     ).slice(0, 8);
-  }, [customerQuery]);
+  }, [customerQuery, allCustomers]);
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/ecommerce/reviews');
+  const handleSave = async (exit = false) => {
+    if (!productId) {
+      setSaveError('Please select a product.');
+      return;
+    }
+    if (!comment.trim()) {
+      setSaveError('Please enter a comment.');
+      return;
+    }
+    setSaving(true);
+    setSaveError('');
+    try {
+      await createAdminReview({
+        productId,
+        customerId: customerId || undefined,
+        guestName: customerId ? undefined : customerName,
+        guestEmail: customerId ? undefined : customerEmail,
+        rating: star,
+        comment,
+        images: images.map((img) => img.url).filter((url) => !url.startsWith('blob:')),
+      });
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) navigate('/admin/ecommerce/reviews');
+    } catch (err) {
+      setSaveError(err.parsedMessage || err.message || 'Failed to save review.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addImages = (files) => {
@@ -133,6 +172,12 @@ export const AdminEcommerceReviewCreate = () => {
         <div className="fixed top-16 right-6 z-50 bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow-lg flex items-center gap-2">
           <FiCheck size={16} />
           <span>Review saved successfully!</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="mb-4 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {saveError}
         </div>
       )}
 
@@ -298,7 +343,8 @@ export const AdminEcommerceReviewCreate = () => {
             <button
               type="button"
               onClick={() => handleSave(false)}
-              className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition"
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 disabled:opacity-60 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition"
             >
               <FiSave size={14} />
               Save
@@ -306,7 +352,8 @@ export const AdminEcommerceReviewCreate = () => {
             <button
               type="button"
               onClick={() => handleSave(true)}
-              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold py-2 px-3 rounded-md text-xs transition"
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-800 font-semibold py-2 px-3 rounded-md text-xs transition"
             >
               <FiLogOut size={14} />
               Save & Exit

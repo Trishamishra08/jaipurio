@@ -9,6 +9,36 @@ const ReturnRequest = require('../models/returnRequestModel');
 const Payout = require('../models/payoutModel');
 const Notification = require('../models/notificationModel');
 const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
+const { clearAllCatalogCache } = require('../utils/cache');
+const IncompleteOrder = require('../models/incompleteOrderModel');
+
+// @desc    Clear all catalog/public caches
+// @route   POST /api/admins/clear-cache
+// @access  Private/Admin
+const clearCache = async (req, res) => {
+  try {
+    await clearAllCatalogCache();
+    res.status(200).json({ success: true, message: 'Cache cleared' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Delete stale unused data (abandoned incomplete-order records older than 30 days)
+// @route   POST /api/admins/cleanup
+// @access  Private/Admin
+const runCleanup = async (req, res) => {
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const result = await IncompleteOrder.deleteMany({ createdAt: { $lt: cutoff } });
+    res.status(200).json({
+      success: true,
+      message: `Removed ${result.deletedCount} abandoned checkout record(s) older than 30 days.`,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // @desc    Get Finance Stats
 // @route   GET /api/admins/finance-stats
@@ -251,11 +281,39 @@ const getAdminReviews = async (req, res) => {
   try {
     const reviews = await Review.find()
       .populate('product', 'name image images')
-      .populate('user', 'name phone mobile')
+      .populate('user', 'name phone mobile email')
       .sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: { reviews } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const createAdminReview = async (req, res) => {
+  try {
+    const { productId, customerId, guestName, guestEmail, rating, comment, images } = req.body;
+    if (!productId) {
+      return res.status(400).json({ success: false, message: 'Product is required' });
+    }
+    if (!comment) {
+      return res.status(400).json({ success: false, message: 'Comment is required' });
+    }
+    const review = await Review.create({
+      product: productId,
+      user: customerId || undefined,
+      guestName: customerId ? '' : (guestName || ''),
+      guestEmail: customerId ? '' : (guestEmail || ''),
+      rating: Number(rating) || 5,
+      comment,
+      images: Array.isArray(images) ? images : [],
+      isApproved: true,
+    });
+    const populated = await Review.findById(review._id)
+      .populate('product', 'name image images')
+      .populate('user', 'name phone mobile email');
+    res.status(201).json({ success: true, data: { review: populated } });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -379,6 +437,7 @@ const getDashboardStats = async (req, res) => {
     const totalOrders = await Order.countDocuments();
     const pendingOrders = await Order.countDocuments({ isPaid: false });
     const totalProducts = await Product.countDocuments();
+    const totalReviews = await Review.countDocuments();
 
     const paidOrders = await Order.find({ isPaid: true });
     let totalRevenue = 0;
@@ -394,6 +453,7 @@ const getDashboardStats = async (req, res) => {
         totalOrders,
         pendingOrders,
         totalProducts,
+        totalReviews,
         totalRevenue: `₹${totalRevenue}`
       }
     });
@@ -686,6 +746,7 @@ module.exports = {
   getAdminPayouts,
   clearVendorPayout,
   getAdminReviews,
+  createAdminReview,
   toggleReviewApproval,
   deleteReview,
   replyReview,
@@ -697,4 +758,6 @@ module.exports = {
   getDashboardStats,
   getUserAnalytics,
   getPendingCounts,
+  clearCache,
+  runCleanup,
 };

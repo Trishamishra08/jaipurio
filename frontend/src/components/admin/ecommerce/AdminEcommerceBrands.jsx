@@ -1,24 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
-import { PRODUCT_BRANDS } from '../../../data/productBrands';
-import { liveEcommerceList } from '../../../utils/ecommerceApi';
+import { ecommerceList, ecommerceRemove } from '../../../utils/ecommerceApi';
+
+const RESOURCE = 'brands';
+const LIST_PATH = '/admin/ecommerce/brands';
+
+const mapRow = (r) => ({
+  ...r,
+  id: String(r._id || r.id || r.legacyId || ''),
+});
 
 export const AdminEcommerceBrands = () => {
   const navigate = useNavigate();
-  const [brands, setBrands] = useState(PRODUCT_BRANDS);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await ecommerceList(RESOURCE);
+      setBrands((Array.isArray(rows) ? rows : []).map(mapRow));
+    } catch (err) {
+      setBrands([]);
+      setLoadError(err?.response?.data?.message || err?.message || 'Failed to load brands');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    liveEcommerceList('brands', PRODUCT_BRANDS).then((rows) => {
-      setBrands(
-        rows.map((r) => ({
-          ...r,
-          id: String(r._id || r.id || r.legacyId),
-        }))
-      );
-    });
-  }, []);
+    load();
+  }, [load]);
+
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete brand "${row.name}"?`)) return;
+    try {
+      await ecommerceRemove(RESOURCE, row.id);
+      await load();
+    } catch (err) {
+      setLoadError(err?.response?.data?.message || err?.message || 'Delete failed');
+    }
+  };
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },
@@ -27,7 +53,7 @@ export const AdminEcommerceBrands = () => {
       accessor: 'name',
       cell: (row) => (
         <Link
-          to={`/admin/ecommerce/brands/edit/${row.id}`}
+          to={`${LIST_PATH}/edit/${row.id}`}
           className="flex items-center gap-2.5"
           onClick={(e) => e.stopPropagation()}
         >
@@ -85,7 +111,7 @@ export const AdminEcommerceBrands = () => {
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Link
-            to={`/admin/ecommerce/brands/edit/${row.id}`}
+            to={`${LIST_PATH}/edit/${row.id}`}
             className="text-blue-600 hover:underline text-[11px] font-medium"
             onClick={(e) => e.stopPropagation()}
           >
@@ -95,7 +121,7 @@ export const AdminEcommerceBrands = () => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setBrands((prev) => prev.filter((item) => item.id !== row.id));
+              handleDelete(row);
             }}
             className="text-red-500 hover:underline text-[11px] font-medium"
           >
@@ -108,15 +134,26 @@ export const AdminEcommerceBrands = () => {
 
   return (
     <EcommerceLayout breadcrumb={['BRANDS']}>
-      <AdminDataTable
-        columns={columns}
-        data={brands}
-        createLabel="Create"
-        onCreate={() => navigate('/admin/ecommerce/brands/create')}
-        onRowClick={(row) => navigate(`/admin/ecommerce/brands/edit/${row.id}`)}
-        searchPlaceholder="Search brands..."
-        showExport={false}
-      />
+      {loadError ? (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      ) : null}
+      {loading ? (
+        <div className="py-16 text-center text-sm text-slate-500">Loading brands…</div>
+      ) : (
+        <AdminDataTable
+          columns={columns}
+          data={brands}
+          createLabel="Create"
+          onCreate={() => navigate(`${LIST_PATH}/create`)}
+          onRowClick={(row) => navigate(`${LIST_PATH}/edit/${row.id}`)}
+          searchPlaceholder="Search brands..."
+          showExport={false}
+          showReload
+          onReload={load}
+        />
+      )}
     </EcommerceLayout>
   );
 };

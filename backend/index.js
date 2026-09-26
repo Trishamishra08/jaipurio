@@ -122,6 +122,10 @@ app.use('/api/faqs', faqRoutes);
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/countries', countryRoutes);
 app.use('/api/payments', paymentRoutes);
+const redirectRoutes = require('./routes/redirectRoutes');
+app.use('/api/redirects', redirectRoutes);
+const affiliateRoutes = require('./routes/affiliateRoutes');
+app.use('/api/affiliates', affiliateRoutes);
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -1,5 +1,6 @@
 const Category = require('../models/categoryModel');
 const { invalidateCatalog } = require('../utils/cache');
+const { normalizeSeo } = require('../utils/seoFields');
 
 // @desc    Create a new category
 // @route   POST /api/categories
@@ -23,6 +24,7 @@ const createCategory = async (req, res, next) => {
       }
     }
 
+    const seo = normalizeSeo(req.body, title, description || '');
     const category = await Category.create({
       title,
       url: url || '',
@@ -32,6 +34,9 @@ const createCategory = async (req, res, next) => {
       path: pathLabel,
       slug: title.toLowerCase().replace(/\s+/g, '-'),
       level,
+      seo,
+      seoTitle: seo.general.metaTitle,
+      seoDescription: seo.general.metaDescription,
     });
 
     invalidateCatalog('categories').catch(() => {});
@@ -93,10 +98,16 @@ const updateCategory = async (req, res, next) => {
       throw new Error('Category not found');
     }
 
-    category = await Category.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
+    const seo = normalizeSeo(
+      { ...category.toObject(), ...req.body, seo: req.body.seo || category.seo },
+      req.body.title || category.title,
+      req.body.description || category.description
+    );
+    category = await Category.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, seo, seoTitle: seo.general.metaTitle, seoDescription: seo.general.metaDescription },
+      { new: true, runValidators: true }
+    );
 
     invalidateCatalog('categories').catch(() => {});
     res.status(200).json({

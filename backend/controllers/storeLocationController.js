@@ -46,6 +46,41 @@ const createLocation = async (req, res, next) => {
   }
 };
 
+// @desc    Bulk import store locations (upsert by pincode)
+// @route   POST /api/locations/bulk-import
+// @access  Private (Admin only)
+const bulkImportLocations = async (req, res, next) => {
+  try {
+    const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+    let imported = 0;
+    const errors = [];
+    for (const row of rows) {
+      const pincode = String(row.pincode || '').trim();
+      const city = String(row.city || '').trim();
+      const district = String(row.district || row.state || '').trim();
+      const state = String(row.state || '').trim();
+      if (!pincode || !city || !state) {
+        errors.push(`Skipped row (missing fields): ${JSON.stringify(row)}`);
+        continue;
+      }
+      try {
+        await StoreLocation.findOneAndUpdate(
+          { pincode },
+          { pincode, city, district: district || state, state, isActive: true },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+        imported += 1;
+      } catch (err) {
+        errors.push(`${pincode}: ${err.message}`);
+      }
+    }
+    invalidateCatalog('locations').catch(() => {});
+    res.status(200).json({ success: true, data: { imported, total: rows.length, errors } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Update a store location
 // @route   PUT /api/locations/:id
 // @access  Private (Admin only)
@@ -101,6 +136,7 @@ const deleteLocation = async (req, res, next) => {
 module.exports = {
   getLocations,
   createLocation,
+  bulkImportLocations,
   updateLocation,
   deleteLocation
 };

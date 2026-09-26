@@ -10,6 +10,10 @@ import {
 } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import { getProductTagById, slugifyTag } from '../../../data/productTags';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const isMongoId = (value) => /^[a-f0-9]{24}$/i.test(String(value || ''));
 
 const LANGUAGES = [
   { code: 'fr_FR', label: 'Français', flag: '🇫🇷' },
@@ -45,45 +49,115 @@ export const AdminEcommerceProductTagEdit = () => {
   const existing = useMemo(() => (isCreate ? null : getProductTagById(id)), [id, isCreate]);
   const seed = existing || emptyTag;
 
+  const [mongoId, setMongoId] = useState(isMongoId(id) ? id : null);
   const [name, setName] = useState(seed.name);
   const [permalink, setPermalink] = useState(seed.slug);
   const [description, setDescription] = useState(seed.description || '');
   const [status, setStatus] = useState(seed.status || 'Published');
+  const [seo, setSeo] = useState(() =>
+    normalizeSeoState(seed.seo, {
+      slug: seed.slug,
+      seoTitle: seed.seoTitle,
+      seoDescription: seed.seoDescription,
+    })
+  );
   const [seoOpen, setSeoOpen] = useState(false);
-  const [seoTitle, setSeoTitle] = useState(seed.seoTitle || '');
-  const [seoDescription, setSeoDescription] = useState(seed.seoDescription || '');
   const [savedToast, setSavedToast] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [selectedLangs, setSelectedLangs] = useState({});
 
   useEffect(() => {
-    const next = isCreate ? emptyTag : getProductTagById(id) || emptyTag;
-    setName(next.name);
-    setPermalink(next.slug);
-    setDescription(next.description || '');
-    setStatus(next.status || 'Published');
-    setSeoTitle(next.seoTitle || '');
-    setSeoDescription(next.seoDescription || '');
-    setSelectedLangs({});
+    let cancelled = false;
+    const load = async () => {
+      if (isCreate) {
+        setName(emptyTag.name);
+        setPermalink(emptyTag.slug);
+        setDescription(emptyTag.description || '');
+        setStatus(emptyTag.status || 'Published');
+        setSeo(normalizeSeoState(null, { slug: '', seoTitle: '', seoDescription: '' }));
+        setMongoId(null);
+        setSelectedLangs({});
+        return;
+      }
+      try {
+        if (isMongoId(id)) {
+          const row = await ecommerceGet('product-tags', id);
+          if (cancelled || !row) return;
+          setMongoId(row._id || row.id);
+          setName(row.name || '');
+          setPermalink(row.slug || '');
+          setDescription(row.description || '');
+          setStatus(row.status || 'Published');
+          setSeo(
+            normalizeSeoState(row.seo, {
+              slug: row.slug,
+              seoTitle: row.seoTitle,
+              seoDescription: row.seoDescription,
+            })
+          );
+          setSelectedLangs({});
+          return;
+        }
+      } catch {
+        /* fallback local */
+      }
+      if (cancelled) return;
+      const next = getProductTagById(id) || emptyTag;
+      setName(next.name);
+      setPermalink(next.slug);
+      setDescription(next.description || '');
+      setStatus(next.status || 'Published');
+      setSeo(
+        normalizeSeoState(next.seo, {
+          slug: next.slug,
+          seoTitle: next.seoTitle,
+          seoDescription: next.seoDescription,
+        })
+      );
+      setSelectedLangs({});
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
-  const previewUrl = `https://jaipurio.in/product-tags/${permalink || 'slug'}`;
-  const displaySeoTitle = seoTitle || name || 'Product tag';
-  const displaySeoDescription =
-    seoDescription ||
-    (name
-      ? `Shop ${name} products and handcrafted collections from Jaipurio.`
-      : 'Product tag on Jaipurio.');
+  const previewUrl = `https://jaipurio.in/product-tags/${seo.general?.slug || permalink || 'slug'}`;
   const pageTitle = isCreate ? 'Create' : `Edit "${name || existing?.name || 'Tag'}"`;
 
   const handleGenerateUrl = () => {
-    setPermalink(slugifyTag(name));
+    const s = slugifyTag(name);
+    setPermalink(s);
+    setSeo((prev) => ({ ...prev, general: { ...prev.general, slug: s } }));
   };
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) {
-      navigate('/admin/ecommerce/product-tags');
+  const handleSave = async (exit = false) => {
+    setSaveError('');
+    const nextSlug = seo.general?.slug || permalink || slugifyTag(name);
+    const payload = {
+      name,
+      slug: nextSlug,
+      description,
+      status,
+      seo: { ...seo, general: { ...seo.general, slug: nextSlug } },
+      seoTitle: seo.general?.metaTitle || '',
+      seoDescription: seo.general?.metaDescription || '',
+    };
+    try {
+      if (mongoId) {
+        await ecommerceUpdate('product-tags', mongoId, payload);
+      } else {
+        const created = await ecommerceCreate('product-tags', payload);
+        if (created?._id) setMongoId(created._id);
+      }
+      setPermalink(nextSlug);
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) {
+        navigate('/admin/ecommerce/product-tags');
+      }
+    } catch (err) {
+      setSaveError(err?.message || 'Save failed');
     }
   };
 
@@ -174,56 +248,88 @@ export const AdminEcommerceProductTagEdit = () => {
           </div>
 
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                 Search Engine Optimize
               </h4>
-              <button
-                type="button"
-                onClick={() => setSeoOpen((v) => !v)}
-                className="text-xs text-blue-600 hover:underline font-semibold"
-              >
-                Edit SEO meta
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {seoOpen ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const metaTitle = name ? `${name} | Jaipurio`.slice(0, 60) : '';
+                        const metaDescription = name
+                          ? `Shop ${name} products and handcrafted collections from Jaipurio.`
+                          : description
+                          ? description.slice(0, 160)
+                          : '';
+                        const slug = permalink || slugifyTag(name);
+                        setSeo(
+                          normalizeSeoState({
+                            general: {
+                              slug,
+                              metaTitle,
+                              metaDescription,
+                              metaKeywords: '',
+                              robots: 'index,follow',
+                              canonicalUrl: '',
+                            },
+                          })
+                        );
+                      }}
+                      className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
+                    >
+                      Create
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoOpen(false)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Hide SEO meta
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (mongoId && isMongoId(mongoId)) {
+                        try {
+                          const row = await ecommerceGet('product-tags', mongoId);
+                          if (row?.seo) {
+                            setSeo(
+                              normalizeSeoState(row.seo, {
+                                slug: row.slug || permalink,
+                                seoTitle: row.seoTitle,
+                                seoDescription: row.seoDescription,
+                              })
+                            );
+                          }
+                        } catch {
+                          /* keep in-memory seo */
+                        }
+                      }
+                      setSeoOpen(true);
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Edit SEO meta
+                  </button>
+                )}
+              </div>
             </div>
 
             {seoOpen && (
-              <div className="space-y-3 pb-1">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">SEO Title</label>
-                  <input
-                    type="text"
-                    value={seoTitle}
-                    onChange={(e) => setSeoTitle(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs focus:outline-hidden focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    SEO Description
-                  </label>
-                  <textarea
-                    value={seoDescription}
-                    onChange={(e) => setSeoDescription(e.target.value)}
-                    rows={3}
-                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs focus:outline-hidden focus:border-blue-500 resize-y"
-                  />
-                </div>
-              </div>
+              <SeoEditorPanel
+                value={seo}
+                onChange={setSeo}
+                previewTitle={name}
+                previewUrl={previewUrl}
+                onGenerateSlug={handleGenerateUrl}
+              />
             )}
-
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1">
-              <h4 className="text-sm font-semibold text-blue-800 hover:underline cursor-pointer">
-                {displaySeoTitle}
-              </h4>
-              <p className="text-emerald-700 text-xs font-mono break-all">{previewUrl}</p>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                <span className="text-slate-400 font-medium">
-                  {formatSeoDate(existing?.createdAt || seed.createdAt)} -{' '}
-                </span>
-                {displaySeoDescription}
-              </p>
-            </div>
+            {saveError ? <div className="text-xs text-red-600 font-medium">{saveError}</div> : null}
           </div>
         </div>
 

@@ -12,8 +12,18 @@ import {
 import EcommerceLayout from './EcommerceLayout';
 import { getBrandById } from '../../../data/productBrands';
 import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
 
 const isMongoId = (value) => /^[a-f0-9]{24}$/i.test(String(value || ''));
+
+const slugify = (text = '') =>
+  String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
 
 const LANGUAGES = [
   { code: 'fr_FR', label: 'Français', flag: '🇫🇷' },
@@ -49,6 +59,14 @@ export const AdminEcommerceBrandEdit = () => {
   const [status, setStatus] = useState(seed.status || 'Published');
   const [isFeatured, setIsFeatured] = useState(Boolean(seed.isFeatured));
   const [logo, setLogo] = useState(seed.logo || '');
+  const [seo, setSeo] = useState(() =>
+    normalizeSeoState(seed.seo, {
+      slug: seed.slug,
+      seoTitle: seed.seoTitle,
+      seoDescription: seed.seoDescription,
+    })
+  );
+  const [seoOpen, setSeoOpen] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
   const [selectedLangs, setSelectedLangs] = useState({});
   const [saveError, setSaveError] = useState('');
@@ -64,6 +82,7 @@ export const AdminEcommerceBrandEdit = () => {
         setStatus('Published');
         setIsFeatured(false);
         setLogo('');
+        setSeo(normalizeSeoState(null));
         setMongoId(null);
         return;
       }
@@ -79,6 +98,13 @@ export const AdminEcommerceBrandEdit = () => {
           setStatus(row.status || 'Published');
           setIsFeatured(Boolean(row.isFeatured));
           setLogo(row.logo || '');
+          setSeo(
+            normalizeSeoState(row.seo, {
+              slug: row.slug,
+              seoTitle: row.seoTitle,
+              seoDescription: row.seoDescription,
+            })
+          );
           return;
         }
       } catch {
@@ -93,6 +119,13 @@ export const AdminEcommerceBrandEdit = () => {
       setStatus(next.status || 'Published');
       setIsFeatured(Boolean(next.isFeatured));
       setLogo(next.logo || '');
+      setSeo(
+        normalizeSeoState(next.seo, {
+          slug: next.slug,
+          seoTitle: next.seoTitle,
+          seoDescription: next.seoDescription,
+        })
+      );
       setSelectedLangs({});
     };
     load();
@@ -107,7 +140,19 @@ export const AdminEcommerceBrandEdit = () => {
 
   const handleSave = async (exit = false) => {
     setSaveError('');
-    const payload = { name, description, website, order: Number(order) || 0, status, isFeatured, logo };
+    const nextSlug = seo.general?.slug || slugify(name);
+    const payload = {
+      name,
+      description,
+      website,
+      order: Number(order) || 0,
+      status,
+      isFeatured,
+      logo,
+      seo: { ...seo, general: { ...seo.general, slug: nextSlug } },
+      seoTitle: seo.general?.metaTitle || '',
+      seoDescription: seo.general?.metaDescription || '',
+    };
     try {
       if (mongoId) {
         await ecommerceUpdate('brands', mongoId, payload);
@@ -193,6 +238,102 @@ export const AdminEcommerceBrandEdit = () => {
                 className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
+          </div>
+
+          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Search Engine Optimize
+              </h4>
+              <div className="flex items-center gap-2 shrink-0">
+                {seoOpen ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const metaTitle = name ? `${name} | Jaipurio`.slice(0, 60) : '';
+                        const metaDescription = description
+                          ? description.slice(0, 160)
+                          : name
+                          ? `Shop ${name} products on Jaipurio.`
+                          : '';
+                        const slug = slugify(name);
+                        setSeo(
+                          normalizeSeoState({
+                            general: {
+                              slug,
+                              metaTitle,
+                              metaDescription,
+                              metaKeywords: '',
+                              robots: 'index,follow',
+                              canonicalUrl: '',
+                            },
+                            social: {
+                              ogTitle: metaTitle,
+                              ogDescription: metaDescription,
+                              ogImage: logo || '',
+                              twitterTitle: metaTitle,
+                              twitterDescription: metaDescription,
+                              twitterImage: logo || '',
+                            },
+                          })
+                        );
+                      }}
+                      className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
+                    >
+                      Create
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoOpen(false)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Hide SEO meta
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (mongoId && isMongoId(mongoId)) {
+                        try {
+                          const row = await ecommerceGet('brands', mongoId);
+                          if (row?.seo) {
+                            setSeo(
+                              normalizeSeoState(row.seo, {
+                                slug: row.slug,
+                                seoTitle: row.seoTitle,
+                                seoDescription: row.seoDescription,
+                              })
+                            );
+                          }
+                        } catch {
+                          /* keep in-memory seo */
+                        }
+                      }
+                      setSeoOpen(true);
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Edit SEO meta
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {seoOpen && (
+              <SeoEditorPanel
+                value={seo}
+                onChange={setSeo}
+                previewTitle={name}
+                previewUrl={`https://jaipurio.in/brands/${seo.general?.slug || slugify(name) || 'slug'}`}
+                onGenerateSlug={() => {
+                  const s = slugify(name);
+                  setSeo((prev) => ({ ...prev, general: { ...prev.general, slug: s } }));
+                }}
+                showSeoImage
+              />
+            )}
           </div>
         </div>
 

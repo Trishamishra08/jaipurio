@@ -1,118 +1,70 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
-import { FiEye, FiTrash2, FiExternalLink } from 'react-icons/fi';
-
-const mockIncompleteOrders = [
-  {
-    id: '395',
-    token: 'bc40dd9c7b6b8a014ad9ae2735b8c468',
-    customer: '—',
-    amount: '₹178,000.0',
-    createdAt: '2026-09-12',
-    store: '—'
-  },
-  {
-    id: '394',
-    token: 'bc40dd9c7b6b8a014ad9ae2735b8c468',
-    customer: '—',
-    amount: '₹178,000.0',
-    createdAt: '2026-08-31',
-    store: '—'
-  },
-  {
-    id: '393',
-    token: 'bc40dd9c7b6b8a014ad9ae2735b8c468',
-    customer: 'Jitusinh Balvantsinh rajput',
-    amount: '₹1,799.0',
-    createdAt: '2026-08-21',
-    store: '—'
-  },
-  {
-    id: '392',
-    token: 'bc40dd9c7b6b8a014ad9ae2735b8c468',
-    customer: '—',
-    amount: '₹1,800.0',
-    createdAt: '2026-08-16',
-    store: '—'
-  }
-];
+import { fetchIncompleteOrders } from '../../../utils/orderApi';
 
 export const AdminEcommerceIncompleteOrders = () => {
-  const navigate = useNavigate();
-  const [data, setData] = useState(mockIncompleteOrders);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await fetchIncompleteOrders();
+      setData(rows);
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to load incomplete orders.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const columns = [
-    {
-      header: 'ID',
-      accessor: 'id',
-      width: '60px',
-      cell: (row) => (
-        <Link
-          to={`/checkout/${row.token || 'bc40dd9c7b6b8a014ad9ae2735b8c468'}`}
-          className="font-bold text-blue-600 hover:underline"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {row.id}
-        </Link>
-      )
-    },
+    { header: 'Code', accessor: 'code', width: '110px', cell: (row) => <span className="font-bold text-slate-800">{row.code}</span> },
     {
       header: 'Customer',
       accessor: 'customer',
       cell: (row) => (
-        <span className={row.customer !== '—' ? 'font-medium text-slate-800' : 'text-slate-400'}>
+        <span className={row.customer !== 'Guest' ? 'font-medium text-slate-800' : 'text-slate-400'}>
           {row.customer}
         </span>
       )
     },
+    { header: 'Amount', accessor: 'amount', cell: (row) => <span className="font-bold text-slate-800">{row.amount}</span> },
     {
-      header: 'Amount',
-      accessor: 'amount',
-      cell: (row) => <span className="font-bold text-slate-800">{row.amount}</span>
-    },
-    { header: 'Created At', accessor: 'createdAt' },
-    { header: 'Store', accessor: 'store' },
-    {
-      header: 'Operations',
-      sortable: false,
+      header: 'Status',
+      accessor: 'status',
       cell: (row) => (
-        <div className="flex items-center gap-2.5">
-          <Link
-            to={`/checkout/${row.token || 'bc40dd9c7b6b8a014ad9ae2735b8c468'}`}
-            className="text-blue-600 hover:text-blue-800 hover:underline text-[11px] font-medium flex items-center gap-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <FiEye size={12} />
-            <span>View Detail</span>
-          </Link>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setData(data.filter((item) => item.id !== row.id));
-            }}
-            className="text-red-500 hover:text-red-700 hover:underline text-[11px] font-medium flex items-center gap-1"
-          >
-            <FiTrash2 size={12} />
-            <span>Delete</span>
-          </button>
-        </div>
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+          {row.status}
+        </span>
       )
-    }
+    },
+    { header: 'Created At', accessor: 'createdAt', cell: (row) => <span>{new Date(row.createdAt).toLocaleDateString('en-IN')}</span> },
   ];
 
   return (
     <EcommerceLayout breadcrumb={['ORDERS', 'INCOMPLETE ORDERS']}>
+      {loadError && (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      )}
       <AdminDataTable
         columns={columns}
         data={data}
         searchPlaceholder="Search incomplete orders..."
-        createLabel="Create"
-        onCreate={() => navigate('/checkout/bc40dd9c7b6b8a014ad9ae2735b8c468')}
-        onRowClick={(row) => navigate(`/checkout/${row.token || 'bc40dd9c7b6b8a014ad9ae2735b8c468'}`)}
+        showCreate={false}
+        showReload
+        onReload={load}
       />
+      {loading && <div className="text-center text-xs text-slate-400 py-4">Loading…</div>}
     </EcommerceLayout>
   );
 };

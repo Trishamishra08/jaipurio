@@ -17,6 +17,10 @@ import {
   getProductCollectionById,
   slugifyCollection,
 } from '../../../data/productCollections';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const isMongoId = (value) => /^[a-f0-9]{24}$/i.test(String(value || ''));
 
 const LANGUAGES = [
   { code: 'fr_FR', label: 'Français', flag: '🇫🇷' },
@@ -47,6 +51,7 @@ export const AdminEcommerceProductCollectionEdit = () => {
   );
   const seed = existing || emptyCollection;
 
+  const [mongoId, setMongoId] = useState(isMongoId(id) ? id : null);
   const [name, setName] = useState(seed.name);
   const [slug, setSlug] = useState(seed.slug);
   const [description, setDescription] = useState(seed.description || '');
@@ -55,20 +60,84 @@ export const AdminEcommerceProductCollectionEdit = () => {
   const [image, setImage] = useState(seed.image || '');
   const [productIds, setProductIds] = useState(seed.productIds || []);
   const [productQuery, setProductQuery] = useState('');
+  const [seo, setSeo] = useState(() =>
+    normalizeSeoState(seed.seo, {
+      slug: seed.slug,
+      seoTitle: seed.seoTitle,
+      seoDescription: seed.seoDescription,
+    })
+  );
+  const [seoOpen, setSeoOpen] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [selectedLangs, setSelectedLangs] = useState({});
 
   useEffect(() => {
-    const next = isCreate ? emptyCollection : getProductCollectionById(id) || emptyCollection;
-    setName(next.name);
-    setSlug(next.slug);
-    setDescription(next.description || '');
-    setStatus(next.status || 'Published');
-    setIsFeatured(Boolean(next.isFeatured));
-    setImage(next.image || '');
-    setProductIds(next.productIds || []);
-    setProductQuery('');
-    setSelectedLangs({});
+    let cancelled = false;
+    const load = async () => {
+      if (isCreate) {
+        setName(emptyCollection.name);
+        setSlug(emptyCollection.slug);
+        setDescription(emptyCollection.description || '');
+        setStatus(emptyCollection.status || 'Published');
+        setIsFeatured(Boolean(emptyCollection.isFeatured));
+        setImage(emptyCollection.image || '');
+        setProductIds(emptyCollection.productIds || []);
+        setProductQuery('');
+        setSeo(normalizeSeoState(null));
+        setMongoId(null);
+        setSelectedLangs({});
+        return;
+      }
+      try {
+        if (isMongoId(id)) {
+          const row = await ecommerceGet('product-collections', id);
+          if (cancelled || !row) return;
+          setMongoId(row._id || row.id);
+          setName(row.name || '');
+          setSlug(row.slug || '');
+          setDescription(row.description || '');
+          setStatus(row.status || 'Published');
+          setIsFeatured(Boolean(row.isFeatured));
+          setImage(row.image || '');
+          setProductIds(Array.isArray(row.productIds) ? row.productIds : []);
+          setProductQuery('');
+          setSeo(
+            normalizeSeoState(row.seo, {
+              slug: row.slug,
+              seoTitle: row.seoTitle,
+              seoDescription: row.seoDescription,
+            })
+          );
+          setSelectedLangs({});
+          return;
+        }
+      } catch {
+        /* fallback local */
+      }
+      if (cancelled) return;
+      const next = getProductCollectionById(id) || emptyCollection;
+      setName(next.name);
+      setSlug(next.slug);
+      setDescription(next.description || '');
+      setStatus(next.status || 'Published');
+      setIsFeatured(Boolean(next.isFeatured));
+      setImage(next.image || '');
+      setProductIds(next.productIds || []);
+      setProductQuery('');
+      setSeo(
+        normalizeSeoState(next.seo, {
+          slug: next.slug,
+          seoTitle: next.seoTitle,
+          seoDescription: next.seoDescription,
+        })
+      );
+      setSelectedLangs({});
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
   const selectedProducts = useMemo(
@@ -93,10 +162,35 @@ export const AdminEcommerceProductCollectionEdit = () => {
     ? 'Create'
     : `Edit "${name || existing?.name || 'Collection'}"`;
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/ecommerce/product-collections');
+  const handleSave = async (exit = false) => {
+    setSaveError('');
+    const nextSlug = seo.general?.slug || slug || slugifyCollection(name);
+    const payload = {
+      name,
+      slug: nextSlug,
+      description,
+      status,
+      isFeatured,
+      image,
+      productIds,
+      seo: { ...seo, general: { ...seo.general, slug: nextSlug } },
+      seoTitle: seo.general?.metaTitle || '',
+      seoDescription: seo.general?.metaDescription || '',
+    };
+    try {
+      if (mongoId) {
+        await ecommerceUpdate('product-collections', mongoId, payload);
+      } else {
+        const created = await ecommerceCreate('product-collections', payload);
+        if (created?._id) setMongoId(created._id);
+      }
+      setSlug(nextSlug);
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) navigate('/admin/ecommerce/product-collections');
+    } catch (err) {
+      setSaveError(err?.message || 'Save failed');
+    }
   };
 
   const addProduct = (productId) => {
@@ -250,6 +344,104 @@ export const AdminEcommerceProductCollectionEdit = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Search Engine Optimize
+              </h4>
+              <div className="flex items-center gap-2 shrink-0">
+                {seoOpen ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const metaTitle = name ? `${name} | Jaipurio`.slice(0, 60) : '';
+                        const metaDescription = description
+                          ? description.slice(0, 160)
+                          : name
+                          ? `Shop the ${name} collection from Jaipurio.`
+                          : '';
+                        const nextSlug = slug || slugifyCollection(name);
+                        setSeo(
+                          normalizeSeoState({
+                            general: {
+                              slug: nextSlug,
+                              metaTitle,
+                              metaDescription,
+                              metaKeywords: '',
+                              robots: 'index,follow',
+                              canonicalUrl: '',
+                            },
+                            social: {
+                              ogTitle: metaTitle,
+                              ogDescription: metaDescription,
+                              ogImage: image || '',
+                              twitterTitle: metaTitle,
+                              twitterDescription: metaDescription,
+                              twitterImage: image || '',
+                            },
+                          })
+                        );
+                      }}
+                      className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
+                    >
+                      Create
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoOpen(false)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Hide SEO meta
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (mongoId && isMongoId(mongoId)) {
+                        try {
+                          const row = await ecommerceGet('product-collections', mongoId);
+                          if (row?.seo) {
+                            setSeo(
+                              normalizeSeoState(row.seo, {
+                                slug: row.slug || slug,
+                                seoTitle: row.seoTitle,
+                                seoDescription: row.seoDescription,
+                              })
+                            );
+                          }
+                        } catch {
+                          /* keep in-memory seo */
+                        }
+                      }
+                      setSeoOpen(true);
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Edit SEO meta
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {seoOpen && (
+              <SeoEditorPanel
+                value={seo}
+                onChange={setSeo}
+                previewTitle={name}
+                previewUrl={`https://jaipurio.in/collections/${seo.general?.slug || slug || 'slug'}`}
+                onGenerateSlug={() => {
+                  const s = slugifyCollection(name);
+                  setSlug(s);
+                  setSeo((prev) => ({ ...prev, general: { ...prev.general, slug: s } }));
+                }}
+                showSeoImage
+              />
+            )}
+            {saveError ? <div className="text-xs text-red-600 font-medium">{saveError}</div> : null}
           </div>
         </div>
 

@@ -1,57 +1,47 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
-import { FiEye, FiTrash2, FiEdit2, FiCheck, FiX, FiClock } from 'react-icons/fi';
+import { fetchAdminOrders } from '../../../utils/orderApi';
 
-const mockOrders = [
-  {
-    id: '370',
-    customer: 'Singh',
-    email: 'vaibhavsingh8032@gmail.com',
-    phone: '8839665405',
-    amount: '₹1,700.0',
-    paymentMethod: 'Cash on delivery (COD)',
-    paymentStatus: 'Pending',
-    status: 'Pending',
-    taxAmount: '₹0.0',
-    shippingAmount: '0.00',
-    createdAt: '2026-05-13',
-    store: '—'
-  },
-  {
-    id: '369',
-    customer: 'Aarav Sharma',
-    email: 'aarav.sharma@gmail.com',
-    phone: '9829012345',
-    amount: '₹3,450.0',
-    paymentMethod: 'Razorpay (Online)',
-    paymentStatus: 'Completed',
-    status: 'Delivered',
-    taxAmount: '₹172.5',
-    shippingAmount: '0.00',
-    createdAt: '2026-05-12',
-    store: 'Jaipur Blue Pottery'
-  },
-  {
-    id: '368',
-    customer: 'Pooja Verma',
-    email: 'pooja.verma@yahoo.com',
-    phone: '9414055678',
-    amount: '₹890.0',
-    paymentMethod: 'Cash on delivery (COD)',
-    paymentStatus: 'Pending',
-    status: 'Processing',
-    taxAmount: '₹44.5',
-    shippingAmount: '50.00',
-    createdAt: '2026-05-11',
-    store: 'Marwar Mitti'
-  }
-];
+const formatMoney = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
 
 export const AdminEcommerceOrders = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const loadOrders = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await fetchAdminOrders();
+      setOrders(rows.map((o) => ({
+        id: o.id,
+        _id: o._id,
+        customer: o.customer,
+        email: o.user?.email || o.customerEmail || '',
+        phone: o.phone,
+        amount: formatMoney(o.total),
+        paymentMethod: o.paymentMethod,
+        paymentStatus: o.paymentStatus,
+        status: o.orderStatus,
+        taxAmount: formatMoney(o.tax),
+        shippingAmount: formatMoney(o.shippingFee),
+        createdAt: o.createdAt,
+        store: o.items?.length ? '' : '—',
+      })));
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to load orders.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -59,25 +49,29 @@ export const AdminEcommerceOrders = () => {
       case 'Delivered':
         return (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
-            Completed
+            {status}
           </span>
         );
-      case 'Pending':
+      case 'Order Placed':
+      case 'Unpaid':
         return (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
-            Pending
+            {status}
           </span>
         );
       case 'Processing':
+      case 'Payment Confirmed':
+      case 'Vendor Accepts':
+      case 'Paid':
         return (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">
-            Processing
+            {status}
           </span>
         );
       case 'Canceled':
         return (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">
-            Canceled
+            {status}
           </span>
         );
       default:
@@ -96,7 +90,7 @@ export const AdminEcommerceOrders = () => {
       width: '60px',
       cell: (row) => (
         <Link
-          to={`/admin/ecommerce/orders/edit/${row.id}`}
+          to={`/admin/ecommerce/orders/edit/${row._id}`}
           className="font-bold text-blue-600 hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
@@ -110,7 +104,7 @@ export const AdminEcommerceOrders = () => {
       cell: (row) => (
         <div>
           <Link
-            to={`/admin/ecommerce/orders/edit/${row.id}`}
+            to={`/admin/ecommerce/orders/edit/${row._id}`}
             className="font-semibold text-slate-800 hover:text-blue-600 hover:underline block"
             onClick={(e) => e.stopPropagation()}
           >
@@ -147,22 +141,12 @@ export const AdminEcommerceOrders = () => {
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Link
-            to={`/admin/ecommerce/orders/edit/${row.id}`}
+            to={`/admin/ecommerce/orders/edit/${row._id}`}
             className="text-blue-600 hover:text-blue-800 hover:underline text-[11px] font-medium"
             onClick={(e) => e.stopPropagation()}
           >
-            Edit
+            View / Edit
           </Link>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOrders(orders.filter((o) => o.id !== row.id));
-            }}
-            className="text-red-500 hover:text-red-700 hover:underline text-[11px] font-medium"
-          >
-            Delete
-          </button>
         </div>
       )
     }
@@ -170,14 +154,21 @@ export const AdminEcommerceOrders = () => {
 
   return (
     <EcommerceLayout breadcrumb={['ORDERS']}>
+      {loadError && (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      )}
       <AdminDataTable
         columns={columns}
         data={orders}
         searchPlaceholder="Search orders..."
-        createLabel="Create"
-        onCreate={() => navigate('/admin/ecommerce/orders/edit/370')}
-        onRowClick={(row) => navigate(`/admin/ecommerce/orders/edit/${row.id}`)}
+        showCreate={false}
+        showReload
+        onReload={loadOrders}
+        onRowClick={(row) => navigate(`/admin/ecommerce/orders/edit/${row._id}`)}
       />
+      {loading && <div className="text-center text-xs text-slate-400 py-4">Loading orders…</div>}
     </EcommerceLayout>
   );
 };

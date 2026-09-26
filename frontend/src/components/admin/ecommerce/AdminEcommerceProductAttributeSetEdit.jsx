@@ -14,6 +14,10 @@ import {
   getAttributeSetById,
   slugifyAttribute,
 } from '../../../data/productAttributeSets';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const isMongoId = (value) => /^[a-f0-9]{24}$/i.test(String(value || ''));
 
 const emptySet = {
   id: 'new',
@@ -69,20 +73,87 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
     seed.useImageFromProductVariation
   );
   const [attributes, setAttributes] = useState(seed.attributes || []);
+  const [mongoId, setMongoId] = useState(isMongoId(id) ? id : null);
+  const [seo, setSeo] = useState(() =>
+    normalizeSeoState(seed.seo, {
+      slug: seed.slug,
+      seoTitle: seed.seoTitle,
+      seoDescription: seed.seoDescription,
+    })
+  );
+  const [seoOpen, setSeoOpen] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    const next = isCreate ? emptySet : getAttributeSetById(id) || emptySet;
-    setTitle(next.title);
-    setSlug(next.slug);
-    setDisplayLayout(next.displayLayout);
-    setStatus(next.status);
-    setOrder(next.order);
-    setIsSearchable(next.isSearchable);
-    setIsComparable(next.isComparable);
-    setIsUseInProductListing(next.isUseInProductListing);
-    setUseImageFromProductVariation(next.useImageFromProductVariation);
-    setAttributes(next.attributes || []);
+    let cancelled = false;
+    const load = async () => {
+      if (isCreate) {
+        setTitle(emptySet.title);
+        setSlug(emptySet.slug);
+        setDisplayLayout(emptySet.displayLayout);
+        setStatus(emptySet.status);
+        setOrder(emptySet.order);
+        setIsSearchable(emptySet.isSearchable);
+        setIsComparable(emptySet.isComparable);
+        setIsUseInProductListing(emptySet.isUseInProductListing);
+        setUseImageFromProductVariation(emptySet.useImageFromProductVariation);
+        setAttributes(emptySet.attributes || []);
+        setSeo(normalizeSeoState(null));
+        setMongoId(null);
+        return;
+      }
+      try {
+        if (isMongoId(id)) {
+          const row = await ecommerceGet('product-attribute-sets', id);
+          if (cancelled || !row) return;
+          setMongoId(row._id || row.id);
+          setTitle(row.title || '');
+          setSlug(row.slug || '');
+          setDisplayLayout(row.displayLayout || 'dropdown');
+          setStatus(row.status || 'Published');
+          setOrder(row.order ?? 0);
+          setIsSearchable(Boolean(row.isSearchable));
+          setIsComparable(Boolean(row.isComparable));
+          setIsUseInProductListing(Boolean(row.isUseInProductListing));
+          setUseImageFromProductVariation(Boolean(row.useImageFromProductVariation));
+          setAttributes(Array.isArray(row.attributes) ? row.attributes : []);
+          setSeo(
+            normalizeSeoState(row.seo, {
+              slug: row.slug,
+              seoTitle: row.seoTitle,
+              seoDescription: row.seoDescription,
+            })
+          );
+          return;
+        }
+      } catch {
+        /* fallback local */
+      }
+      if (cancelled) return;
+      const next = getAttributeSetById(id) || emptySet;
+      setTitle(next.title);
+      setSlug(next.slug);
+      setDisplayLayout(next.displayLayout);
+      setStatus(next.status);
+      setOrder(next.order);
+      setIsSearchable(next.isSearchable);
+      setIsComparable(next.isComparable);
+      setIsUseInProductListing(next.isUseInProductListing);
+      setUseImageFromProductVariation(next.useImageFromProductVariation);
+      setAttributes(next.attributes || []);
+      setSeo(
+        normalizeSeoState(next.seo, {
+          slug: next.slug,
+          seoTitle: next.seoTitle,
+          seoDescription: next.seoDescription,
+        })
+      );
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
   const pageTitle = isCreate
@@ -126,10 +197,38 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
     ]);
   };
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/ecommerce/product-attribute-sets');
+  const handleSave = async (exit = false) => {
+    setSaveError('');
+    const nextSlug = seo.general?.slug || slug || slugifyAttribute(title);
+    const payload = {
+      title,
+      slug: nextSlug,
+      displayLayout,
+      status,
+      order: Number(order) || 0,
+      isSearchable,
+      isComparable,
+      isUseInProductListing,
+      useImageFromProductVariation,
+      attributes,
+      seo: { ...seo, general: { ...seo.general, slug: nextSlug } },
+      seoTitle: seo.general?.metaTitle || '',
+      seoDescription: seo.general?.metaDescription || '',
+    };
+    try {
+      if (mongoId) {
+        await ecommerceUpdate('product-attribute-sets', mongoId, payload);
+      } else {
+        const created = await ecommerceCreate('product-attribute-sets', payload);
+        if (created?._id) setMongoId(created._id);
+      }
+      setSlug(nextSlug);
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) navigate('/admin/ecommerce/product-attribute-sets');
+    } catch (err) {
+      setSaveError(err?.message || 'Save failed');
+    }
   };
 
   return (
@@ -314,6 +413,93 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
                 Add new attribute
               </button>
             </div>
+          </div>
+
+          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Search Engine Optimize
+              </h4>
+              <div className="flex items-center gap-2 shrink-0">
+                {seoOpen ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const metaTitle = title ? `${title} | Jaipurio`.slice(0, 60) : '';
+                        const metaDescription = title
+                          ? `Browse ${title} attribute options for Jaipurio products.`
+                          : '';
+                        const nextSlug = slug || slugifyAttribute(title);
+                        setSeo(
+                          normalizeSeoState({
+                            general: {
+                              slug: nextSlug,
+                              metaTitle,
+                              metaDescription,
+                              metaKeywords: '',
+                              robots: 'index,follow',
+                              canonicalUrl: '',
+                            },
+                          })
+                        );
+                      }}
+                      className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
+                    >
+                      Create
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoOpen(false)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Hide SEO meta
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (mongoId && isMongoId(mongoId)) {
+                        try {
+                          const row = await ecommerceGet('product-attribute-sets', mongoId);
+                          if (row?.seo) {
+                            setSeo(
+                              normalizeSeoState(row.seo, {
+                                slug: row.slug || slug,
+                                seoTitle: row.seoTitle,
+                                seoDescription: row.seoDescription,
+                              })
+                            );
+                          }
+                        } catch {
+                          /* keep in-memory seo */
+                        }
+                      }
+                      setSeoOpen(true);
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Edit SEO meta
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {seoOpen && (
+              <SeoEditorPanel
+                value={seo}
+                onChange={setSeo}
+                previewTitle={title}
+                previewUrl={`https://jaipurio.in/attribute-sets/${seo.general?.slug || slug || 'slug'}`}
+                onGenerateSlug={() => {
+                  const s = slugifyAttribute(title);
+                  setSlug(s);
+                  setSeo((prev) => ({ ...prev, general: { ...prev.general, slug: s } }));
+                }}
+              />
+            )}
+            {saveError ? <div className="text-xs text-red-600 font-medium">{saveError}</div> : null}
           </div>
         </div>
 

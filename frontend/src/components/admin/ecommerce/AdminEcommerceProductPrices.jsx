@@ -1,109 +1,33 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
-import { FiEdit2, FiCheck, FiX, FiExternalLink } from 'react-icons/fi';
-import { PHOTOS } from '../../../data/photos';
+import { FiEdit2, FiCheck, FiX } from 'react-icons/fi';
+import { fetchAdminProducts } from '../../../utils/marketplaceApi';
+import api from '../../../utils/api';
 
-// Mock product price data matching the live Botble CMS product prices table
-const initialPriceData = [
-  {
-    id: '7878',
-    image: '/planter.png',
-    name: 'Comfy White Hunting Style Cotton Shirt - Premium Comfort Style | Jaipurio',
-    sku: 'JAI-CL-CWH-001',
-    regularPrice: 1700,
-    salePrice: '',
-    startDate: '',
-    endDate: '',
-    costPerItem: 1020,
-    status: 'Published'
-  },
-  {
-    id: '7877',
-    image: '/planter.png',
-    name: 'Handcrafted Blue Pottery Vase - Traditional Jaipur Art',
-    sku: 'JAI-BP-VAS-002',
-    regularPrice: 2499,
-    salePrice: 1999,
-    startDate: '2026-09-01',
-    endDate: '2026-09-30',
-    costPerItem: 1200,
-    status: 'Published'
-  },
-  {
-    id: '7876',
-    image: '/planter.png',
-    name: 'Rajasthani Design Matka (5L) - Natural Clay Water Pot',
-    sku: 'JAI-MT-5L-003',
-    regularPrice: 599,
-    salePrice: 399,
-    startDate: '',
-    endDate: '',
-    costPerItem: 280,
-    status: 'Published'
-  },
-  {
-    id: '7875',
-    image: '/planter.png',
-    name: 'Kulhad (Pack of 6) - Traditional Terracotta Chai Cups',
-    sku: 'JAI-KH-PK6-004',
-    regularPrice: 349,
-    salePrice: 249,
-    startDate: '',
-    endDate: '',
-    costPerItem: 160,
-    status: 'Draft'
-  },
-  {
-    id: '7874',
-    image: '/planter.png',
-    name: 'Handmade Mitti Planter - 8 Inch Garden Terracotta Pot',
-    sku: 'JAI-PL-8IN-005',
-    regularPrice: 499,
-    salePrice: 349,
-    startDate: '2026-08-01',
-    endDate: '2026-10-01',
-    costPerItem: 200,
-    status: 'Published'
-  },
-  {
-    id: '7873',
-    image: '/planter.png',
-    name: 'Decorative Diya Set (8 Pcs) - Festive Terracotta Diyas',
-    sku: 'JAI-DY-SET8-006',
-    regularPrice: 399,
-    salePrice: 299,
-    startDate: '',
-    endDate: '',
-    costPerItem: 150,
-    status: 'Published'
-  },
-  {
-    id: '7872',
-    image: '/planter.png',
-    name: 'Jaipur Blue Pottery Bowl - Hand Painted Ceramic Art',
-    sku: 'JAI-BP-BWL-007',
-    regularPrice: 899,
-    salePrice: '',
-    startDate: '',
-    endDate: '',
-    costPerItem: 420,
-    status: 'Published'
-  },
-  {
-    id: '7871',
-    image: '/planter.png',
-    name: 'Terracotta Wall Hanging Set - 3 Pieces Rustic Decor',
-    sku: 'JAI-WH-SET3-008',
-    regularPrice: 1299,
-    salePrice: 999,
-    startDate: '2026-09-10',
-    endDate: '2026-09-25',
-    costPerItem: 600,
-    status: 'Published'
-  }
-];
+const toDateInput = (d) => (d ? String(d).slice(0, 10) : '');
+
+const mapPriceRow = (p) => ({
+  id: String(p._id || p.id),
+  image: p.image || (Array.isArray(p.images) ? p.images[0] : '') || '/planter.png',
+  name: p.title || p.name,
+  sku: p.sku || '',
+  regularPrice: p.price ?? '',
+  salePrice: p.salePrice ?? '',
+  startDate: toDateInput(p.saleStartDate),
+  endDate: toDateInput(p.saleEndDate),
+  costPerItem: p.costPerItem ?? '',
+  status: p.lifecycle || (p.published ? 'Published' : 'Draft'),
+});
+
+const FIELD_TO_PAYLOAD_KEY = {
+  regularPrice: 'price',
+  salePrice: 'salePrice',
+  startDate: 'saleStartDate',
+  endDate: 'saleEndDate',
+  costPerItem: 'costPerItem',
+};
 
 // Inline editable price cell
 const EditablePriceCell = ({ value, onSave, prefix = '₹' }) => {
@@ -220,12 +144,49 @@ const EditableDateCell = ({ value, label, onSave }) => {
 
 export const AdminEcommerceProductPrices = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState(initialPriceData);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  const updateField = (id, field, value) => {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await fetchAdminProducts();
+      setData(rows.map(mapPriceRow));
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to load products.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const updateField = async (id, field, value) => {
     setData((prev) =>
       prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
     );
+    const payloadKey = FIELD_TO_PAYLOAD_KEY[field];
+    if (!payloadKey) return;
+    try {
+      await api.put(`/products/${id}`, { [payloadKey]: value === '' ? null : value });
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to save change.');
+      await load();
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this product? This cannot be undone.')) return;
+    try {
+      await api.delete(`/products/${id}`);
+      await load();
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to delete product.');
+    }
   };
 
   const columns = [
@@ -357,7 +318,7 @@ export const AdminEcommerceProductPrices = () => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setData((prev) => prev.filter((r) => r.id !== row.id));
+              handleDelete(row.id);
             }}
             className="text-red-500 hover:text-red-700 hover:underline text-[11px] font-medium"
           >
@@ -370,6 +331,11 @@ export const AdminEcommerceProductPrices = () => {
 
   return (
     <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT PRICES']}>
+      {loadError && (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      )}
       {/* Info tip */}
       <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700 flex items-start gap-2">
         <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -382,9 +348,12 @@ export const AdminEcommerceProductPrices = () => {
         columns={columns}
         data={data}
         showCreate={false}
+        showReload
+        onReload={load}
         searchPlaceholder="Filter by name or SKU..."
         onRowClick={(row) => navigate(`/admin/ecommerce/products/edit/${row.id}`)}
       />
+      {loading && <div className="text-center text-xs text-slate-400 py-4">Loading…</div>}
     </EcommerceLayout>
   );
 };

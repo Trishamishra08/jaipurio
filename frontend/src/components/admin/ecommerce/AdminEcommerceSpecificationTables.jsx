@@ -4,9 +4,9 @@ import { FiEdit, FiTrash2 } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
 import {
+  ecommerceList,
   ecommerceRemove,
   ecommerceUpdate,
-  liveEcommerceList,
 } from '../../../utils/ecommerceApi';
 
 const LIST_PATH = '/admin/ecommerce/specification-tables';
@@ -34,7 +34,7 @@ export const AdminEcommerceSpecificationTables = () => {
     setLoading(true);
     setError('');
     try {
-      const list = await liveEcommerceList(RESOURCE);
+      const list = await ecommerceList(RESOURCE);
       setRows((Array.isArray(list) ? list : []).map(mapRow));
     } catch (err) {
       setRows([]);
@@ -119,7 +119,7 @@ export const AdminEcommerceSpecificationTables = () => {
   return (
     <EcommerceLayout breadcrumb={['SPECIFICATION TABLES']}>
       {error ? (
-        <div className="mb-3 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-md px-3 py-2">
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
           {error}
         </div>
       ) : null}
@@ -132,6 +132,7 @@ export const AdminEcommerceSpecificationTables = () => {
           createLabel="Create"
           searchPlaceholder="Search..."
           showExport={false}
+          showReload
           onCreate={() => navigate(`${LIST_PATH}/create`)}
           onReload={load}
           emptyMessage="No data to display"

@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
-import {
-  PRODUCT_ATTRIBUTE_SETS,
-  displayLayoutLabel,
-} from '../../../data/productAttributeSets';
-import { liveEcommerceList } from '../../../utils/ecommerceApi';
+import { displayLayoutLabel } from '../../../data/productAttributeSets';
+import { ecommerceList, ecommerceRemove } from '../../../utils/ecommerceApi';
+
+const RESOURCE = 'product-attribute-sets';
+const LIST_PATH = '/admin/ecommerce/product-attribute-sets';
 
 const mapAttr = (row) => ({
-  id: String(row._id || row.id || row.legacyId),
+  id: String(row._id || row.id || row.legacyId || ''),
   title: row.title || row.name,
   slug: row.slug,
   displayLayout: displayLayoutLabel(row.displayLayout) || row.displayLayout || '—',
@@ -21,13 +21,37 @@ const mapAttr = (row) => ({
 
 export const AdminEcommerceProductAttributeSets = () => {
   const navigate = useNavigate();
-  const [attributes, setAttributes] = useState(PRODUCT_ATTRIBUTE_SETS.map(mapAttr));
+  const [attributes, setAttributes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await ecommerceList(RESOURCE);
+      setAttributes((Array.isArray(rows) ? rows : []).map(mapAttr));
+    } catch (err) {
+      setAttributes([]);
+      setLoadError(err?.response?.data?.message || err?.message || 'Failed to load attribute sets');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    liveEcommerceList('product-attribute-sets', PRODUCT_ATTRIBUTE_SETS).then((rows) => {
-      setAttributes(rows.map(mapAttr));
-    });
-  }, []);
+    load();
+  }, [load]);
+
+  const handleDelete = async (row) => {
+    if (!window.confirm(`Delete attribute set "${row.title}"?`)) return;
+    try {
+      await ecommerceRemove(RESOURCE, row.id);
+      await load();
+    } catch (err) {
+      setLoadError(err?.response?.data?.message || err?.message || 'Delete failed');
+    }
+  };
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '60px' },
@@ -36,7 +60,7 @@ export const AdminEcommerceProductAttributeSets = () => {
       accessor: 'title',
       cell: (row) => (
         <Link
-          to={`/admin/ecommerce/product-attribute-sets/edit/${row.id}`}
+          to={`${LIST_PATH}/edit/${row.id}`}
           className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
@@ -59,7 +83,7 @@ export const AdminEcommerceProductAttributeSets = () => {
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Link
-            to={`/admin/ecommerce/product-attribute-sets/edit/${row.id}`}
+            to={`${LIST_PATH}/edit/${row.id}`}
             className="text-blue-600 hover:underline text-[11px] font-medium"
             onClick={(e) => e.stopPropagation()}
           >
@@ -69,7 +93,7 @@ export const AdminEcommerceProductAttributeSets = () => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setAttributes((prev) => prev.filter((item) => item.id !== row.id));
+              handleDelete(row);
             }}
             className="text-red-500 hover:underline text-[11px] font-medium"
           >
@@ -82,15 +106,26 @@ export const AdminEcommerceProductAttributeSets = () => {
 
   return (
     <EcommerceLayout breadcrumb={['PRODUCTS', 'PRODUCT ATTRIBUTES']}>
-      <AdminDataTable
-        columns={columns}
-        data={attributes}
-        createLabel="Create"
-        onCreate={() => navigate('/admin/ecommerce/product-attribute-sets/create')}
-        onRowClick={(row) => navigate(`/admin/ecommerce/product-attribute-sets/edit/${row.id}`)}
-        searchPlaceholder="Search product attributes..."
-        showExport={false}
-      />
+      {loadError ? (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      ) : null}
+      {loading ? (
+        <div className="py-16 text-center text-sm text-slate-500">Loading product attributes…</div>
+      ) : (
+        <AdminDataTable
+          columns={columns}
+          data={attributes}
+          createLabel="Create"
+          onCreate={() => navigate(`${LIST_PATH}/create`)}
+          onRowClick={(row) => navigate(`${LIST_PATH}/edit/${row.id}`)}
+          searchPlaceholder="Search product attributes..."
+          showExport={false}
+          showReload
+          onReload={load}
+        />
+      )}
     </EcommerceLayout>
   );
 };

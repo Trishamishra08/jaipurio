@@ -16,6 +16,19 @@ import {
   PRICE_TYPE_CHOICES,
   getProductOptionById,
 } from '../../../data/productOptions';
+import SeoEditorPanel, { normalizeSeoState } from './SeoEditorPanel';
+import { ecommerceCreate, ecommerceGet, ecommerceUpdate } from '../../../utils/ecommerceApi';
+
+const isMongoId = (value) => /^[a-f0-9]{24}$/i.test(String(value || ''));
+
+const slugify = (text = '') =>
+  String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
 
 const LANGUAGES = [
   { code: 'fr_FR', label: 'Français', flag: '🇫🇷' },
@@ -40,20 +53,77 @@ export const AdminEcommerceProductOptionEdit = () => {
   const existing = useMemo(() => (isCreate ? null : getProductOptionById(id)), [id, isCreate]);
   const seed = existing || emptyOption;
 
+  const [mongoId, setMongoId] = useState(isMongoId(id) ? id : null);
   const [name, setName] = useState(seed.name);
   const [optionType, setOptionType] = useState(seed.optionType || '');
   const [required, setRequired] = useState(Boolean(seed.required));
   const [values, setValues] = useState(seed.values || []);
+  const [seo, setSeo] = useState(() =>
+    normalizeSeoState(seed.seo, {
+      slug: seed.slug,
+      seoTitle: seed.seoTitle,
+      seoDescription: seed.seoDescription,
+    })
+  );
+  const [seoOpen, setSeoOpen] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [selectedLangs, setSelectedLangs] = useState({});
 
   useEffect(() => {
-    const next = isCreate ? emptyOption : getProductOptionById(id) || emptyOption;
-    setName(next.name);
-    setOptionType(next.optionType || '');
-    setRequired(Boolean(next.required));
-    setValues(next.values || []);
-    setSelectedLangs({});
+    let cancelled = false;
+    const load = async () => {
+      if (isCreate) {
+        setName(emptyOption.name);
+        setOptionType(emptyOption.optionType || '');
+        setRequired(Boolean(emptyOption.required));
+        setValues(emptyOption.values || []);
+        setSeo(normalizeSeoState(null));
+        setMongoId(null);
+        setSelectedLangs({});
+        return;
+      }
+      try {
+        if (isMongoId(id)) {
+          const row = await ecommerceGet('product-options', id);
+          if (cancelled || !row) return;
+          setMongoId(row._id || row.id);
+          setName(row.name || '');
+          setOptionType(row.optionType || '');
+          setRequired(Boolean(row.required));
+          setValues(Array.isArray(row.values) ? row.values : []);
+          setSeo(
+            normalizeSeoState(row.seo, {
+              slug: row.slug,
+              seoTitle: row.seoTitle,
+              seoDescription: row.seoDescription,
+            })
+          );
+          setSelectedLangs({});
+          return;
+        }
+      } catch {
+        /* fallback local */
+      }
+      if (cancelled) return;
+      const next = getProductOptionById(id) || emptyOption;
+      setName(next.name);
+      setOptionType(next.optionType || '');
+      setRequired(Boolean(next.required));
+      setValues(next.values || []);
+      setSeo(
+        normalizeSeoState(next.seo, {
+          slug: next.slug,
+          seoTitle: next.seoTitle,
+          seoDescription: next.seoDescription,
+        })
+      );
+      setSelectedLangs({});
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, isCreate]);
 
   const pageTitle = isCreate
@@ -80,10 +150,31 @@ export const AdminEcommerceProductOptionEdit = () => {
     ]);
   };
 
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/ecommerce/options');
+  const handleSave = async (exit = false) => {
+    setSaveError('');
+    const nextSlug = seo.general?.slug || slugify(name);
+    const payload = {
+      name,
+      optionType,
+      required,
+      values,
+      seo: { ...seo, general: { ...seo.general, slug: nextSlug } },
+      seoTitle: seo.general?.metaTitle || '',
+      seoDescription: seo.general?.metaDescription || '',
+    };
+    try {
+      if (mongoId) {
+        await ecommerceUpdate('product-options', mongoId, payload);
+      } else {
+        const created = await ecommerceCreate('product-options', payload);
+        if (created?._id) setMongoId(created._id);
+      }
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) navigate('/admin/ecommerce/options');
+    } catch (err) {
+      setSaveError(err?.message || 'Save failed');
+    }
   };
 
   return (
@@ -206,6 +297,92 @@ export const AdminEcommerceProductOptionEdit = () => {
                 Add new row
               </button>
             </div>
+          </div>
+
+          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Search Engine Optimize
+              </h4>
+              <div className="flex items-center gap-2 shrink-0">
+                {seoOpen ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const metaTitle = name ? `${name} | Jaipurio`.slice(0, 60) : '';
+                        const metaDescription = name
+                          ? `Choose your ${name} option for Jaipurio products.`
+                          : '';
+                        const slug = slugify(name);
+                        setSeo(
+                          normalizeSeoState({
+                            general: {
+                              slug,
+                              metaTitle,
+                              metaDescription,
+                              metaKeywords: '',
+                              robots: 'index,follow',
+                              canonicalUrl: '',
+                            },
+                          })
+                        );
+                      }}
+                      className="text-xs text-white bg-blue-600 hover:bg-blue-700 font-semibold px-2.5 py-1 rounded-sm"
+                    >
+                      Create
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoOpen(false)}
+                      className="text-xs text-blue-600 hover:underline font-semibold"
+                    >
+                      Hide SEO meta
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (mongoId && isMongoId(mongoId)) {
+                        try {
+                          const row = await ecommerceGet('product-options', mongoId);
+                          if (row?.seo) {
+                            setSeo(
+                              normalizeSeoState(row.seo, {
+                                slug: row.slug,
+                                seoTitle: row.seoTitle,
+                                seoDescription: row.seoDescription,
+                              })
+                            );
+                          }
+                        } catch {
+                          /* keep in-memory seo */
+                        }
+                      }
+                      setSeoOpen(true);
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Edit SEO meta
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {seoOpen && (
+              <SeoEditorPanel
+                value={seo}
+                onChange={setSeo}
+                previewTitle={name}
+                previewUrl={`https://jaipurio.in/options/${seo.general?.slug || slugify(name) || 'slug'}`}
+                onGenerateSlug={() => {
+                  const s = slugify(name);
+                  setSeo((prev) => ({ ...prev, general: { ...prev.general, slug: s } }));
+                }}
+              />
+            )}
+            {saveError ? <div className="text-xs text-red-600 font-medium">{saveError}</div> : null}
           </div>
         </div>
 

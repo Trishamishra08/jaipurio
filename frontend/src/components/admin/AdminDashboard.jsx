@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Package, ShoppingBag, Users } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import AdminPageHeader, { ManageWidgetsButton } from './AdminPageHeader';
 import { getActivityLogs, getWidgetPrefs, relativeTime, setWidgetPrefs } from '../../utils/adminAuth';
+import { fetchAdminDashboardStats } from '../../utils/adminApi';
 
 const STAT_CARDS = [
   { key: 'orders', label: 'Orders', icon: ShoppingBag, tone: 'mint' },
@@ -18,14 +19,22 @@ const AdminDashboard = () => {
   const [manageOpen, setManageOpen] = useState(false);
   const logs = getActivityLogs();
 
+  const [liveStats, setLiveStats] = useState(null);
+
+  useEffect(() => {
+    fetchAdminDashboardStats()
+      .then(setLiveStats)
+      .catch(() => {});
+  }, []);
+
   const stats = useMemo(
     () => ({
-      orders: orders?.length || 18,
-      products: products?.length || 0,
-      customers: 177,
-      reviews: reviews?.length || 0,
+      orders: liveStats?.totalOrders ?? orders?.length ?? 0,
+      products: liveStats?.totalProducts ?? products?.length ?? 0,
+      customers: liveStats?.totalUsers ?? 0,
+      reviews: liveStats?.totalReviews ?? reviews?.length ?? 0,
     }),
-    [orders, products, reviews]
+    [liveStats, orders, products, reviews]
   );
 
   const posts = useMemo(() => {

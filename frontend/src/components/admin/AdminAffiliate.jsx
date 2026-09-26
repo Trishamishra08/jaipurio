@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AdminPageHeader from './AdminPageHeader';
-import { platformStore } from '../../data/platformStore';
+import api from '../../utils/api';
 
 const AdminAffiliate = () => {
-  const [items, setItems] = useState(platformStore.affiliates());
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const setStatus = (id, status) => {
-    const next = items.map((item) => (item.id === id ? { ...item, status } : item));
-    setItems(next);
-    platformStore.saveAffiliates(next);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.get('/affiliates');
+      setItems(res.data?.data || []);
+    } catch (err) {
+      setError(err.parsedMessage || err.message || 'Failed to load affiliates.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const setStatus = async (id, status) => {
+    try {
+      await api.put(`/affiliates/${id}`, { status });
+      await load();
+    } catch (err) {
+      setError(err.parsedMessage || err.message || 'Failed to update status.');
+    }
   };
 
   return (
     <div>
       <AdminPageHeader title="Affiliate Program" hideAction />
+      {error && <p className="text-sm text-rose-600 mb-3">{error}</p>}
       <div className="admin-card overflow-hidden">
         <table className="admin-table">
           <thead>
@@ -28,22 +51,27 @@ const AdminAffiliate = () => {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id || item._id}>
                 <td>{item.name}</td>
                 <td>{item.email}</td>
                 <td><span className="admin-badge admin-badge-info">{item.status}</span></td>
-                <td>₹{item.pending}</td>
-                <td>₹{item.available}</td>
+                <td>₹{item.pending || 0}</td>
+                <td>₹{item.available || 0}</td>
                 <td className="text-right">
                   {item.status === 'Pending' && (
                     <>
-                      <button type="button" className="admin-btn-light" onClick={() => setStatus(item.id, 'Rejected')}>Reject</button>
-                      <button type="button" className="admin-btn-primary ml-2" onClick={() => setStatus(item.id, 'Approved')}>Approve</button>
+                      <button type="button" className="admin-btn-light" onClick={() => setStatus(item.id || item._id, 'Rejected')}>Reject</button>
+                      <button type="button" className="admin-btn-primary ml-2" onClick={() => setStatus(item.id || item._id, 'Approved')}>Approve</button>
                     </>
                   )}
                 </td>
               </tr>
             ))}
+            {!loading && items.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center text-slate-400 py-6">No affiliate applications yet.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

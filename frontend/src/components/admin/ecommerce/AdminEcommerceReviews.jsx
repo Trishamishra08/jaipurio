@@ -1,13 +1,51 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMessageSquare, FiStar } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
 import AdminDataTable from './AdminDataTable';
-import { PRODUCT_REVIEWS } from '../../../data/productReviews';
+import { fetchAdminReviews, approveReview, deleteReview } from '../../../utils/reviewApi';
 
 export const AdminEcommerceReviews = () => {
   const navigate = useNavigate();
-  const [reviews, setReviews] = useState(PRODUCT_REVIEWS);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const rows = await fetchAdminReviews();
+      setReviews(rows);
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to load reviews.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleApprove = async (row) => {
+    try {
+      await approveReview(row.id);
+      await load();
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to approve review.');
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!window.confirm('Delete this review?')) return;
+    try {
+      await deleteReview(row.id);
+      await load();
+    } catch (err) {
+      setLoadError(err.parsedMessage || err.message || 'Failed to delete review.');
+    }
+  };
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '70px' },
@@ -58,11 +96,7 @@ export const AdminEcommerceReviews = () => {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setReviews((prev) =>
-                  prev.map((item) =>
-                    item.id === row.id ? { ...item, status: 'Approved' } : item
-                  )
-                );
+                handleApprove(row);
               }}
               className="text-blue-600 hover:underline text-[11px] font-medium"
             >
@@ -73,7 +107,7 @@ export const AdminEcommerceReviews = () => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setReviews((prev) => prev.filter((item) => item.id !== row.id));
+              handleDelete(row);
             }}
             className="text-red-500 hover:underline text-[11px] font-medium"
           >
@@ -86,7 +120,12 @@ export const AdminEcommerceReviews = () => {
 
   return (
     <EcommerceLayout breadcrumb={['REVIEWS']}>
-      {reviews.length === 0 ? (
+      {loadError && (
+        <div className="mb-3 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError}
+        </div>
+      )}
+      {!loading && reviews.length === 0 ? (
         <div className="bg-white rounded-md border border-slate-200 shadow-2xs px-6 py-14 text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mb-4">
             <FiMessageSquare size={28} className="text-slate-400" />
@@ -111,6 +150,8 @@ export const AdminEcommerceReviews = () => {
           onCreate={() => navigate('/admin/ecommerce/reviews/create')}
           searchPlaceholder="Search reviews..."
           showExport={false}
+          showReload
+          onReload={load}
         />
       )}
     </EcommerceLayout>

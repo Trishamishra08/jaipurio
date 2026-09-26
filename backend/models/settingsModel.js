@@ -18,7 +18,21 @@ const settingsSchema = new mongoose.Schema({
   soundAlerts: { type: Boolean, default: true },
   currency: { type: String, default: 'INR (₹)' },
   taxComputation: { type: String, default: 'Automatic (GST)' },
-  maintenanceMode: { type: Boolean, default: false }
+  maintenanceMode: { type: Boolean, default: false },
+
+  // Appearance
+  theme: {
+    siteTitle: { type: String, default: 'Jaipurio' },
+    tagline: { type: String, default: 'Authentic Mitti & Handicraft Bazaar' },
+    headerStyle: { type: String, default: 'Default' },
+    footerStyle: { type: String, default: 'Classic' },
+  },
+  menus: [{ name: String, location: String, items: String }],
+  widgets: [{ name: String, sidebar: String }],
+  customCss: { type: String, default: '' },
+  customJs: { type: String, default: '' },
+  customHtml: { type: String, default: '' },
+  robotsTxt: { type: String, default: 'User-agent: *\nDisallow:' },
 }, {
   timestamps: true
 });

@@ -27,6 +27,10 @@ const invalidateCatalog = async (...names) => {
   await cacheDel(...keys);
 };
 
+const clearAllCatalogCache = async () => {
+  await cacheDel(...Object.values(CATALOG_KEYS));
+};
+
 const cachePublic = (name, ttlSeconds = 60) => {
   return async (req, res, next) => {
     if (req.method !== 'GET') return next();
@@ -69,5 +73,6 @@ module.exports = {
   CATALOG_KEYS,
   catalogKey,
   invalidateCatalog,
+  clearAllCatalogCache,
   cachePublic
 };
