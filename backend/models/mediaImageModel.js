@@ -28,6 +28,15 @@ const mediaImageSchema = new mongoose.Schema(
     width: { type: Number, default: null },
     height: { type: Number, default: null },
     alt: { type: String, default: '', trim: true },
+    title: { type: String, default: '', trim: true },
+    keywords: { type: [String], default: [] },
+    description: { type: String, default: '' },
+    copyright: { type: String, default: '' },
+    location: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+    },
+    originalSize: { type: Number, default: 0 },
     isFavorite: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null, index: true },
     uploadedBy: {

@@ -10,6 +10,22 @@ const getAdSettings = async (req, res) => {
   }
 };
 
+/** Public — the storefront reads this to decide whether/how to inject Google AdSense. */
+const getPublicAdSettings = async (req, res) => {
+  try {
+    const doc = await AdSetting.findOne({ key: 'default' });
+    if (!doc || !doc.enableAds) {
+      return res.json({ success: true, data: { enableAds: false, headerScript: '', adsenseClientId: '' } });
+    }
+    res.json({
+      success: true,
+      data: { enableAds: true, headerScript: doc.headerScript || '', adsenseClientId: doc.adsenseClientId || '' },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const TRUTHY = new Set(['yes', 'true', '1', 1, true]);
 
 const updateAdSettings = async (req, res) => {
@@ -34,4 +50,4 @@ const updateAdSettings = async (req, res) => {
   }
 };
 
-module.exports = { getAdSettings, updateAdSettings };
+module.exports = { getAdSettings, getPublicAdSettings, updateAdSettings };

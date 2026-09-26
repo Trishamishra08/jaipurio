@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { ShopProvider } from './context/ShopContext';
+import AdsenseInjector from './components/shared/AdsenseInjector';
 
 import SplashPage from './components/shared/SplashPage';
 import Navbar from './components/user/Navbar';
@@ -118,6 +119,7 @@ const AuthLayout = () => {
 function App() {
   return (
     <ShopProvider>
+      <AdsenseInjector />
       <Router>
         <Routes>
           {/* App load → splash → login */}

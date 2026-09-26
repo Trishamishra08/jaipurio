@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import ProductEditorForm from '../shared/ProductEditorForm';
+import VendorProductEdit from './VendorProductEdit';
 import VendorPage from './VendorPage';
 
 const VendorAddProduct = () => {
@@ -12,7 +12,7 @@ const VendorAddProduct = () => {
       hint="Required: Title, SKU, Category, Price, Stock, and at least one image. Save draft or submit for admin review."
       extra={<Link to="/vendor/products" className="admin-btn-light">Back to products</Link>}
     >
-      <ProductEditorForm role="vendor" productId={id} />
+      <VendorProductEdit productId={id} />
     </VendorPage>
   );
 };

@@ -35,6 +35,13 @@ const userSchema = new mongoose.Schema({
   profile: {
     type: String
   },
+  dateOfBirth: {
+    type: Date
+  },
+  privateNotes: {
+    type: String,
+    default: ''
+  },
   role: {
     type: String,
     enum: ['user', 'vendor', 'admin'],

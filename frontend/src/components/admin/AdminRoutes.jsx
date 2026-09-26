@@ -28,6 +28,9 @@ import AdminSystem from './AdminSystem';
 import AdminAffiliate from './AdminAffiliate';
 import AdminSeoRedirects from './AdminSeoRedirects';
 import AdminLocationTools from './AdminLocationTools';
+import AdminPaymentMethods from './AdminPaymentMethods';
+import AdminAds from './AdminAds';
+import AdminAdsSettings from './AdminAdsSettings';
 import ProductEditorForm from '../shared/ProductEditorForm';
 import AdminPageHeader from './AdminPageHeader';
 import './admin.css';
@@ -82,6 +85,9 @@ const AdminRoutes = () => (
       <Route path="users" element={<AdminUsers />} />
       <Route path="affiliates" element={<AdminAffiliate />} />
       <Route path="seo/redirects" element={<AdminSeoRedirects />} />
+      <Route path="payments/methods" element={<AdminPaymentMethods />} />
+      <Route path="ads" element={<AdminAds />} />
+      <Route path="ads/settings" element={<AdminAdsSettings />} />
       {/* Product specification pages are mounted in App.jsx under /admin/ecommerce/specification-* */}
       <Route path="simple-sliders" element={<AdminCrudPage />} />
       <Route path="sliders" element={<Navigate to="/admin/simple-sliders" replace />} />

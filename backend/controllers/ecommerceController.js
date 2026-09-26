@@ -13,6 +13,9 @@ const getReports = async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    const startOfSeries = new Date(now);
+    startOfSeries.setDate(startOfSeries.getDate() - 29);
+    startOfSeries.setHours(0, 0, 0, 0);
 
     const [
       ordersTotal,
@@ -29,6 +32,8 @@ const getReports = async (req, res) => {
       recentOrders,
       topProducts,
       statusBreakdown,
+      salesSeriesAgg,
+      customerSeriesAgg,
     ] = await Promise.all([
       Order.countDocuments(),
       Order.aggregate([
@@ -77,6 +82,27 @@ const getReports = async (req, res) => {
         { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
       ]),
+      Order.aggregate([
+        { $match: { createdAt: { $gte: startOfSeries } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            sales: { $sum: { $cond: ['$isPaid', '$totalPrice', 0] } },
+            orders: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: startOfSeries }, role: { $in: ['user', 'customer'] } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            customers: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
     ]);
 
     const revenue = revenueAgg[0]?.total || 0;
@@ -90,9 +116,32 @@ const getReports = async (req, res) => {
           ? 100
           : 0;
 
+    const dayKey = (d) => d.toISOString().slice(0, 10);
+    const dayLabel = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    const salesMap = Object.fromEntries(salesSeriesAgg.map((r) => [r._id, r]));
+    const customerMap = Object.fromEntries(customerSeriesAgg.map((r) => [r._id, r]));
+    const salesData = [];
+    const customerGrowthData = [];
+    for (let i = 0; i < 30; i += 1) {
+      const d = new Date(startOfSeries);
+      d.setDate(d.getDate() + i);
+      const key = dayKey(d);
+      salesData.push({
+        date: dayLabel(d),
+        sales: salesMap[key]?.sales || 0,
+        orders: salesMap[key]?.orders || 0,
+      });
+      customerGrowthData.push({
+        date: dayLabel(d),
+        customers: customerMap[key]?.customers || 0,
+      });
+    }
+
     res.json({
       success: true,
       data: {
+        salesData,
+        customerGrowthData,
         summary: {
           revenue,
           paidOrders,
@@ -176,12 +225,36 @@ const getCustomer = async (req, res) => {
     const user = await User.findById(req.params.id).select('-password').lean();
     if (!user) return res.status(404).json({ success: false, message: 'Customer not found' });
     const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(50).lean();
+    const orderIds = orders.map((o) => o._id);
+    const PaymentTransaction = require('../models/paymentTransactionModel');
+    const [payments, reviews] = await Promise.all([
+      PaymentTransaction.find({ order: { $in: orderIds } }).sort({ createdAt: -1 }).limit(50).lean(),
+      Review.find({ user: user._id }).populate('product', 'name title').sort({ createdAt: -1 }).limit(50).lean(),
+    ]);
+    const orderNumberById = Object.fromEntries(orders.map((o) => [String(o._id), o.orderNumber]));
     res.json({
       success: true,
       data: {
         ...user,
         id: String(user._id),
         orders,
+        payments: payments.map((p) => ({
+          id: String(p._id),
+          order: orderNumberById[String(p.order)] || p.orderNumber || '',
+          chargeId: p.gatewayPaymentId || p.gatewayOrderId || '',
+          amount: `₹${Number(p.amount || 0).toLocaleString('en-IN')}`,
+          method: p.gateway,
+          status: p.status,
+        })),
+        reviews: reviews.map((r) => ({
+          id: String(r._id),
+          product: r.product?.name || r.product?.title || '—',
+          user: user.name,
+          star: r.rating,
+          comment: r.comment,
+          status: r.isApproved ? 'Approved' : 'Pending',
+          createdAt: r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : '',
+        })),
       },
     });
   } catch (error) {

@@ -1,12 +1,19 @@
 const Order = require('../models/orderModel');
 const Coupon = require('../models/couponModel');
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
 const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
 const { computeOrderQuote } = require('../utils/pricing');
 const { nextOrderNumber, serializeOrder } = require('../utils/marketplace');
 const { canAccessOrder } = require('./orderFlowController');
 const { logTransaction } = require('./paymentTransactionController');
+const PaymentMethod = require('../models/paymentMethodModel');
+const { decryptConfig } = require('./paymentMethodController');
+const { getGateway } = require('../services/paymentGateways');
+
+const getEnabledMethodConfig = async (code) => {
+  const method = await PaymentMethod.findOne({ code, isEnabled: true, status: 'Published' });
+  if (!method) return null;
+  return decryptConfig(method);
+};
 
 const quoteItemsPayload = (items = []) => items.map((item) => ({
   product: item.product || item._id,
@@ -90,6 +97,13 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No order items' });
     }
 
+    if ((paymentMethod || 'COD') === 'COD') {
+      const codConfig = await getEnabledMethodConfig('cod');
+      if (codConfig === null) {
+        return res.status(400).json({ success: false, message: 'Cash on delivery is currently unavailable.' });
+      }
+    }
+
     const quote = await computeOrderQuote({
       items: quoteItemsPayload(items),
       couponCode,
@@ -157,36 +171,18 @@ const createRazorpayOrder = async (req, res) => {
       paymentMethod: 'paynow'
     });
 
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.warn('Razorpay keys not found. Returning mock order id.');
-      return res.status(200).json({
-        success: true,
-        data: {
-          quote,
-          keyId: '',
-          order: {
-            id: 'mock_order_' + Date.now(),
-            amount: Math.round(quote.total * 100),
-            currency: 'INR'
-          }
-        }
-      });
+    const config = await getEnabledMethodConfig('razorpay');
+    if (config === null) {
+      return res.status(400).json({ success: false, message: 'Online payment is currently unavailable.' });
     }
-
-    const instance = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
-
-    const order = await instance.orders.create({
-      amount: Math.round(quote.total * 100),
-      currency: 'INR',
+    const gateway = getGateway('razorpay');
+    const { mock, order, keyId } = await gateway.createOrder(config, {
+      amount: quote.total,
       receipt: 'receipt_order_' + Date.now(),
     });
 
-    if (!order) return res.status(500).send('Some error occured');
-
-    res.status(200).json({ success: true, data: { order, quote, keyId: process.env.RAZORPAY_KEY_ID || '' } });
+    if (mock) console.warn('Razorpay not configured. Returning mock order id.');
+    res.status(200).json({ success: true, data: { order, quote, keyId } });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -199,24 +195,20 @@ const verifyRazorpayOrder = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderDetails } = req.body;
 
-    // Verify signature only if keys exist
-    if (process.env.RAZORPAY_KEY_SECRET) {
-      const sign = razorpay_order_id + "|" + razorpay_payment_id;
-      const expectedSign = crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-        .update(sign.toString())
-        .digest("hex");
-
-      if (razorpay_signature !== expectedSign) {
-        logTransaction({
-          gateway: 'razorpay',
-          gatewayOrderId: razorpay_order_id || '',
-          gatewayPaymentId: razorpay_payment_id || '',
-          status: 'failed',
-          errorMessage: 'Signature verification failed',
-        }).catch(() => {});
-        return res.status(400).json({ success: false, message: "Invalid signature sent!" });
-      }
+    const config = await getEnabledMethodConfig('razorpay');
+    if (config === null) {
+      return res.status(400).json({ success: false, message: 'Online payment is currently unavailable.' });
+    }
+    const gateway = getGateway('razorpay');
+    if (!gateway.verifySignature(config, { razorpay_order_id, razorpay_payment_id, razorpay_signature })) {
+      logTransaction({
+        gateway: 'razorpay',
+        gatewayOrderId: razorpay_order_id || '',
+        gatewayPaymentId: razorpay_payment_id || '',
+        status: 'failed',
+        errorMessage: 'Signature verification failed',
+      }).catch(() => {});
+      return res.status(400).json({ success: false, message: "Invalid signature sent!" });
     }
 
     const { items, shippingAddress, couponCode } = orderDetails || {};

@@ -4,6 +4,7 @@ const adSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, trim: true },
+    shortcode: { type: String, unique: true, sparse: true, index: true },
     image: { type: String, default: '' },
     link: { type: String, default: '' },
     placement: {

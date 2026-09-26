@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const exifr = require('exifr');
 const MediaAsset = require('../models/mediaAssetModel');
 const MediaImage = require('../models/mediaImageModel');
 const {
@@ -228,6 +229,16 @@ const uploadMedia = async (req, res) => {
     const created = [];
 
     for (const file of files) {
+      let location = { latitude: null, longitude: null };
+      try {
+        const gps = await exifr.gps(file.buffer);
+        if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+          location = { latitude: gps.latitude, longitude: gps.longitude };
+        }
+      } catch {
+        /* no EXIF GPS data — leave as null, admin can fill in manually */
+      }
+
       const stored = await uploadBuffer(file, folderPath);
       const originalName = file.originalname || 'untitled';
       const name = sanitizeName(originalName);
@@ -240,9 +251,11 @@ const uploadMedia = async (req, res) => {
         storageProvider: stored.provider || 'cloudinary',
         mimeType: stored.mimeType || file.mimetype || 'image/webp',
         size: stored.size || file.size || 0,
+        originalSize: file.size || file.buffer?.length || 0,
         width: stored.width || null,
         height: stored.height || null,
         alt: '',
+        location,
         uploadedBy: req.user?._id || null,
       });
       created.push(serializeImage(image));
@@ -293,6 +306,63 @@ const updateAlt = async (req, res) => {
     return res.json({ success: true, data: { ...serializeFolder(doc), type: 'file' } });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const updateMetadata = async (req, res) => {
+  try {
+    const { kind, doc } = await findImageOrFolder(req.params.id);
+    if (!doc || (kind !== 'image' && kind !== 'legacy')) {
+      return res.status(404).json({ success: false, message: 'Not found' });
+    }
+    const { alt, title, description, copyright, keywords, latitude, longitude } = req.body;
+    if (alt !== undefined) doc.alt = String(alt);
+    if (title !== undefined) doc.title = String(title);
+    if (description !== undefined) doc.description = String(description);
+    if (copyright !== undefined) doc.copyright = String(copyright);
+    if (keywords !== undefined) {
+      doc.keywords = Array.isArray(keywords)
+        ? keywords
+        : String(keywords).split(',').map((k) => k.trim()).filter(Boolean);
+    }
+    if (latitude !== undefined || longitude !== undefined) {
+      doc.location = {
+        latitude: latitude !== undefined && latitude !== '' ? Number(latitude) : doc.location?.latitude ?? null,
+        longitude: longitude !== undefined && longitude !== '' ? Number(longitude) : doc.location?.longitude ?? null,
+      };
+    }
+    await doc.save();
+    if (kind === 'image') {
+      return res.json({ success: true, data: serializeImage(doc) });
+    }
+    return res.json({ success: true, data: { ...serializeFolder(doc), type: 'file' } });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+/** Re-runs the Cloudinary WebP/quality pipeline against an already-uploaded image's stored URL. */
+const reoptimizeMedia = async (req, res) => {
+  try {
+    const image = await MediaImage.findById(req.params.id);
+    if (!image) return res.status(404).json({ success: false, message: 'Not found' });
+    const cloudinary = require('cloudinary').v2;
+    const result = await cloudinary.uploader.explicit(image.storageKey, {
+      type: 'upload',
+      eager: [{ width: 2000, crop: 'limit', fetch_format: 'webp', quality: 'auto:good' }],
+    });
+    const eager = result.eager?.[0];
+    if (eager?.secure_url) {
+      if (!image.originalSize) image.originalSize = image.size;
+      image.url = eager.secure_url;
+      image.size = eager.bytes || image.size;
+      image.width = eager.width || image.width;
+      image.height = eager.height || image.height;
+      await image.save();
+    }
+    res.json({ success: true, data: serializeImage(image) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -560,6 +630,8 @@ module.exports = {
   uploadMedia,
   renameMedia,
   updateAlt,
+  updateMetadata,
+  reoptimizeMedia,
   replaceMediaFile,
   toggleFavorite,
   moveMedia,

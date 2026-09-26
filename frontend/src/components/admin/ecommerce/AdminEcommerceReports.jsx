@@ -27,32 +27,6 @@ import {
 } from 'recharts';
 import { fetchEcommerceReports } from '../../../utils/ecommerceApi';
 
-const salesData = [
-  { date: '14 Aug', sales: 0, orders: 0 },
-  { date: '16 Aug', sales: 0, orders: 1 },
-  { date: '18 Aug', sales: 0, orders: 0 },
-  { date: '20 Aug', sales: 0, orders: 0 },
-  { date: '22 Aug', sales: 0, orders: 1 },
-  { date: '24 Aug', sales: 0, orders: 0 },
-  { date: '26 Aug', sales: 0, orders: 0 },
-  { date: '28 Aug', sales: 0, orders: 0 },
-  { date: '30 Aug', sales: 0, orders: 0 },
-  { date: '01 Sep', sales: 0, orders: 2 },
-  { date: '03 Sep', sales: 0, orders: 1 },
-  { date: '05 Sep', sales: 0, orders: 2 },
-  { date: '07 Sep', sales: 0, orders: 0 },
-  { date: '09 Sep', sales: 0, orders: 0 },
-  { date: '11 Sep', sales: 0, orders: 1 },
-];
-
-const customerGrowthData = [
-  { date: '01 Sep', customers: 1 },
-  { date: '02 Sep', customers: 2 },
-  { date: '05 Sep', customers: 4 },
-  { date: '06 Sep', customers: 5 },
-  { date: '11 Sep', customers: 7 },
-];
-
 const trendingProductsFallback = [
   { id: '860', name: 'Shakha with Blue Chudiyan | Traditional Bengali Jewelry Set', views: 249 },
   { id: '7463', name: 'Pure Brass Standing Trishul Carved - Sacred Shiva Trident Temple Art | Jaipurio', views: 216 },
@@ -70,12 +44,29 @@ const AdminEcommerceReports = () => {
     paidOrders: 0,
   });
   const [trendingProducts, setTrendingProducts] = useState(trendingProductsFallback);
+  const [salesData, setSalesData] = useState([]);
+  const [customerGrowthData, setCustomerGrowthData] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
 
   useEffect(() => {
     (async () => {
       try {
         const data = await fetchEcommerceReports();
         if (data?.summary) setSummary(data.summary);
+        if (Array.isArray(data?.salesData)) setSalesData(data.salesData);
+        if (Array.isArray(data?.customerGrowthData)) setCustomerGrowthData(data.customerGrowthData);
+        if (Array.isArray(data?.recentOrders)) {
+          setRecentOrders(
+            data.recentOrders.map((o) => ({
+              id: o.id,
+              customer: o.customerName || '—',
+              amount: `₹${Number(o.totalPrice || 0).toLocaleString('en-IN')}.0`,
+              paymentStatus: o.paymentStatus,
+              status: o.orderStatus,
+              createdAt: o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : '',
+            }))
+          );
+        }
         if (Array.isArray(data?.topProducts) && data.topProducts.length) {
           setTrendingProducts(
             data.topProducts.map((p, i) => ({
@@ -234,7 +225,7 @@ const AdminEcommerceReports = () => {
               { header: 'Status', accessor: 'status' },
               { header: 'Created At', accessor: 'createdAt' },
             ]}
-            data={[]}
+            data={recentOrders}
             emptyMessage="No data to display"
           />
         </div>

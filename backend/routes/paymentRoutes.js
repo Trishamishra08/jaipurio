@@ -1,22 +1,36 @@
 const express = require('express');
 const { protect, authorize } = require('../middlewares/authMiddleware');
-const { createAdminCrudRouter } = require('../utils/crudFactory');
-const PaymentMethod = require('../models/paymentMethodModel');
 const {
   listTransactions,
   getTransactionById,
   updateTransaction,
   deleteTransaction,
 } = require('../controllers/paymentTransactionController');
+const {
+  listMethods,
+  listPublicMethods,
+  toggleMethod,
+  saveMethodConfig,
+  setDefaultMethod,
+  listAvailableGateways,
+  createMethod,
+  deleteMethod,
+} = require('../controllers/paymentMethodController');
 
 const router = express.Router();
 
+// Public — checkout needs this without an admin session.
+router.get('/methods/public', listPublicMethods);
+
 router.use(protect, authorize('admin'));
 
-router.use(
-  '/methods',
-  createAdminCrudRouter(PaymentMethod, { skipAuth: true, searchFields: ['name', 'code', 'description'] })
-);
+router.get('/methods', listMethods);
+router.get('/methods/available', listAvailableGateways);
+router.post('/methods', createMethod);
+router.put('/methods/:id/toggle', toggleMethod);
+router.put('/methods/:id/config', saveMethodConfig);
+router.put('/methods/:id/default', setDefaultMethod);
+router.delete('/methods/:id', deleteMethod);
 
 // Transactions and Logs are the same underlying collection: Transactions defaults to
 // successful payments, Logs shows everything (including failed/initiated attempts).
