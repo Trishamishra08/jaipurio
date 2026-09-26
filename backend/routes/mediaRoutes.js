@@ -9,6 +9,8 @@ const {
   uploadMedia,
   renameMedia,
   updateAlt,
+  updateMetadata,
+  reoptimizeMedia,
   replaceMediaFile,
   toggleFavorite,
   moveMedia,
@@ -45,6 +47,8 @@ router.post('/upload', upload.array('documents', 20), uploadMedia);
 router.get('/:id/download', downloadMedia);
 router.put('/:id/rename', renameMedia);
 router.put('/:id/alt', updateAlt);
+router.put('/:id/metadata', updateMetadata);
+router.post('/:id/reoptimize', reoptimizeMedia);
 router.put('/:id/replace', upload.single('document'), replaceMediaFile);
 router.put('/:id/favorite', toggleFavorite);
 router.put('/:id/move', moveMedia);

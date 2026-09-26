@@ -6,11 +6,30 @@ const attributeSetSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true },
     name: { type: String, trim: true },
     slug: { type: String, trim: true, index: true },
-    attributes: [
+    /**
+     * Nested layers: Set -> Groups -> Attributes -> Values.
+     * e.g. group "Physical Properties" -> attribute "Color" -> values [Red, Blue].
+     */
+    groups: [
       {
-        title: String,
+        name: { type: String, required: true, trim: true },
         slug: String,
-        values: [String],
+        order: { type: Number, default: 0 },
+        attributes: [
+          {
+            title: { type: String, required: true, trim: true },
+            slug: String,
+            values: [
+              {
+                title: String,
+                slug: String,
+                color: String,
+                image: String,
+                isDefault: { type: Boolean, default: false },
+              },
+            ],
+          },
+        ],
       },
     ],
     displayLayout: { type: String, default: 'dropdown' },

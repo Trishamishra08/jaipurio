@@ -1,24 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiCheck, FiImage, FiLogOut, FiPlus, FiSave, FiX } from 'react-icons/fi';
+import { FiCheck, FiImage, FiLogOut, FiSave, FiX } from 'react-icons/fi';
 import EcommerceLayout from './EcommerceLayout';
-import { customerInitials, getCustomerById } from '../../../data/customers';
+import { fetchEcommerceCustomer, saveEcommerceCustomer } from '../../../utils/ecommerceApi';
 
-const emptyCustomer = {
-  id: 'new',
-  name: '',
-  email: '',
-  phone: '',
-  dateOfBirth: '',
-  status: 'Activated',
-  isVendor: false,
-  privateNotes: '',
-  avatar: '',
-  addresses: [],
-  wishlist: [],
-  payments: [],
-  reviews: [],
-};
+const customerInitials = (name = '') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('') || 'C';
 
 const EmptyTable = ({ cols, message = 'No data to display' }) => (
   <div className="overflow-x-auto border border-slate-200 rounded-md">
@@ -47,54 +39,99 @@ export const AdminEcommerceCustomerEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isCreate = !id || id === 'create';
-  const existing = useMemo(() => (isCreate ? null : getCustomerById(id)), [id, isCreate]);
-  const seed = existing || emptyCustomer;
 
-  const [name, setName] = useState(seed.name);
-  const [email, setEmail] = useState(seed.email);
-  const [phone, setPhone] = useState(seed.phone || '');
-  const [dateOfBirth, setDateOfBirth] = useState(seed.dateOfBirth || '');
-  const [isVendor, setIsVendor] = useState(Boolean(seed.isVendor));
-  const [status, setStatus] = useState(seed.status || 'Activated');
-  const [privateNotes, setPrivateNotes] = useState(seed.privateNotes || '');
-  const [avatar, setAvatar] = useState(seed.avatar || '');
+  const [loading, setLoading] = useState(!isCreate);
+  const [loadError, setLoadError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [privateNotes, setPrivateNotes] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [changePassword, setChangePassword] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
 
+  const [addresses, setAddresses] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [reviews, setReviews] = useState([]);
+
   useEffect(() => {
-    const next = isCreate ? emptyCustomer : getCustomerById(id) || emptyCustomer;
-    setName(next.name);
-    setEmail(next.email);
-    setPhone(next.phone || '');
-    setDateOfBirth(next.dateOfBirth || '');
-    setIsVendor(Boolean(next.isVendor));
-    setStatus(next.status || 'Activated');
-    setPrivateNotes(next.privateNotes || '');
-    setAvatar(next.avatar || '');
-    setPassword('');
-    setPasswordConfirm('');
-    setChangePassword(false);
-    setShowUrlInput(false);
-    setAvatarUrl('');
+    if (isCreate) {
+      setName('');
+      setEmail('');
+      setPhone('');
+      setDateOfBirth('');
+      setIsBlocked(false);
+      setPrivateNotes('');
+      setAvatar('');
+      setAddresses([]);
+      setPayments([]);
+      setReviews([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setLoadError('');
+    fetchEcommerceCustomer(id)
+      .then((c) => {
+        setName(c.name || '');
+        setEmail(c.email || '');
+        setPhone(c.mobile || '');
+        setDateOfBirth(c.dateOfBirth ? String(c.dateOfBirth).slice(0, 10) : '');
+        setIsBlocked(Boolean(c.isBlocked));
+        setPrivateNotes(c.privateNotes || '');
+        setAvatar(c.profile || '');
+        setAddresses(Array.isArray(c.addresses) ? c.addresses : []);
+        setPayments(Array.isArray(c.payments) ? c.payments : []);
+        setReviews(Array.isArray(c.reviews) ? c.reviews : []);
+      })
+      .catch((err) => setLoadError(err.parsedMessage || err.message || 'Failed to load customer.'))
+      .finally(() => setLoading(false));
   }, [id, isCreate]);
 
-  const addresses = existing?.addresses || [];
-  const wishlist = existing?.wishlist || [];
-  const payments = existing?.payments || [];
-  const reviews = existing?.reviews || [];
+  const pageTitle = isCreate ? 'Create a customer' : `Edit customer "${name || 'Customer'}"`;
 
-  const pageTitle = isCreate
-    ? 'Create a customer'
-    : `Edit customer "${name || existing?.name || 'Customer'}"`;
-
-  const handleSave = (exit = false) => {
-    setSavedToast(true);
-    window.setTimeout(() => setSavedToast(false), 1800);
-    if (exit) navigate('/admin/customers');
+  const handleSave = async (exit = false) => {
+    if (!name.trim() || !email.trim()) {
+      setSaveError('Name and email are required.');
+      return;
+    }
+    setSaving(true);
+    setSaveError('');
+    try {
+      const payload = {
+        id: isCreate ? undefined : id,
+        name,
+        email,
+        mobile: phone,
+        dateOfBirth: dateOfBirth || undefined,
+        isBlocked,
+        privateNotes,
+        profile: avatar,
+      };
+      if (isCreate || changePassword) {
+        if (password) payload.password = password;
+      }
+      const saved = await saveEcommerceCustomer(payload);
+      setSavedToast(true);
+      window.setTimeout(() => setSavedToast(false), 1800);
+      if (exit) {
+        navigate('/admin/customers');
+      } else if (isCreate && (saved?._id || saved?.id)) {
+        navigate(`/admin/customers/edit/${saved._id || saved.id}`, { replace: true });
+      }
+    } catch (err) {
+      setSaveError(err.parsedMessage || err.message || 'Failed to save customer.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const applyAvatarUrl = () => {
@@ -104,12 +141,25 @@ export const AdminEcommerceCustomerEdit = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <EcommerceLayout breadcrumb={['CUSTOMERS', pageTitle.toUpperCase()]}>
+        <div className="text-center text-xs text-slate-400 py-10">Loading customer…</div>
+      </EcommerceLayout>
+    );
+  }
+
   return (
     <EcommerceLayout breadcrumb={['CUSTOMERS', pageTitle.toUpperCase()]}>
       {savedToast && (
         <div className="fixed top-16 right-6 z-50 bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 rounded-md shadow-lg flex items-center gap-2">
           <FiCheck size={16} />
           <span>Customer saved successfully!</span>
+        </div>
+      )}
+      {(loadError || saveError) && (
+        <div className="mb-4 px-3 py-2 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
+          {loadError || saveError}
         </div>
       )}
 
@@ -150,16 +200,6 @@ export const AdminEcommerceCustomerEdit = () => {
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isVendor}
-                  onChange={(e) => setIsVendor(e.target.checked)}
-                  className="rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5"
-                />
-                <span>Is vendor?</span>
-              </label>
-
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Phone</label>
                 <input
@@ -182,30 +222,16 @@ export const AdminEcommerceCustomerEdit = () => {
               </div>
 
               {isCreate ? (
-                <>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      Password confirmation <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordConfirm}
-                      onChange={(e) => setPasswordConfirm(e.target.value)}
-                      className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Leave blank to auto-generate"
+                    className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
               ) : (
                 <>
                   <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
@@ -218,30 +244,15 @@ export const AdminEcommerceCustomerEdit = () => {
                     <span>Change password?</span>
                   </label>
                   {changePassword && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                          Password <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                          Password confirmation <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="password"
-                          value={passwordConfirm}
-                          onChange={(e) => setPasswordConfirm(e.target.value)}
-                          className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-                    </>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">New password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full border border-slate-300 rounded-md py-2 px-3 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
                   )}
                 </>
               )}
@@ -265,93 +276,30 @@ export const AdminEcommerceCustomerEdit = () => {
           {!isCreate && (
             <>
               <div className="bg-white rounded-md border border-slate-200 shadow-2xs overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-2">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Addresses
-                  </h4>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
-                  >
-                    <FiPlus size={12} />
-                    New address
-                  </button>
+                <div className="px-4 py-3 border-b border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Addresses</h4>
                 </div>
                 <div className="p-4">
                   {addresses.length === 0 ? (
-                    <EmptyTable
-                      cols={['#', 'Address', 'Zip code', 'Country', 'State', 'City', 'Action']}
-                    />
+                    <EmptyTable cols={['#', 'Title', 'Address', 'Phone', 'Default']} />
                   ) : (
                     <div className="overflow-x-auto border border-slate-200 rounded-md">
                       <table className="w-full text-xs">
                         <thead className="bg-slate-50 text-slate-600">
                           <tr>
-                            {['#', 'Address', 'Zip code', 'Country', 'State', 'City', 'Action'].map(
-                              (col) => (
-                                <th
-                                  key={col}
-                                  className="text-left font-semibold px-3 py-2 border-b border-slate-200"
-                                >
-                                  {col}
-                                </th>
-                              )
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {addresses.map((row, idx) => (
-                            <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                              <td className="px-3 py-2 text-slate-500">{idx + 1}</td>
-                              <td className="px-3 py-2">{row.address}</td>
-                              <td className="px-3 py-2">{row.zipCode}</td>
-                              <td className="px-3 py-2">{row.country}</td>
-                              <td className="px-3 py-2">{row.state}</td>
-                              <td className="px-3 py-2">{row.city}</td>
-                              <td className="px-3 py-2">
-                                <button type="button" className="text-red-500 hover:underline">
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-md border border-slate-200 shadow-2xs overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Wishlist
-                  </h4>
-                </div>
-                <div className="p-4">
-                  {wishlist.length === 0 ? (
-                    <EmptyTable cols={['#', 'Product', 'Created At']} />
-                  ) : (
-                    <div className="overflow-x-auto border border-slate-200 rounded-md">
-                      <table className="w-full text-xs">
-                        <thead className="bg-slate-50 text-slate-600">
-                          <tr>
-                            {['#', 'Product', 'Created At'].map((col) => (
-                              <th
-                                key={col}
-                                className="text-left font-semibold px-3 py-2 border-b border-slate-200"
-                              >
-                                {col}
-                              </th>
+                            {['#', 'Title', 'Address', 'Phone', 'Default'].map((col) => (
+                              <th key={col} className="text-left font-semibold px-3 py-2 border-b border-slate-200">{col}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {wishlist.map((row, idx) => (
-                            <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                          {addresses.map((row, idx) => (
+                            <tr key={row._id || idx} className="border-b border-slate-100 last:border-0">
                               <td className="px-3 py-2 text-slate-500">{idx + 1}</td>
-                              <td className="px-3 py-2 text-blue-600">{row.product}</td>
-                              <td className="px-3 py-2">{row.createdAt}</td>
+                              <td className="px-3 py-2">{row.title}</td>
+                              <td className="px-3 py-2">{row.addressLine}</td>
+                              <td className="px-3 py-2">{row.mobile}</td>
+                              <td className="px-3 py-2">{row.isDefault ? 'Yes' : 'No'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -363,56 +311,30 @@ export const AdminEcommerceCustomerEdit = () => {
 
               <div className="bg-white rounded-md border border-slate-200 shadow-2xs overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Payments
-                  </h4>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Payments</h4>
                 </div>
                 <div className="p-4">
                   {payments.length === 0 ? (
-                    <EmptyTable
-                      cols={[
-                        '#',
-                        'Order',
-                        'Charge ID',
-                        'Amount',
-                        'Payment methods',
-                        'Status',
-                        'Action',
-                      ]}
-                    />
+                    <EmptyTable cols={['#', 'Order', 'Charge ID', 'Amount', 'Method', 'Status']} />
                   ) : (
                     <div className="overflow-x-auto border border-slate-200 rounded-md">
                       <table className="w-full text-xs">
                         <thead className="bg-slate-50 text-slate-600">
                           <tr>
-                            {[
-                              '#',
-                              'Order',
-                              'Charge ID',
-                              'Amount',
-                              'Payment methods',
-                              'Status',
-                              'Action',
-                            ].map((col) => (
-                              <th
-                                key={col}
-                                className="text-left font-semibold px-3 py-2 border-b border-slate-200"
-                              >
-                                {col}
-                              </th>
+                            {['#', 'Order', 'Charge ID', 'Amount', 'Method', 'Status'].map((col) => (
+                              <th key={col} className="text-left font-semibold px-3 py-2 border-b border-slate-200">{col}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {payments.map((row, idx) => (
-                            <tr key={row.id} className="border-b border-slate-100 last:border-0">
+                            <tr key={row.id || idx} className="border-b border-slate-100 last:border-0">
                               <td className="px-3 py-2 text-slate-500">{idx + 1}</td>
                               <td className="px-3 py-2 text-blue-600">{row.order}</td>
                               <td className="px-3 py-2 font-mono text-[11px]">{row.chargeId}</td>
                               <td className="px-3 py-2 font-semibold">{row.amount}</td>
                               <td className="px-3 py-2">{row.method}</td>
                               <td className="px-3 py-2">{row.status}</td>
-                              <td className="px-3 py-2 text-slate-400">—</td>
                             </tr>
                           ))}
                         </tbody>
@@ -424,45 +346,18 @@ export const AdminEcommerceCustomerEdit = () => {
 
               <div className="bg-white rounded-md border border-slate-200 shadow-2xs overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Reviews
-                  </h4>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Reviews</h4>
                 </div>
                 <div className="p-4">
                   {reviews.length === 0 ? (
-                    <EmptyTable
-                      cols={[
-                        'ID',
-                        'Product',
-                        'User',
-                        'Star',
-                        'Comment',
-                        'Images',
-                        'Status',
-                        'Created At',
-                      ]}
-                    />
+                    <EmptyTable cols={['ID', 'Product', 'Star', 'Comment', 'Status', 'Created At']} />
                   ) : (
                     <div className="overflow-x-auto border border-slate-200 rounded-md">
                       <table className="w-full text-xs">
                         <thead className="bg-slate-50 text-slate-600">
                           <tr>
-                            {[
-                              'ID',
-                              'Product',
-                              'User',
-                              'Star',
-                              'Comment',
-                              'Images',
-                              'Status',
-                              'Created At',
-                            ].map((col) => (
-                              <th
-                                key={col}
-                                className="text-left font-semibold px-3 py-2 border-b border-slate-200"
-                              >
-                                {col}
-                              </th>
+                            {['ID', 'Product', 'Star', 'Comment', 'Status', 'Created At'].map((col) => (
+                              <th key={col} className="text-left font-semibold px-3 py-2 border-b border-slate-200">{col}</th>
                             ))}
                           </tr>
                         </thead>
@@ -471,10 +366,8 @@ export const AdminEcommerceCustomerEdit = () => {
                             <tr key={row.id} className="border-b border-slate-100 last:border-0">
                               <td className="px-3 py-2 text-slate-500">{row.id}</td>
                               <td className="px-3 py-2 text-blue-600">{row.product}</td>
-                              <td className="px-3 py-2">{row.user}</td>
                               <td className="px-3 py-2">{row.star}</td>
                               <td className="px-3 py-2">{row.comment}</td>
-                              <td className="px-3 py-2 text-slate-400">—</td>
                               <td className="px-3 py-2">{row.status}</td>
                               <td className="px-3 py-2">{row.createdAt}</td>
                             </tr>
@@ -497,7 +390,8 @@ export const AdminEcommerceCustomerEdit = () => {
             <button
               type="button"
               onClick={() => handleSave(false)}
-              className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition"
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 bg-[#1E293B] hover:bg-slate-900 disabled:opacity-60 text-white font-semibold py-2 px-3 rounded-md text-xs shadow-xs transition"
             >
               <FiSave size={14} />
               Save
@@ -505,7 +399,8 @@ export const AdminEcommerceCustomerEdit = () => {
             <button
               type="button"
               onClick={() => handleSave(true)}
-              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 font-semibold py-2 px-3 rounded-md text-xs transition"
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-60 text-slate-800 font-semibold py-2 px-3 rounded-md text-xs transition"
             >
               <FiLogOut size={14} />
               Save & Exit
@@ -517,8 +412,8 @@ export const AdminEcommerceCustomerEdit = () => {
               Status<span className="text-red-500">*</span>
             </label>
             <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={isBlocked ? 'Locked' : 'Activated'}
+              onChange={(e) => setIsBlocked(e.target.value === 'Locked')}
               className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs bg-white text-slate-700 focus:outline-hidden focus:border-blue-500"
             >
               <option value="Activated">Activated</option>

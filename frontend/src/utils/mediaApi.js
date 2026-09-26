@@ -76,6 +76,24 @@ export const updateMediaAlt = async (id, alt) => {
   }
 };
 
+export const updateMediaMetadata = async (id, metadata) => {
+  try {
+    const res = await api.put(`/media/${id}/metadata`, metadata);
+    return unwrap(res);
+  } catch (err) {
+    throw mediaError(err);
+  }
+};
+
+export const reoptimizeMedia = async (id) => {
+  try {
+    const res = await api.post(`/media/${id}/reoptimize`);
+    return unwrap(res);
+  } catch (err) {
+    throw mediaError(err);
+  }
+};
+
 export const replaceMediaFile = async (id, file) => {
   try {
     const form = new FormData();

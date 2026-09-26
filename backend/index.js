@@ -31,6 +31,9 @@ const { connectRedis, getRedisStatus } = require('./config/redis');
 const connectDB = require('./config/db');
 const { freePort } = require('./scripts/free-port');
 const ensureDemoAdmin = require('./scripts/ensureDemoAdmin');
+const ensurePaymentMethods = require('./scripts/ensurePaymentMethods');
+const migrateAttributeSetGroups = require('./scripts/migrateAttributeSetGroups');
+const ensureCountries = require('./scripts/ensureCountries');
 
 // Initialize Express App
 const app = express();
@@ -171,6 +174,9 @@ const startServer = () => {
 
 connectDB()
   .then(() => ensureDemoAdmin())
+  .then(() => ensurePaymentMethods())
+  .then(() => migrateAttributeSetGroups())
+  .then(() => ensureCountries())
   .then(startServer)
   .catch((err) => {
   console.error(`Database connection failed: ${err.message}`);

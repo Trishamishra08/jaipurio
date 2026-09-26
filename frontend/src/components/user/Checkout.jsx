@@ -36,6 +36,22 @@ const Checkout = () => {
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
   const [placing, setPlacing] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [enabledMethodCodes, setEnabledMethodCodes] = useState(null);
+
+  useEffect(() => {
+    api.get('/payments/methods/public')
+      .then((res) => setEnabledMethodCodes((res.data?.data || []).map((m) => m.code)))
+      .catch(() => setEnabledMethodCodes(['cod', 'razorpay']));
+  }, []);
+
+  const codEnabled = enabledMethodCodes === null || enabledMethodCodes.includes('cod');
+  const onlineEnabled = enabledMethodCodes === null || enabledMethodCodes.includes('razorpay');
+
+  useEffect(() => {
+    if (enabledMethodCodes === null) return;
+    if (paymentMethod === 'cod' && !codEnabled) setPaymentMethod(onlineEnabled ? 'upi' : '');
+    if (paymentMethod !== 'cod' && !onlineEnabled) setPaymentMethod(codEnabled ? 'cod' : '');
+  }, [enabledMethodCodes, paymentMethod, codEnabled, onlineEnabled]);
 
   useEffect(() => {
     ensureCustomerAuth();
@@ -324,11 +340,11 @@ const Checkout = () => {
 
                 <div className="space-y-3">
                   {[
-                    { id: 'upi', title: 'UPI (GPay / PhonePe / Paytm / QR)', desc: 'Instant verification with zero transaction fee' },
-                    { id: 'card', title: 'Debit / Credit Card', desc: 'Visa, MasterCard, RuPay cards accepted' },
-                    { id: 'netbanking', title: 'Net Banking', desc: 'All major Indian public & private banks' },
-                    { id: 'cod', title: 'Cash on Delivery', desc: 'Pay safely upon doorstep delivery' },
-                  ].map(method => (
+                    { id: 'upi', title: 'UPI (GPay / PhonePe / Paytm / QR)', desc: 'Instant verification with zero transaction fee', online: true },
+                    { id: 'card', title: 'Debit / Credit Card', desc: 'Visa, MasterCard, RuPay cards accepted', online: true },
+                    { id: 'netbanking', title: 'Net Banking', desc: 'All major Indian public & private banks', online: true },
+                    { id: 'cod', title: 'Cash on Delivery', desc: 'Pay safely upon doorstep delivery', online: false },
+                  ].filter((method) => (method.online ? onlineEnabled : codEnabled)).map(method => (
                     <label 
                       key={method.id}
                       className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${

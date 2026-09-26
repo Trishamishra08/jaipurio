@@ -35,6 +35,25 @@ const {
 const router = express.Router();
 const crudOpts = { skipAuth: true };
 
+// Vendors need read-only access to category-driven spec attributes and
+// specification tables so the product editor can render the same dynamic
+// fields admins get. Registered before the blanket admin-only auth below so
+// these two GETs match first; every other method/path still requires admin.
+router.get('/categories/:categoryId/attributes', protect, authorize('admin', 'vendor'), listForCategory);
+router.get(
+  '/specification-tables',
+  protect,
+  authorize('admin', 'vendor'),
+  async (req, res) => {
+    try {
+      const rows = await EcommerceSpecificationTable.find({}).sort({ updatedAt: -1 }).lean();
+      res.json({ success: true, data: rows.map((r) => ({ ...r, id: String(r._id) })) });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+);
+
 router.use(protect, authorize('admin'));
 
 router.get('/reports', getReports);

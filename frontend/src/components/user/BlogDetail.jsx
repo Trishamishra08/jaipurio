@@ -5,6 +5,7 @@ import { useShop } from '../../context/ShopContext';
 import { journalPosts } from '../../data/journalPosts';
 import { getWhatsAppHref } from '../../utils/whatsapp';
 import JharokhaBand from './JharokhaBand';
+import ContentWithAds from '../shared/ContentWithAds';
 
 const GUIDE = journalPosts[0];
 
@@ -124,7 +125,7 @@ const BlogDetail = () => {
             </div>
             <div className="art-body">
               {hasCmsBody ? (
-                <div dangerouslySetInnerHTML={{ __html: String(blog.content).replace(/\n/g, '<br/>') }} />
+                <ContentWithAds html={String(blog.content).replace(/\n/g, '<br/>')} />
               ) : (
                 <>
                   <h2 id="quality">Material quality</h2>

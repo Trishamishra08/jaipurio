@@ -30,8 +30,61 @@ const emptySet = {
   isComparable: false,
   isUseInProductListing: false,
   useImageFromProductVariation: false,
-  attributes: [],
+  groups: [],
 };
+
+const uid = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+/** Normalizes any loaded/legacy shape into groups[].attributes[].values[] with local ids for React keys. */
+const normalizeGroups = (rawGroups) => {
+  if (!Array.isArray(rawGroups)) return [];
+  return rawGroups.map((g) => ({
+    id: g._id || g.id || uid('group'),
+    name: g.name || '',
+    slug: g.slug || '',
+    order: g.order ?? 0,
+    attributes: Array.isArray(g.attributes)
+      ? g.attributes.map((a) => ({
+          id: a._id || a.id || uid('attr'),
+          title: a.title || '',
+          slug: a.slug || '',
+          values: Array.isArray(a.values)
+            ? a.values.map((v) =>
+                typeof v === 'string'
+                  ? { id: uid('val'), title: v, slug: '', color: '', image: '', isDefault: false }
+                  : {
+                      id: v._id || v.id || uid('val'),
+                      title: v.title || '',
+                      slug: v.slug || '',
+                      color: v.color || '',
+                      image: v.image || '',
+                      isDefault: Boolean(v.isDefault),
+                    }
+              )
+            : [],
+        }))
+      : [],
+  }));
+};
+
+/** Strips local-only ids before sending to the backend. */
+const serializeGroups = (groups) =>
+  groups.map((g) => ({
+    name: g.name,
+    slug: g.slug,
+    order: g.order,
+    attributes: g.attributes.map((a) => ({
+      title: a.title,
+      slug: a.slug,
+      values: a.values.map((v) => ({
+        title: v.title,
+        slug: v.slug,
+        color: v.color,
+        image: v.image,
+        isDefault: v.isDefault,
+      })),
+    })),
+  }));
 
 const OnOffToggle = ({ label, checked, onChange }) => (
   <div className="flex items-center justify-between gap-3 py-1">
@@ -72,7 +125,7 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
   const [useImageFromProductVariation, setUseImageFromProductVariation] = useState(
     seed.useImageFromProductVariation
   );
-  const [attributes, setAttributes] = useState(seed.attributes || []);
+  const [groups, setGroups] = useState(() => normalizeGroups(seed.groups));
   const [mongoId, setMongoId] = useState(isMongoId(id) ? id : null);
   const [seo, setSeo] = useState(() =>
     normalizeSeoState(seed.seo, {
@@ -98,7 +151,7 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
         setIsComparable(emptySet.isComparable);
         setIsUseInProductListing(emptySet.isUseInProductListing);
         setUseImageFromProductVariation(emptySet.useImageFromProductVariation);
-        setAttributes(emptySet.attributes || []);
+        setGroups([]);
         setSeo(normalizeSeoState(null));
         setMongoId(null);
         return;
@@ -117,7 +170,7 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
           setIsComparable(Boolean(row.isComparable));
           setIsUseInProductListing(Boolean(row.isUseInProductListing));
           setUseImageFromProductVariation(Boolean(row.useImageFromProductVariation));
-          setAttributes(Array.isArray(row.attributes) ? row.attributes : []);
+          setGroups(normalizeGroups(row.groups));
           setSeo(
             normalizeSeoState(row.seo, {
               slug: row.slug,
@@ -141,7 +194,7 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
       setIsComparable(next.isComparable);
       setIsUseInProductListing(next.isUseInProductListing);
       setUseImageFromProductVariation(next.useImageFromProductVariation);
-      setAttributes(next.attributes || []);
+      setGroups(normalizeGroups(next.groups));
       setSeo(
         normalizeSeoState(next.seo, {
           slug: next.slug,
@@ -160,41 +213,117 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
     ? 'Create'
     : `Edit "${title || existing?.title || 'Attribute set'}"`;
 
-  const updateAttribute = (attrId, patch) => {
-    setAttributes((prev) =>
-      prev.map((attr) => (attr.id === attrId ? { ...attr, ...patch } : attr))
+  const addGroup = () => {
+    setGroups((prev) => [...prev, { id: uid('group'), name: '', slug: '', order: prev.length, attributes: [] }]);
+  };
+
+  const updateGroup = (groupId, patch) => {
+    setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, ...patch } : g)));
+  };
+
+  const removeGroup = (groupId) => {
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+  };
+
+  const addAttribute = (groupId) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? { ...g, attributes: [...g.attributes, { id: uid('attr'), title: '', slug: '', values: [] }] }
+          : g
+      )
     );
   };
 
-  const setDefaultAttribute = (attrId) => {
-    setAttributes((prev) =>
-      prev.map((attr) => ({ ...attr, isDefault: attr.id === attrId }))
+  const updateAttribute = (groupId, attrId, patch) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? { ...g, attributes: g.attributes.map((a) => (a.id === attrId ? { ...a, ...patch } : a)) }
+          : g
+      )
     );
   };
 
-  const removeAttribute = (attrId) => {
-    setAttributes((prev) => {
-      const next = prev.filter((attr) => attr.id !== attrId);
-      if (next.length && !next.some((attr) => attr.isDefault)) {
-        next[0] = { ...next[0], isDefault: true };
-      }
-      return next;
-    });
+  const removeAttribute = (groupId, attrId) => {
+    setGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, attributes: g.attributes.filter((a) => a.id !== attrId) } : g))
+    );
   };
 
-  const addAttribute = () => {
-    const nextId = `tmp-${Date.now()}`;
-    setAttributes((prev) => [
-      ...prev,
-      {
-        id: nextId,
-        title: '',
-        slug: '',
-        color: '#000000',
-        image: '',
-        isDefault: prev.length === 0,
-      },
-    ]);
+  const addValue = (groupId, attrId) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              attributes: g.attributes.map((a) =>
+                a.id === attrId
+                  ? {
+                      ...a,
+                      values: [
+                        ...a.values,
+                        { id: uid('val'), title: '', slug: '', color: '#000000', image: '', isDefault: a.values.length === 0 },
+                      ],
+                    }
+                  : a
+              ),
+            }
+          : g
+      )
+    );
+  };
+
+  const updateValue = (groupId, attrId, valueId, patch) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              attributes: g.attributes.map((a) =>
+                a.id === attrId
+                  ? { ...a, values: a.values.map((v) => (v.id === valueId ? { ...v, ...patch } : v)) }
+                  : a
+              ),
+            }
+          : g
+      )
+    );
+  };
+
+  const setDefaultValue = (groupId, attrId, valueId) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              attributes: g.attributes.map((a) =>
+                a.id === attrId
+                  ? { ...a, values: a.values.map((v) => ({ ...v, isDefault: v.id === valueId })) }
+                  : a
+              ),
+            }
+          : g
+      )
+    );
+  };
+
+  const removeValue = (groupId, attrId, valueId) => {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              attributes: g.attributes.map((a) => {
+                if (a.id !== attrId) return a;
+                const next = a.values.filter((v) => v.id !== valueId);
+                if (next.length && !next.some((v) => v.isDefault)) next[0] = { ...next[0], isDefault: true };
+                return { ...a, values: next };
+              }),
+            }
+          : g
+      )
+    );
   };
 
   const handleSave = async (exit = false) => {
@@ -210,7 +339,7 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
       isComparable,
       isUseInProductListing,
       useImageFromProductVariation,
-      attributes,
+      groups: serializeGroups(groups),
       seo: { ...seo, general: { ...seo.general, slug: nextSlug } },
       seoTitle: seo.general?.metaTitle || '',
       seoDescription: seo.general?.metaDescription || '',
@@ -285,134 +414,196 @@ export const AdminEcommerceProductAttributeSetEdit = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-md border border-slate-200 shadow-2xs overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Attributes list
-              </h4>
-            </div>
-
-            <div className="overflow-x-auto">
-              <div className="min-w-[720px]">
-                <div className="grid grid-cols-[70px_1.4fr_1.2fr_110px_88px_70px] gap-2 px-3 py-2.5 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-                  <div className="text-center">Is default?</div>
-                  <div>Title</div>
-                  <div>Slug</div>
-                  <div>Color</div>
-                  <div className="text-center">Image</div>
-                  <div className="text-center">Remove</div>
+          <div className="space-y-4">
+            {groups.map((group) => (
+              <div key={group.id} className="bg-white rounded-md border border-slate-200 shadow-2xs overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80 flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={group.name}
+                    onChange={(e) => updateGroup(group.id, { name: e.target.value, slug: slugifyAttribute(e.target.value) })}
+                    placeholder="Group name, e.g. Physical Properties"
+                    className="flex-1 border border-slate-300 rounded-md py-1.5 px-2.5 text-xs font-bold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGroup(group.id)}
+                    className="text-red-500 hover:text-red-700 p-1.5"
+                    title="Remove group"
+                  >
+                    <FiTrash2 size={15} />
+                  </button>
                 </div>
 
-                <ul className="divide-y divide-slate-100">
-                  {attributes.length === 0 && (
-                    <li className="px-3 py-8 text-center text-xs text-slate-400">
-                      No attributes yet. Click &quot;Add new attribute&quot; below.
-                    </li>
+                <div className="p-4 space-y-4">
+                  {group.attributes.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center py-2">
+                      No attributes in this group yet.
+                    </p>
                   )}
 
-                  {attributes.map((attr) => (
-                    <li
-                      key={attr.id}
-                      className="grid grid-cols-[70px_1.4fr_1.2fr_110px_88px_70px] gap-2 px-3 py-2.5 items-center"
-                    >
-                      <div className="flex justify-center">
-                        <input
-                          type="radio"
-                          name="related_attribute_is_default"
-                          checked={Boolean(attr.isDefault)}
-                          onChange={() => setDefaultAttribute(attr.id)}
-                          className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
+                  {group.attributes.map((attr) => (
+                    <div key={attr.id} className="border border-slate-200 rounded-md overflow-hidden">
+                      <div className="px-3 py-2 bg-slate-50 flex items-center gap-2">
                         <input
                           type="text"
                           value={attr.title}
                           onChange={(e) => {
                             const value = e.target.value;
-                            updateAttribute(attr.id, {
+                            updateAttribute(group.id, attr.id, {
                               title: value,
-                              slug:
-                                !attr.slug || attr.slug === slugifyAttribute(attr.title)
-                                  ? slugifyAttribute(value)
-                                  : attr.slug,
+                              slug: !attr.slug ? slugifyAttribute(value) : attr.slug,
                             });
                           }}
-                          className="w-full border border-slate-300 rounded-md py-1.5 px-2 text-xs focus:outline-hidden focus:border-blue-500"
-                          placeholder="Title"
+                          placeholder="Attribute name, e.g. Color"
+                          className="flex-1 border border-slate-300 rounded-md py-1.5 px-2 text-xs font-semibold focus:outline-hidden focus:border-blue-500"
                         />
-                      </div>
-                      <div>
                         <input
                           type="text"
                           value={attr.slug}
-                          onChange={(e) => updateAttribute(attr.id, { slug: e.target.value })}
-                          className="w-full border border-slate-300 rounded-md py-1.5 px-2 text-xs font-mono focus:outline-hidden focus:border-blue-500"
+                          onChange={(e) => updateAttribute(group.id, attr.id, { slug: e.target.value })}
                           placeholder="slug"
+                          className="w-32 border border-slate-300 rounded-md py-1.5 px-2 text-xs font-mono focus:outline-hidden focus:border-blue-500"
                         />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="color"
-                          value={attr.color || '#000000'}
-                          onChange={(e) => updateAttribute(attr.id, { color: e.target.value })}
-                          className="h-8 w-8 rounded-sm border border-slate-300 bg-white p-0.5 cursor-pointer"
-                          title="Pick color"
-                        />
-                        <input
-                          type="text"
-                          value={attr.color || ''}
-                          onChange={(e) => updateAttribute(attr.id, { color: e.target.value })}
-                          className="w-full min-w-0 border border-slate-300 rounded-md py-1.5 px-1.5 text-[11px] font-mono focus:outline-hidden focus:border-blue-500"
-                          placeholder="#000000"
-                        />
-                      </div>
-                      <div className="flex justify-center">
-                        <label className="relative w-12 h-12 rounded-md border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 cursor-pointer overflow-hidden flex items-center justify-center">
-                          {attr.image ? (
-                            <img src={attr.image} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <FiImage size={16} className="text-slate-400" />
-                          )}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const url = URL.createObjectURL(file);
-                              updateAttribute(attr.id, { image: url });
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <div className="flex justify-center">
                         <button
                           type="button"
-                          onClick={() => removeAttribute(attr.id)}
+                          onClick={() => removeAttribute(group.id, attr.id)}
                           className="text-red-500 hover:text-red-700 p-1.5"
-                          title="Remove"
+                          title="Remove attribute"
                         >
-                          <FiTrash2 size={15} />
+                          <FiTrash2 size={14} />
                         </button>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
 
-            <div className="px-4 py-3 border-t border-slate-200 bg-white">
-              <button
-                type="button"
-                onClick={addAttribute}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#7c69ef] hover:bg-[#6b58e0] transition"
-              >
-                <FiPlus size={13} />
-                Add new attribute
-              </button>
-            </div>
+                      <div className="overflow-x-auto">
+                        <div className="min-w-[640px]">
+                          <div className="grid grid-cols-[60px_1.4fr_1.2fr_110px_80px_60px] gap-2 px-3 py-2 border-b border-slate-100 bg-white text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                            <div className="text-center">Default</div>
+                            <div>Value</div>
+                            <div>Slug</div>
+                            <div>Color</div>
+                            <div className="text-center">Image</div>
+                            <div className="text-center">Remove</div>
+                          </div>
+                          <ul className="divide-y divide-slate-100">
+                            {attr.values.length === 0 && (
+                              <li className="px-3 py-4 text-center text-xs text-slate-400">
+                                No values yet.
+                              </li>
+                            )}
+                            {attr.values.map((val) => (
+                              <li key={val.id} className="grid grid-cols-[60px_1.4fr_1.2fr_110px_80px_60px] gap-2 px-3 py-2 items-center">
+                                <div className="flex justify-center">
+                                  <input
+                                    type="radio"
+                                    name={`default-value-${attr.id}`}
+                                    checked={Boolean(val.isDefault)}
+                                    onChange={() => setDefaultValue(group.id, attr.id, val.id)}
+                                    className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <input
+                                  type="text"
+                                  value={val.title}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    updateValue(group.id, attr.id, val.id, {
+                                      title: value,
+                                      slug: !val.slug ? slugifyAttribute(value) : val.slug,
+                                    });
+                                  }}
+                                  placeholder="e.g. Red"
+                                  className="w-full border border-slate-300 rounded-md py-1.5 px-2 text-xs focus:outline-hidden focus:border-blue-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={val.slug}
+                                  onChange={(e) => updateValue(group.id, attr.id, val.id, { slug: e.target.value })}
+                                  className="w-full border border-slate-300 rounded-md py-1.5 px-2 text-xs font-mono focus:outline-hidden focus:border-blue-500"
+                                />
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={val.color || '#000000'}
+                                    onChange={(e) => updateValue(group.id, attr.id, val.id, { color: e.target.value })}
+                                    className="h-8 w-8 rounded-sm border border-slate-300 bg-white p-0.5 cursor-pointer"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={val.color || ''}
+                                    onChange={(e) => updateValue(group.id, attr.id, val.id, { color: e.target.value })}
+                                    className="w-full min-w-0 border border-slate-300 rounded-md py-1.5 px-1.5 text-[11px] font-mono focus:outline-hidden focus:border-blue-500"
+                                    placeholder="#000000"
+                                  />
+                                </div>
+                                <div className="flex justify-center">
+                                  <label className="relative w-10 h-10 rounded-md border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 cursor-pointer overflow-hidden flex items-center justify-center">
+                                    {val.image ? (
+                                      <img src={val.image} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <FiImage size={14} className="text-slate-400" />
+                                    )}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="absolute inset-0 opacity-0 cursor-pointer"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const url = URL.createObjectURL(file);
+                                        updateValue(group.id, attr.id, val.id, { image: url });
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                                <div className="flex justify-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeValue(group.id, attr.id, val.id)}
+                                    className="text-red-500 hover:text-red-700 p-1.5"
+                                  >
+                                    <FiTrash2 size={14} />
+                                  </button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="px-3 py-2 bg-white border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => addValue(group.id, attr.id)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold text-blue-600 hover:bg-blue-50 transition"
+                        >
+                          <FiPlus size={12} />
+                          Add value
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => addAttribute(group.id)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#7c69ef] hover:bg-[#6b58e0] transition"
+                  >
+                    <FiPlus size={13} />
+                    Add attribute to this group
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addGroup}
+              className="w-full flex items-center justify-center gap-1.5 border-2 border-dashed border-slate-200 rounded-md py-3 text-xs font-semibold text-slate-500 hover:border-blue-300 hover:text-blue-600 transition-colors"
+            >
+              <FiPlus size={14} />
+              Add attribute group
+            </button>
           </div>
 
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
