@@ -22,6 +22,7 @@ const AdminTools = () => {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [health, setHealth] = useState(null);
+  const [syncResult, setSyncResult] = useState(null);
 
   const exportProducts = async () => {
     setBusy(true);
@@ -56,6 +57,19 @@ const AdminTools = () => {
     }
   };
 
+  const syncInvoices = async () => {
+    setBusy(true);
+    setSyncResult(null);
+    try {
+      const res = await api.post('/ecommerce/invoices/sync');
+      setSyncResult(`Synced ${res.data?.synced ?? res.data?.data?.length ?? 0} invoice(s) from orders.`);
+    } catch (err) {
+      setSyncResult(err.parsedMessage || err.message || 'Invoice sync failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const loadHealth = async () => {
     setBusy(true);
     try {
@@ -71,7 +85,15 @@ const AdminTools = () => {
   return (
     <div>
       <AdminPageHeader
-        title={section === 'plugins' ? 'Installed Modules' : section === 'import-export' ? 'Import / Export' : 'System information'}
+        title={
+          section === 'plugins'
+            ? 'Installed Modules'
+            : section === 'import-export'
+              ? 'Import / Export'
+              : section === 'data-synchronize'
+                ? 'Data Synchronize'
+                : 'System information'
+        }
         hideAction
       />
 
@@ -110,6 +132,33 @@ const AdminTools = () => {
               Clear cache
             </button>
           </div>
+          {message && <p className="text-sm text-emerald-600">{message}</p>}
+        </div>
+      )}
+
+      {section === 'data-synchronize' && (
+        <div className="admin-card p-5 max-w-xl space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800 mb-1">Sync invoices from orders</h3>
+            <p className="text-sm text-slate-500 mb-2">
+              Scans all orders and creates any missing invoice records for them — run this after bulk-importing
+              orders or if an invoice failed to generate automatically at checkout.
+            </p>
+            <button type="button" className="admin-btn-primary" disabled={busy} onClick={syncInvoices}>
+              {busy ? 'Syncing…' : 'Sync invoices'}
+            </button>
+          </div>
+          <div className="pt-4 border-t border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-800 mb-1">Clear server cache</h3>
+            <p className="text-sm text-slate-500 mb-2">
+              Clears the Redis-backed cache for public catalog endpoints so storefront visitors immediately see the
+              latest products, categories, banners, offers and settings.
+            </p>
+            <button type="button" className="admin-btn-light" disabled={busy} onClick={clearCache}>
+              {busy ? 'Working…' : 'Clear cache'}
+            </button>
+          </div>
+          {syncResult && <p className="text-sm text-emerald-600">{syncResult}</p>}
           {message && <p className="text-sm text-emerald-600">{message}</p>}
         </div>
       )}

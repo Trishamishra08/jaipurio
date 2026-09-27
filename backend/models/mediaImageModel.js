@@ -36,6 +36,9 @@ const mediaImageSchema = new mongoose.Schema(
       latitude: { type: Number, default: null },
       longitude: { type: Number, default: null },
     },
+    /** Where `location` came from: 'exif' (the photo's own GPS tag), 'device' (uploader's
+     *  browser location, used as a fallback when the file has no EXIF GPS), or 'none'. */
+    locationSource: { type: String, enum: ['exif', 'device', 'ip', 'manual', 'none'], default: 'none' },
     originalSize: { type: Number, default: 0 },
     isFavorite: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null, index: true },

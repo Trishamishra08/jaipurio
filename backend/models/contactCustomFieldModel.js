@@ -5,6 +5,7 @@ const contactCustomFieldSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     slug: { type: String, trim: true },
     label: { type: String, default: '' },
+    placeholder: { type: String, default: '' },
     type: {
       type: String,
       enum: ['Text', 'Textarea', 'Email', 'Phone', 'Select', 'Checkbox'],

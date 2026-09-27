@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiPercent, FiTruck, FiSave, FiAlertCircle, FiSettings, FiCheckCircle, FiShield, FiLink, FiMapPin, FiPhone } from 'react-icons/fi';
-
-// MOCK API for Frontend-Only mode
-const api = {
-  get: async () => ({ data: { data: { products: [], categories: [], banners: [], settings: {}, orders: [], users: [], stats: [], recentTransactions: [], dailyRevenue: [], vendors: [], blogs: [], returns: [], testimonials: [], reviews: [], replacements: [], supportTickets: [], locations: [], coupons: [], logs: [] }, status: 'success' } }),
-  post: async () => ({ data: { data: { order: { orderId: 'MOCK-ORDER-123' } }, status: 'success' } }),
-  patch: async () => ({ data: { status: 'success' } }),
-  delete: async () => ({ data: { status: 'success' } })
-};
+import api from '../../utils/api';
 
 
 const AdminLogistics = () => {
@@ -59,7 +52,7 @@ const AdminLogistics = () => {
     setSaving(true);
     setMessage({ type: '', content: '' });
     try {
-      await api.patch('/settings/update', settings);
+      await api.put('/settings', settings);
       setMessage({ type: 'success', content: 'Sanctuary logistics & financial attributes refined successfully.' });
       setTimeout(() => setMessage({ type: '', content: '' }), 3000);
     } catch (err) {

@@ -2,6 +2,20 @@ const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendSmsOtp } = require('../services/otpService');
+const LoginActivity = require('../models/loginActivityModel');
+const { extractClientIp } = require('../utils/geoip');
+const { deviceLabelFromUserAgent } = require('../utils/deviceLabel');
+
+const logLoginAttempt = (req, email, user, status, reason = '') => {
+  LoginActivity.create({
+    user: user?._id || null,
+    email,
+    ip: extractClientIp(req),
+    device: deviceLabelFromUserAgent(req.headers['user-agent']),
+    status,
+    reason,
+  }).catch(() => {});
+};
 // Generate JWT Token
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_ACCESS_SECRET || 'secret123', {
@@ -93,16 +107,19 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email: emailNorm });
 
     if (!user) {
+      logLoginAttempt(req, emailNorm, null, 'Blocked', 'No account with this email');
       res.status(401);
       throw new Error('Invalid email or password');
     }
 
     if (user.isBlocked) {
+      logLoginAttempt(req, emailNorm, user, 'Blocked', 'Account blocked');
       res.status(403);
       throw new Error('Your account has been blocked by the admin.');
     }
 
     if (user && user.password && (await bcrypt.compare(password, user.password))) {
+      logLoginAttempt(req, emailNorm, user, 'Success');
       res.status(200).json({
         success: true,
         data: {
@@ -114,6 +131,7 @@ const login = async (req, res, next) => {
         }
       });
     } else {
+      logLoginAttempt(req, emailNorm, user, 'Blocked', 'Incorrect password');
       res.status(401);
       throw new Error('Invalid email or password');
     }
@@ -428,6 +446,8 @@ const updateProfile = async (req, res, next) => {
     user.email = req.body.email || user.email;
     user.mobile = req.body.mobile || req.body.phone || user.mobile;
     if (req.body.gender) user.gender = req.body.gender;
+    if (req.body.username !== undefined) user.username = req.body.username;
+    if (req.body.profile !== undefined) user.profile = req.body.profile;
 
     const updatedUser = await user.save();
     const safeUser = updatedUser.toObject();
@@ -561,6 +581,25 @@ const updatePassword = async (req, res, next) => {
   }
 };
 
+// @desc    Get the current user's login activity from the last 30 days
+// @route   GET /api/users/login-activity
+// @access  Private
+const getLoginActivity = async (req, res, next) => {
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const rows = await LoginActivity.find({ email: req.user.email, createdAt: { $gte: cutoff } })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    res.status(200).json({
+      success: true,
+      data: rows.map((r) => ({ ...r, id: String(r._id) })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -577,5 +616,6 @@ module.exports = {
   getBlockedUsers,
   blockUser,
   unblockUser,
-  updatePassword
+  updatePassword,
+  getLoginActivity
 };

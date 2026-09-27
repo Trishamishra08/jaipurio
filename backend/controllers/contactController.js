@@ -1,4 +1,5 @@
 const Contact = require('../models/contactModel');
+const { sendMail } = require('../utils/mailer');
 
 // @desc    Public contact form submission
 // @route   POST /api/contacts
@@ -77,6 +78,45 @@ const updateContact = async (req, res) => {
   }
 };
 
+// @desc    Reply to a contact submission — stores the reply and emails the sender
+// @route   POST /api/contacts/:id/reply
+const replyToContact = async (req, res) => {
+  try {
+    const message = String(req.body.message || '').trim();
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Reply message is required' });
+    }
+    const contact = await Contact.findById(req.params.id);
+    if (!contact) return res.status(404).json({ success: false, message: 'Not found' });
+
+    let emailSent = false;
+    try {
+      const result = await sendMail({
+        to: contact.email,
+        subject: `Re: ${contact.subject || 'Your message to Jaipurio'}`,
+        text: message,
+        html: `<p>${message.replace(/\n/g, '<br/>')}</p>`,
+      });
+      emailSent = result.sent;
+    } catch (mailErr) {
+      console.error('[contact reply] email send failed:', mailErr.message);
+    }
+
+    contact.replies.push({
+      message,
+      repliedBy: req.user?._id,
+      repliedByName: req.user?.name || 'Admin',
+      emailSent,
+    });
+    contact.status = 'Read';
+    await contact.save();
+
+    res.json({ success: true, data: { ...contact.toObject(), id: String(contact._id) }, emailSent });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 const deleteContact = async (req, res) => {
   try {
     const doc = await Contact.findByIdAndDelete(req.params.id);
@@ -87,4 +127,4 @@ const deleteContact = async (req, res) => {
   }
 };
 
-module.exports = { submitContact, listContacts, getContactById, updateContact, deleteContact };
+module.exports = { submitContact, listContacts, getContactById, updateContact, replyToContact, deleteContact };

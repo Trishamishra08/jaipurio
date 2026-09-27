@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiStar, FiCheckCircle, FiUpload } from 'react-icons/fi';
 import api from '../../utils/api';
+import { uploadMediaFiles } from '../../utils/mediaApi';
 
 const AdminTestimonials = () => {
     const [testimonials, setTestimonials] = useState([]);
@@ -27,11 +28,12 @@ const AdminTestimonials = () => {
 
         try {
             setUploading(true);
-            const url = URL.createObjectURL(file); // Note: replace with real upload if needed
-            setFormData(prev => ({ ...prev, image: url }));
+            const uploaded = await uploadMediaFiles([file]);
+            const url = uploaded?.[0]?.url;
+            if (url) setFormData(prev => ({ ...prev, image: url }));
         } catch (err) {
             console.error('Upload failed:', err);
-            alert('Image upload failed.');
+            alert(err.parsedMessage || err.message || 'Image upload failed.');
         } finally {
             setUploading(false);
         }

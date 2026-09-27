@@ -66,6 +66,12 @@ export async function loginAdmin({ email, password, remember }) {
   }
 }
 
+/** Persists updated admin identity (name/email/etc.) and notifies same-tab listeners (e.g. the header). */
+export function setAdminUser(user) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new CustomEvent('jaipurio:admin-user-updated'));
+}
+
 export function logoutAdmin() {
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem(USER_KEY);

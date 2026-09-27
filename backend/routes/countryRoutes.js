@@ -18,6 +18,21 @@ router.get('/public', cachePublic('countries', 3600), async (req, res) => {
   }
 });
 
-router.use('/', createAdminCrudRouter(Country, { searchFields: ['name', 'code', 'dialCode'] }));
+router.use(
+  '/',
+  createAdminCrudRouter(Country, {
+    searchFields: ['name', 'code', 'dialCode'],
+    beforeSave: async (payload, req, action) => {
+      if (payload.isDefault) {
+        const excludeId = action === 'update' ? req.params.id : null;
+        await Country.updateMany(
+          excludeId ? { _id: { $ne: excludeId } } : {},
+          { $set: { isDefault: false } }
+        );
+      }
+      return payload;
+    },
+  })
+);
 
 module.exports = router;

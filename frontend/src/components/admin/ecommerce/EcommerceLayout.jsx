@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   FiSearch,
   FiMoon,
@@ -10,8 +10,12 @@ import {
   FiExternalLink,
   FiMenu,
   FiChevronDown,
+  FiUser,
+  FiLogOut,
 } from 'react-icons/fi';
 import { adminNav, isNavItemActive, isChildNavActive } from '../../../data/adminNav';
+import api from '../../../utils/api';
+import { getAdminUser, logoutAdmin } from '../../../utils/adminAuth';
 
 /** Default destinations for common breadcrumb labels (last crumb stays plain text). */
 const DEFAULT_CRUMB_LINKS = {
@@ -53,7 +57,7 @@ export const ecommerceNavItems = (adminNav.find((item) => item.id === 'ecommerce
     id: child.path.split('/').pop() || `ecom-${index}`,
     title: child.title,
     path: child.path,
-    count: child.badgeKey === 'pendingOrders' ? 17 : undefined,
+    count: undefined,
   })
 );
 
@@ -62,7 +66,18 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
   const [openMenus, setOpenMenus] = useState({});
   const [darkMode, setDarkMode] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const crumbs = breadcrumb.map(normalizeCrumb).filter((c) => c.label);
+
+  const [adminUser, setAdminUserState] = useState(getAdminUser() || { name: 'Admin', email: '' });
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [pendingCounts, setPendingCounts] = useState({ pendingActions: 0, pendingOrders: 0, unreadNotifications: 0 });
+  const [unreadContacts, setUnreadContacts] = useState(0);
+
+  const profileRef = useRef(null);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     const parent = adminNav.find(
@@ -75,6 +90,70 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
 
   const toggleMenu = (id) => {
     setOpenMenus((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const loadBadges = () => {
+    api.get('/admins/pending-counts').then((res) => {
+      if (res.data?.data) setPendingCounts(res.data.data);
+    }).catch(() => {});
+    api.get('/contacts', { params: { status: 'Unread', limit: 1 } }).then((res) => {
+      if (typeof res.data?.total === 'number') setUnreadContacts(res.data.total);
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadBadges();
+    const onUserUpdated = () => setAdminUserState(getAdminUser() || { name: 'Admin', email: '' });
+    window.addEventListener('jaipurio:admin-user-updated', onUserUpdated);
+    window.addEventListener('jaipurio:admin-badges-refresh', loadBadges);
+    return () => {
+      window.removeEventListener('jaipurio:admin-user-updated', onUserUpdated);
+      window.removeEventListener('jaipurio:admin-badges-refresh', loadBadges);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const openNotifications = () => {
+    setNotifOpen((v) => !v);
+    setProfileOpen(false);
+    if (!notifOpen) {
+      api.get('/notifications/me').then((res) => {
+        setNotifications(res.data?.data?.notifications || []);
+      }).catch(() => {});
+    }
+  };
+
+  const markNotificationRead = async (id) => {
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
+      setPendingCounts((prev) => ({ ...prev, unreadNotifications: Math.max(0, prev.unreadNotifications - 1) }));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.patch('/notifications/mark-all-read');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setPendingCounts((prev) => ({ ...prev, unreadNotifications: 0 }));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate('/admin/login');
   };
 
   const showEcommerceCrumb =
@@ -127,29 +206,119 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
             {darkMode ? <FiSun size={15} /> : <FiMoon size={15} />}
           </button>
 
-          <button type="button" className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700">
-            <FiBell size={15} />
-            <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">0</span>
-          </button>
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              onClick={openNotifications}
+              className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700"
+              title="Notifications"
+            >
+              <FiBell size={15} />
+              {pendingCounts.unreadNotifications > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">
+                  {pendingCounts.unreadNotifications}
+                </span>
+              )}
+            </button>
+            {notifOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white text-slate-800 rounded-md shadow-xl border border-slate-200 z-50 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100">
+                  <span className="text-xs font-bold">Notifications</span>
+                  {notifications.some((n) => !n.isRead) && (
+                    <button type="button" onClick={markAllNotificationsRead} className="text-[11px] text-blue-600 hover:underline font-medium">
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-6">No notifications yet.</p>
+                  ) : (
+                    notifications.map((n) => (
+                      <button
+                        key={n._id}
+                        type="button"
+                        onClick={() => !n.isRead && markNotificationRead(n._id)}
+                        className={`w-full text-left px-3 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition ${n.isRead ? '' : 'bg-blue-50/40'}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-800">{n.title}</span>
+                          {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleString() : ''}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
-          <button type="button" className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/contacts')}
+            className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700"
+            title="Contact messages"
+          >
             <FiMail size={15} />
-            <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">10</span>
+            {unreadContacts > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">
+                {unreadContacts}
+              </span>
+            )}
           </button>
 
-          <button type="button" className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/ecommerce/orders')}
+            className="relative p-1.5 text-slate-300 hover:text-white rounded-md hover:bg-slate-700"
+            title="Pending orders"
+          >
             <FiShoppingCart size={15} />
-            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">17</span>
+            {pendingCounts.pendingActions > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">
+                {pendingCounts.pendingActions}
+              </span>
+            )}
           </button>
 
-          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-700">
-            <div className="w-8 h-8 rounded-md bg-teal-600 text-white flex items-center justify-center font-bold text-sm">
-              A
-            </div>
-            <div className="hidden lg:block text-left">
-              <div className="font-semibold text-white leading-tight">Admin Final</div>
-              <div className="text-[10px] text-slate-400">admin@gmail.com</div>
-            </div>
+          <div className="relative" ref={profileRef}>
+            <button
+              type="button"
+              onClick={() => { setProfileOpen((v) => !v); setNotifOpen(false); }}
+              className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-700 hover:bg-slate-700/60 rounded-md py-1 pr-2 transition"
+            >
+              {adminUser.profile ? (
+                <img src={adminUser.profile} alt="" className="w-8 h-8 rounded-md object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-md bg-teal-600 text-white flex items-center justify-center font-bold text-sm">
+                  {(adminUser.name || 'A').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="hidden lg:block text-left">
+                <div className="font-semibold text-white leading-tight">{adminUser.name || 'Admin'}</div>
+                <div className="text-[10px] text-slate-400">{adminUser.email || ''}</div>
+              </div>
+            </button>
+            {profileOpen && (
+              <div className="absolute right-0 top-full mt-2 w-44 bg-white text-slate-800 rounded-md shadow-xl border border-slate-200 z-50 overflow-hidden py-1">
+                <Link
+                  to="/admin/profile"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex items-center gap-2 px-3.5 py-2.5 text-xs font-medium hover:bg-slate-50 transition"
+                >
+                  <FiUser size={14} className="text-slate-400" /> Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3.5 py-2.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition"
+                >
+                  <FiLogOut size={14} /> Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -163,9 +332,9 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
               const expanded = Boolean(openMenus[item.id]);
               const badge =
                 item.badgeKey === 'pendingActions'
-                  ? 17
+                  ? (pendingCounts.pendingActions || null)
                   : item.badgeKey === 'contacts'
-                    ? 10
+                    ? (unreadContacts || null)
                     : null;
 
               if (!item.children) {
@@ -219,10 +388,8 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
                         const childActive = isChildNavActive(child.path, location.pathname);
                         const childCount =
                           child.badgeKey === 'pendingOrders'
-                            ? 17
-                            : child.badgeKey === 'pendingProducts'
-                              ? null
-                              : null;
+                            ? (pendingCounts.pendingOrders || null)
+                            : null;
                         return (
                           <Link
                             key={child.path}

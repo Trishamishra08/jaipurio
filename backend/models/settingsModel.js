@@ -21,12 +21,7 @@ const settingsSchema = new mongoose.Schema({
   maintenanceMode: { type: Boolean, default: false },
 
   // Appearance
-  theme: {
-    siteTitle: { type: String, default: 'Jaipurio' },
-    tagline: { type: String, default: 'Authentic Mitti & Handicraft Bazaar' },
-    headerStyle: { type: String, default: 'Default' },
-    footerStyle: { type: String, default: 'Classic' },
-  },
+  theme: { type: mongoose.Schema.Types.Mixed, default: {} },
   menus: [{ name: String, location: String, items: String }],
   widgets: [{ name: String, sidebar: String }],
   customCss: { type: String, default: '' },

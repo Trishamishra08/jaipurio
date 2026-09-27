@@ -10,6 +10,7 @@ const {
   sanitizeName,
   storageMode,
 } = require('../utils/mediaStorage');
+const { lookupIpLocation } = require('../utils/geoip');
 
 const serializeFolder = (doc) => {
   if (!doc) return null;
@@ -70,8 +71,10 @@ const listMedia = async (req, res) => {
     }
     if (filterType === 'video') {
       imageFilter.mimeType = { $regex: /^video\//i };
-    } else if (filterType === 'image' || filterType === 'file') {
-      imageFilter.mimeType = { $regex: /^(image|application)\//i };
+    } else if (filterType === 'image') {
+      imageFilter.mimeType = { $regex: /^image\//i };
+    } else if (filterType === 'document') {
+      imageFilter.mimeType = { $not: /^(image|video)\//i };
     }
     if (q) {
       imageFilter.$or = [
@@ -92,7 +95,7 @@ const listMedia = async (req, res) => {
       !favorites &&
       !recent &&
       filterType !== 'image' &&
-      filterType !== 'file' &&
+      filterType !== 'document' &&
       filterType !== 'video';
 
     let folders = [];
@@ -136,8 +139,10 @@ const listMedia = async (req, res) => {
       }
       if (filterType === 'video') {
         legacyFilter.mimeType = { $regex: /^video\//i };
-      } else if (filterType === 'image' || filterType === 'file') {
-        legacyFilter.mimeType = { $regex: /^(image|application)\//i };
+      } else if (filterType === 'image') {
+        legacyFilter.mimeType = { $regex: /^image\//i };
+      } else if (filterType === 'document') {
+        legacyFilter.mimeType = { $not: /^(image|video)\//i };
       }
       if (q) {
         legacyFilter.$or = [
@@ -228,20 +233,50 @@ const uploadMedia = async (req, res) => {
     const folderPath = folderId ? `media/${folderId}` : 'media';
     const created = [];
 
+    // Browser-supplied fallback (the uploader's current device location), used only
+    // when the file itself carries no EXIF GPS tag — most images (screenshots, stock
+    // photos, anything sent via WhatsApp/social apps which strip EXIF) have none.
+    const fallbackLat = Number(req.body.latitude);
+    const fallbackLng = Number(req.body.longitude);
+    const hasFallbackLocation = Number.isFinite(fallbackLat) && Number.isFinite(fallbackLng);
+
+    // Third-tier fallback (approximate, city-level): only looked up once per request,
+    // and only if we'll actually need it — i.e. some file might have no EXIF and the
+    // browser didn't supply a device location either.
+    let ipLocation;
+    const getIpLocation = async () => {
+      if (ipLocation === undefined) ipLocation = await lookupIpLocation(req);
+      return ipLocation;
+    };
+
     for (const file of files) {
       let location = { latitude: null, longitude: null };
+      let locationSource = 'none';
       try {
         const gps = await exifr.gps(file.buffer);
         if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
           location = { latitude: gps.latitude, longitude: gps.longitude };
+          locationSource = 'exif';
         }
       } catch {
-        /* no EXIF GPS data — leave as null, admin can fill in manually */
+        /* no EXIF GPS data — fall through to the location fallbacks below */
+      }
+      if (locationSource === 'none' && hasFallbackLocation) {
+        location = { latitude: fallbackLat, longitude: fallbackLng };
+        locationSource = 'device';
+      }
+      if (locationSource === 'none') {
+        const ipLoc = await getIpLocation();
+        if (ipLoc) {
+          location = ipLoc;
+          locationSource = 'ip';
+        }
       }
 
       const stored = await uploadBuffer(file, folderPath);
       const originalName = file.originalname || 'untitled';
       const name = sanitizeName(originalName);
+      const niceLabel = name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
       const image = await MediaImage.create({
         name,
         originalName,
@@ -254,8 +289,10 @@ const uploadMedia = async (req, res) => {
         originalSize: file.size || file.buffer?.length || 0,
         width: stored.width || null,
         height: stored.height || null,
-        alt: '',
+        alt: niceLabel,
+        title: niceLabel,
         location,
+        locationSource,
         uploadedBy: req.user?._id || null,
       });
       created.push(serializeImage(image));
@@ -330,6 +367,7 @@ const updateMetadata = async (req, res) => {
         latitude: latitude !== undefined && latitude !== '' ? Number(latitude) : doc.location?.latitude ?? null,
         longitude: longitude !== undefined && longitude !== '' ? Number(longitude) : doc.location?.longitude ?? null,
       };
+      doc.locationSource = 'manual';
     }
     await doc.save();
     if (kind === 'image') {

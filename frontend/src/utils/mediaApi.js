@@ -44,11 +44,19 @@ export const createMediaFolder = async (name, parentFolder = null) => {
   }
 };
 
-export const uploadMediaFiles = async (files, parentFolder = null) => {
+/**
+ * `coords` (optional): { latitude, longitude } — the uploader's current device location,
+ * used server-side as a fallback only for files that carry no EXIF GPS tag of their own.
+ */
+export const uploadMediaFiles = async (files, parentFolder = null, coords = null) => {
   try {
     const form = new FormData();
     [...files].forEach((f) => form.append('documents', f));
     if (parentFolder) form.append('parentFolder', parentFolder);
+    if (coords?.latitude != null && coords?.longitude != null) {
+      form.append('latitude', coords.latitude);
+      form.append('longitude', coords.longitude);
+    }
     const res = await api.post('/media/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -57,6 +65,24 @@ export const uploadMediaFiles = async (files, parentFolder = null) => {
     throw mediaError(err);
   }
 };
+
+/** Resolves with { latitude, longitude } from the browser, or null if denied/unavailable. */
+export const getBrowserLocation = (timeoutMs = 4000) =>
+  new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    const timer = setTimeout(() => resolve(null), timeoutMs);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timer);
+        resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(null);
+      },
+      { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 5 * 60 * 1000 }
+    );
+  });
 
 export const renameMedia = async (id, name) => {
   try {

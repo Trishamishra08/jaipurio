@@ -16,6 +16,7 @@ import {
   Wrench,
   Settings,
   Shield,
+  Sliders,
   ListChecks,
 } from 'lucide-react';
 
@@ -107,9 +108,8 @@ export const adminNav = [
     icon: Mail,
     badgeKey: 'contacts',
     children: [
-      { title: 'Submissions', path: '/admin/contacts' },
+      { title: 'Contacts', path: '/admin/contacts' },
       { title: 'Custom Fields', path: '/admin/contacts/custom-fields' },
-      { title: 'Contact Forms', path: '/admin/contact/forms' },
     ],
   },
   { id: 'slides', title: 'Simple Sliders', path: '/admin/simple-sliders', icon: Images },
@@ -141,12 +141,13 @@ export const adminNav = [
     title: 'Appearance',
     icon: Palette,
     children: [
-      { title: 'Menus', path: '/admin/appearance/menus' },
-      { title: 'Theme Options', path: '/admin/appearance/theme-options' },
-      { title: 'Custom CSS', path: '/admin/appearance/custom-css' },
-      { title: 'Custom JS', path: '/admin/appearance/custom-js' },
-      { title: 'Custom HTML', path: '/admin/appearance/custom-html' },
-      { title: 'Robots.txt Editor', path: '/admin/appearance/robots' },
+      { title: 'Menus', path: '/admin/menus' },
+      { title: 'Widgets', path: '/admin/widgets' },
+      { title: 'Theme Options', path: '/admin/theme/options/opt-text-subsection-general' },
+      { title: 'Custom CSS', path: '/admin/theme/custom-css' },
+      { title: 'Custom JS', path: '/admin/theme/custom-js' },
+      { title: 'Custom HTML', path: '/admin/theme/custom-html' },
+      { title: 'Robots.txt Editor', path: '/admin/theme/robots-txt' },
     ],
   },
   {
@@ -154,13 +155,11 @@ export const adminNav = [
     title: 'Tools',
     icon: Wrench,
     children: [
-      { title: 'Plugins', path: '/admin/tools/plugins' },
-      { title: 'Export/Import Data', path: '/admin/tools/import-export' },
-      { title: 'System Information', path: '/admin/tools/system-info' },
+      { title: 'Export/Import Data', path: '/admin/tools/data-synchronize' },
     ],
   },
   { id: 'settings', title: 'Settings', path: '/admin/settings', icon: Settings },
-  { id: 'platform', title: 'Platform Administration', path: '/admin/system', icon: Shield },
+  { id: 'platform', title: 'Platform Administration', path: '/admin/system', icon: Sliders },
 ];
 
 export function flattenAdminNav() {
@@ -175,6 +174,15 @@ export function flattenAdminNav() {
 }
 
 export function isNavItemActive(item, pathname) {
+  if (item.id === 'appearance' && (pathname.startsWith('/admin/theme') || pathname.startsWith('/admin/appearance'))) {
+    return true;
+  }
+  if (item.id === 'tools' && pathname.startsWith('/admin/tools')) {
+    return true;
+  }
+  if (item.id === 'platform' && (pathname === '/admin/system' || pathname.startsWith('/admin/system') || pathname.startsWith('/admin/platform'))) {
+    return true;
+  }
   if (item.path) {
     if (item.path === '/admin') return pathname === '/admin';
     return pathname === item.path || pathname.startsWith(`${item.path}/`);
@@ -187,5 +195,7 @@ export function isNavItemActive(item, pathname) {
 export function isChildNavActive(path, pathname) {
   if (!path) return false;
   if (path === '/admin') return pathname === '/admin';
+  if (path.includes('/theme/options') && pathname.includes('/theme/options')) return true;
+  if (path.includes('data-synchronize') && (pathname.includes('data-synchronize') || pathname.includes('import-export'))) return true;
   return pathname === path || pathname.startsWith(`${path}/`);
 }

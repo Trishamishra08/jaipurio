@@ -34,6 +34,9 @@ const ensureDemoAdmin = require('./scripts/ensureDemoAdmin');
 const ensurePaymentMethods = require('./scripts/ensurePaymentMethods');
 const migrateAttributeSetGroups = require('./scripts/migrateAttributeSetGroups');
 const ensureCountries = require('./scripts/ensureCountries');
+const ensureStates = require('./scripts/ensureStates');
+const ensureCities = require('./scripts/ensureCities');
+const migrateContactStatus = require('./scripts/migrateContactStatus');
 
 // Initialize Express App
 const app = express();
@@ -120,10 +123,22 @@ app.use('/api/media', mediaRoutes);
 const marketplaceAdminRoutes = require('./routes/marketplaceAdminRoutes');
 app.use('/api/marketplace', marketplaceAdminRoutes);
 app.use('/api/ads', adRoutes);
+const simpleSliderRoutes = require('./routes/simpleSliderRoutes');
+app.use('/api/simple-sliders', simpleSliderRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/countries', countryRoutes);
+const stateRoutes = require('./routes/stateRoutes');
+app.use('/api/states', stateRoutes);
+const cityRoutes = require('./routes/cityRoutes');
+app.use('/api/cities', cityRoutes);
+const locationImportExportRoutes = require('./routes/locationImportExportRoutes');
+app.use('/api/location-tools', locationImportExportRoutes);
+const menuRoutes = require('./routes/menuRoutes');
+app.use('/api/menus', menuRoutes);
+const widgetRoutes = require('./routes/widgetRoutes');
+app.use('/api/widgets', widgetRoutes);
 app.use('/api/payments', paymentRoutes);
 const redirectRoutes = require('./routes/redirectRoutes');
 app.use('/api/redirects', redirectRoutes);
@@ -132,6 +147,18 @@ app.use('/api/affiliates', affiliateRoutes);
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve robots.txt dynamically from admin settings
+app.get('/robots.txt', async (req, res) => {
+  try {
+    const Settings = require('./models/settingsModel');
+    const settings = await Settings.findOne({});
+    const content = settings?.robotsTxt || "User-agent: *\nAllow: /\n\nSitemap: https://jaipurio.in/sitemap.xml";
+    res.type('text/plain').send(content);
+  } catch {
+    res.type('text/plain').send("User-agent: *\nAllow: /\n");
+  }
+});
 
 // Root Route
 app.get('/', (req, res) => {
@@ -177,6 +204,9 @@ connectDB()
   .then(() => ensurePaymentMethods())
   .then(() => migrateAttributeSetGroups())
   .then(() => ensureCountries())
+  .then(() => ensureStates())
+  .then(() => ensureCities())
+  .then(() => migrateContactStatus())
   .then(startServer)
   .catch((err) => {
   console.error(`Database connection failed: ${err.message}`);

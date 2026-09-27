@@ -11,9 +11,18 @@ const contactSchema = new mongoose.Schema(
     fields: { type: mongoose.Schema.Types.Mixed, default: {} },
     status: {
       type: String,
-      enum: ['New', 'In Progress', 'Resolved', 'Spam'],
-      default: 'New',
+      enum: ['Unread', 'Read'],
+      default: 'Unread',
     },
+    replies: [
+      {
+        message: { type: String, required: true },
+        repliedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        repliedByName: { type: String, default: '' },
+        emailSent: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     source: { type: String, default: '' },
     ip: { type: String, default: '' },
   },

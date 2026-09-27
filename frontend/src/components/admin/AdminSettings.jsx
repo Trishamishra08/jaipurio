@@ -34,6 +34,9 @@ const AdminSettings = () => {
   const [profileForm, setProfileForm] = useState({ ...adminInfo });
   const [activeSecurityView, setActiveSecurityView] = useState(null); // 'password', 'notifications', 'presets', 'archive'
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [loginActivity, setLoginActivity] = useState([]);
+  const [loginActivityLoading, setLoginActivityLoading] = useState(false);
+  const [loginActivityError, setLoginActivityError] = useState('');
 
   const [settings, setSettings] = useState({
     pushNotifications: true,
@@ -78,6 +81,24 @@ const AdminSettings = () => {
     setPasswordForm(prev => ({ ...prev, current: '' }));
     setProfileForm({ ...adminInfo });
   }, [adminInfo]);
+
+  useEffect(() => {
+    if (activeSecurityView !== 'archive') return;
+    let cancelled = false;
+    setLoginActivityLoading(true);
+    setLoginActivityError('');
+    api.get('/users/login-activity')
+      .then((res) => {
+        if (!cancelled) setLoginActivity(res.data?.data || []);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoginActivityError(err.parsedMessage || err.message || 'Failed to load session history.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoginActivityLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeSecurityView]);
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
@@ -248,16 +269,22 @@ const AdminSettings = () => {
               <button onClick={() => setActiveSecurityView(null)} className="text-gray-300 hover:text-admin-dark transition-colors"><FiX size={18} /></button>
             </div>
             <div className="space-y-2 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-              {[
-                { time: '21 Mar 2026, 01:06 PM', ip: '192.168.1.1', device: 'Windows / Chrome', status: 'Success' },
-                { time: '20 Mar 2026, 11:45 AM', ip: '192.168.1.1', device: 'Windows / Chrome', status: 'Success' },
-                { time: '19 Mar 2026, 09:12 PM', ip: '45.12.33.2', device: 'iPhone / Safari', status: 'Blocked' },
-                { time: '19 Mar 2026, 08:30 PM', ip: '192.168.1.1', device: 'Windows / Chrome', status: 'Success' },
-              ].map((session, i) => (
-                <div key={i} className="bg-white p-3 border border-admin-accent/5 flex justify-between items-center group hover:border-admin-accent/20 transition-all">
+              {loginActivityLoading && (
+                <p className="text-xs text-gray-400 text-center py-6">Loading…</p>
+              )}
+              {loginActivityError && (
+                <p className="text-xs text-red-500 text-center py-6">{loginActivityError}</p>
+              )}
+              {!loginActivityLoading && !loginActivityError && loginActivity.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-6">No login activity in the last 30 days.</p>
+              )}
+              {!loginActivityLoading && loginActivity.map((session) => (
+                <div key={session.id} className="bg-white p-3 border border-admin-accent/5 flex justify-between items-center group hover:border-admin-accent/20 transition-all">
                   <div>
-                    <p className="text-sm font-semibold text-admin-dark">{session.time}</p>
-                    <p className="text-xs text-gray-500 mt-1">{session.device} • {session.ip}</p>
+                    <p className="text-sm font-semibold text-admin-dark">
+                      {session.createdAt ? new Date(session.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{session.device || 'Unknown device'} • {session.ip || '—'}</p>
                   </div>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded ${session.status === 'Success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{session.status}</span>
                 </div>

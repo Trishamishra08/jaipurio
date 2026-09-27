@@ -7,6 +7,7 @@ const {
   listContacts,
   getContactById,
   updateContact,
+  replyToContact,
   deleteContact,
 } = require('../controllers/contactController');
 
@@ -26,6 +27,7 @@ router.get('/', listContacts);
 router.get('/:id', getContactById);
 router.put('/:id', updateContact);
 router.patch('/:id', updateContact);
+router.post('/:id/reply', replyToContact);
 router.delete('/:id', deleteContact);
 
 module.exports = router;

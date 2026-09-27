@@ -29,6 +29,8 @@ import {
   uploadMediaFiles,
   renameMedia,
   updateMediaAlt,
+  updateMediaMetadata,
+  getBrowserLocation,
   replaceMediaFile,
   toggleMediaFavorite,
   copyMedia,
@@ -78,6 +80,12 @@ export default function MediaGalleryModal({ open, onClose, onInsert, multi = fal
   const [error, setError] = useState('');
   const [editName, setEditName] = useState('');
   const [altDraft, setAltDraft] = useState('');
+  const [titleDraft, setTitleDraft] = useState('');
+  const [keywordsDraft, setKeywordsDraft] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [copyrightDraft, setCopyrightDraft] = useState('');
+  const [latDraft, setLatDraft] = useState('');
+  const [lngDraft, setLngDraft] = useState('');
   const [altOpen, setAltOpen] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
   const [scopeMenuOpen, setScopeMenuOpen] = useState(false);
@@ -130,9 +138,21 @@ export default function MediaGalleryModal({ open, onClose, onInsert, multi = fal
     if (selected) {
       setEditName(selected.name || '');
       setAltDraft(selected.alt || '');
+      setTitleDraft(selected.title || '');
+      setKeywordsDraft(Array.isArray(selected.keywords) ? selected.keywords.join(', ') : (selected.keywords || ''));
+      setDescriptionDraft(selected.description || '');
+      setCopyrightDraft(selected.copyright || '');
+      setLatDraft(selected.location?.latitude ?? '');
+      setLngDraft(selected.location?.longitude ?? '');
     } else {
       setEditName('');
       setAltDraft('');
+      setTitleDraft('');
+      setKeywordsDraft('');
+      setDescriptionDraft('');
+      setCopyrightDraft('');
+      setLatDraft('');
+      setLngDraft('');
     }
   }, [selected]);
 
@@ -211,7 +231,8 @@ export default function MediaGalleryModal({ open, onClose, onInsert, multi = fal
     if (!filesList?.length) return;
     try {
       setLoading(true);
-      await uploadMediaFiles(filesList, scope === 'all' ? folderId : null);
+      const coords = await getBrowserLocation();
+      await uploadMediaFiles(filesList, scope === 'all' ? folderId : null, coords);
       await load();
     } catch (err) {
       setError(err?.message || 'Upload failed');
@@ -356,13 +377,25 @@ export default function MediaGalleryModal({ open, onClose, onInsert, multi = fal
       if (editName.trim() && editName.trim() !== selected.name) {
         updated = await renameMedia(id, editName.trim());
       }
-      if ((updated?.alt || selected.alt || '') !== altDraft) {
-        updated = await updateMediaAlt(id, altDraft);
-      }
+      updated = await updateMediaMetadata(id, {
+        alt: altDraft,
+        title: titleDraft,
+        keywords: keywordsDraft,
+        description: descriptionDraft,
+        copyright: copyrightDraft,
+        latitude: latDraft,
+        longitude: lngDraft,
+      });
       if (updated) {
         setSelected(updated);
         setEditName(updated.name || editName);
-        setAltDraft(updated.alt || altDraft);
+        setAltDraft(updated.alt || '');
+        setTitleDraft(updated.title || '');
+        setKeywordsDraft(Array.isArray(updated.keywords) ? updated.keywords.join(', ') : '');
+        setDescriptionDraft(updated.description || '');
+        setCopyrightDraft(updated.copyright || '');
+        setLatDraft(updated.location?.latitude ?? '');
+        setLngDraft(updated.location?.longitude ?? '');
       }
       await load();
     } catch (err) {
@@ -738,6 +771,68 @@ export default function MediaGalleryModal({ open, onClose, onInsert, multi = fal
                     placeholder="Describe this image"
                     className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 mb-2 bg-white resize-none"
                   />
+
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Title</label>
+                  <input
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    placeholder="Image title"
+                    className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 mb-2 bg-white"
+                  />
+
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Description</label>
+                  <textarea
+                    value={descriptionDraft}
+                    onChange={(e) => setDescriptionDraft(e.target.value)}
+                    rows={2}
+                    placeholder="Short description"
+                    className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 mb-2 bg-white resize-none"
+                  />
+
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                    Keywords <span className="normal-case font-normal text-slate-400">(comma separated)</span>
+                  </label>
+                  <input
+                    value={keywordsDraft}
+                    onChange={(e) => setKeywordsDraft(e.target.value)}
+                    placeholder="pottery, handmade, jaipur"
+                    className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 mb-2 bg-white"
+                  />
+
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Copyright</label>
+                  <input
+                    value={copyrightDraft}
+                    onChange={(e) => setCopyrightDraft(e.target.value)}
+                    placeholder="© Jaipurio"
+                    className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 mb-2 bg-white"
+                  />
+
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Location</label>
+                    {selected.locationSource && selected.locationSource !== 'none' && (
+                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        {{ exif: 'Photo GPS', device: 'Your device', ip: 'IP (approx.)', manual: 'Manual' }[selected.locationSource]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 mb-3">
+                    <input
+                      type="number"
+                      step="any"
+                      value={latDraft}
+                      onChange={(e) => setLatDraft(e.target.value)}
+                      placeholder="Latitude"
+                      className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 bg-white"
+                    />
+                    <input
+                      type="number"
+                      step="any"
+                      value={lngDraft}
+                      onChange={(e) => setLngDraft(e.target.value)}
+                      placeholder="Longitude"
+                      className="w-full text-xs border border-slate-200 rounded-sm px-2 py-1.5 bg-white"
+                    />
+                  </div>
 
                   <div className="text-[10px] text-slate-500 space-y-1 mb-3">
                     <div className="flex justify-between gap-2">

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FiSearch,
   FiPlus,
@@ -7,7 +7,41 @@ import {
   FiChevronDown,
   FiChevronRight,
   FiFilter,
+  FiX,
+  FiFileText,
 } from 'react-icons/fi';
+
+const FILTER_OPERATORS = [
+  { value: 'contains', label: 'Contains' },
+  { value: 'equals', label: 'Is equal to' },
+  { value: 'gt', label: 'Greater than' },
+  { value: 'lt', label: 'Less than' },
+];
+
+const emptyFilterRow = (defaultField) => ({ field: defaultField || '', operator: 'equals', value: '' });
+
+const matchesFilter = (row, filter, fieldMeta) => {
+  if (!filter.field || filter.value === '' || filter.value == null) return true;
+  const raw = row[filter.field];
+  const isDate = fieldMeta?.type === 'date';
+  const isNumber = fieldMeta?.type === 'number';
+
+  if (filter.operator === 'contains') {
+    return String(raw ?? '').toLowerCase().includes(String(filter.value).toLowerCase());
+  }
+  if (filter.operator === 'equals') {
+    if (isDate) {
+      const a = raw ? new Date(raw).toISOString().slice(0, 10) : '';
+      return a === filter.value;
+    }
+    return String(raw ?? '').toLowerCase() === String(filter.value).toLowerCase();
+  }
+  // gt / lt — numeric or date comparison
+  const a = isDate ? Date.parse(raw) : Number(raw);
+  const b = isDate ? Date.parse(filter.value) : Number(filter.value);
+  if (Number.isNaN(a) || Number.isNaN(b)) return true;
+  return filter.operator === 'gt' ? a > b : a < b;
+};
 
 export const AdminDataTable = ({
   title,
@@ -18,12 +52,15 @@ export const AdminDataTable = ({
   onCreate,
   createLabel = 'Create',
   onExport,
+  onExportCsv,
+  onExportExcel,
   onReload,
   showCreate = true,
   showExport = true,
   showReload = true,
   showBulkActions = true,
   showFilters = true,
+  filterFields,
   bulkStatusOptions = ['Published', 'Pending', 'Draft'],
   onBulkStatusChange,
   onBulkDelete,
@@ -33,19 +70,40 @@ export const AdminDataTable = ({
 }) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filterRows, setFilterRows] = useState([emptyFilterRow()]);
+  const [appliedFilters, setAppliedFilters] = useState([]);
+
+  const availableFields = useMemo(() => {
+    if (filterFields && filterFields.length) return filterFields;
+    return columns
+      .filter((c) => c.accessor)
+      .map((c) => ({ key: c.accessor, label: c.header, type: c.filterType || 'text' }));
+  }, [filterFields, columns]);
+
+  const fieldMetaByKey = useMemo(
+    () => Object.fromEntries(availableFields.map((f) => [f.key, f])),
+    [availableFields]
+  );
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkChangesOpen, setBulkChangesOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState(bulkStatusOptions[0] || '');
+  const [exportOpen, setExportOpen] = useState(false);
   const bulkRef = useRef(null);
+  const exportRef = useRef(null);
+  const hasExportFormats = Boolean(onExportCsv || onExportExcel);
 
   useEffect(() => {
     const onDocClick = (e) => {
       if (bulkRef.current && !bulkRef.current.contains(e.target)) {
         setBulkOpen(false);
         setBulkChangesOpen(false);
+      }
+      if (exportRef.current && !exportRef.current.contains(e.target)) {
+        setExportOpen(false);
       }
     };
     document.addEventListener('mousedown', onDocClick);
@@ -73,10 +131,13 @@ export const AdminDataTable = ({
   };
 
   const filteredData = data.filter((item) => {
-    if (!searchTerm) return true;
-    return Object.values(item).some((val) =>
-      String(val).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    if (searchTerm) {
+      const matchesSearch = Object.values(item).some((val) =>
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      if (!matchesSearch) return false;
+    }
+    return appliedFilters.every((filter) => matchesFilter(item, filter, fieldMetaByKey[filter.field]));
   });
 
   const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
@@ -128,8 +189,102 @@ export const AdminDataTable = ({
     }
   };
 
+  const updateFilterRow = (index, patch) => {
+    setFilterRows((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  };
+
+  const addFilterRow = () => setFilterRows((rows) => [...rows, emptyFilterRow()]);
+
+  const applyFilters = () => {
+    setAppliedFilters(filterRows.filter((r) => r.field && r.value !== ''));
+  };
+
+  const closeFilters = () => {
+    setFiltersOpen(false);
+  };
+
   return (
     <div className="bg-white rounded-md border border-slate-200 shadow-2xs relative">
+      {showFilters && filtersOpen && (
+        <div className="p-4 border-b border-slate-200 bg-slate-50/40">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-slate-800">Filters</h4>
+            <button type="button" onClick={closeFilters} className="text-slate-400 hover:text-slate-700">
+              <FiX size={16} />
+            </button>
+          </div>
+          <div className="space-y-2.5">
+            {filterRows.map((row, index) => (
+              <div key={index} className="flex flex-wrap items-center gap-2">
+                <select
+                  value={row.field}
+                  onChange={(e) => updateFilterRow(index, { field: e.target.value })}
+                  className="border border-slate-300 rounded-md text-xs py-1.5 px-2.5 bg-white focus:outline-hidden focus:border-blue-500 min-w-[150px]"
+                >
+                  <option value="">Select field</option>
+                  {availableFields.map((f) => (
+                    <option key={f.key} value={f.key}>{f.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={row.operator}
+                  onChange={(e) => updateFilterRow(index, { operator: e.target.value })}
+                  className="border border-slate-300 rounded-md text-xs py-1.5 px-2.5 bg-white focus:outline-hidden focus:border-blue-500 min-w-[130px]"
+                >
+                  {FILTER_OPERATORS.map((op) => (
+                    <option key={op.value} value={op.value}>{op.label}</option>
+                  ))}
+                </select>
+                <input
+                  type={fieldMetaByKey[row.field]?.type === 'date' ? 'date' : fieldMetaByKey[row.field]?.type === 'number' ? 'number' : 'text'}
+                  value={row.value}
+                  onChange={(e) => updateFilterRow(index, { value: e.target.value })}
+                  placeholder="Value"
+                  className="border border-slate-300 rounded-md text-xs py-1.5 px-2.5 focus:outline-hidden focus:border-blue-500 min-w-[150px]"
+                />
+                {filterRows.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterRows((rows) => rows.filter((_, i) => i !== index))}
+                    className="text-slate-400 hover:text-rose-600"
+                    title="Remove filter"
+                  >
+                    <FiX size={15} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={addFilterRow}
+                className="px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Add additional filter
+              </button>
+              <button
+                type="button"
+                onClick={applyFilters}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition"
+              >
+                Apply
+              </button>
+              {appliedFilters.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterRows([emptyFilterRow()]);
+                    setAppliedFilters([]);
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-rose-600 hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
           {showBulkActions && (
@@ -190,10 +345,18 @@ export const AdminDataTable = ({
           {showFilters && (
             <button
               type="button"
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+              onClick={() => setFiltersOpen((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-md text-xs font-medium transition ${
+                appliedFilters.length ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+              }`}
             >
-              <FiFilter size={13} className="text-slate-500" />
+              <FiFilter size={13} className={appliedFilters.length ? 'text-blue-600' : 'text-slate-500'} />
               <span>Filters</span>
+              {appliedFilters.length > 0 && (
+                <span className="bg-blue-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  {appliedFilters.length}
+                </span>
+              )}
             </button>
           )}
 
@@ -226,7 +389,43 @@ export const AdminDataTable = ({
             </button>
           )}
 
-          {showExport && (
+          {showExport && hasExportFormats && (
+            <div className="relative inline-block" ref={exportRef}>
+              <button
+                type="button"
+                onClick={() => setExportOpen((v) => !v)}
+                className="flex items-center gap-1 px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                <FiDownload size={13} className="text-slate-500" />
+                <span>Export</span>
+                <FiChevronDown size={12} className="text-slate-400" />
+              </button>
+              {exportOpen && (
+                <div className="absolute right-0 top-full mt-1 z-40 min-w-[140px] bg-white border border-slate-200 rounded-md shadow-lg py-1">
+                  {onExportCsv && (
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                      onClick={() => { setExportOpen(false); onExportCsv(); }}
+                    >
+                      <FiFileText size={13} className="text-emerald-600" /> CSV
+                    </button>
+                  )}
+                  {onExportExcel && (
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
+                      onClick={() => { setExportOpen(false); onExportExcel(); }}
+                    >
+                      <FiFileText size={13} className="text-blue-600" /> Excel
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {showExport && !hasExportFormats && (
             <button
               type="button"
               onClick={onExport}
@@ -270,7 +469,7 @@ export const AdminDataTable = ({
                   className={`px-3.5 py-2.5 ${col.className || ''}`}
                   style={{ width: col.width }}
                 >
-                  <div className="flex items-center gap-1 select-none">
+                  <div className={`flex items-center gap-1 select-none ${col.className?.includes('text-center') ? 'justify-center' : ''} ${col.className?.includes('text-right') ? 'justify-end' : ''}`}>
                     <span>{col.header}</span>
                     {col.sortable !== false && (
                       <span className="text-slate-400 text-[9px]">↕</span>
