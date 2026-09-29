@@ -243,8 +243,27 @@ const ensureDefaultUiBlocks = async () => {
 /** Public published posts */
 const getBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find({ status: 'Published' }).sort('-createdAt').lean();
-    res.status(200).json({ success: true, data: { blogs: blogs.map(serializeBlog) } });
+    const filter = { status: 'Published' };
+    if (req.query.category) {
+      filter.$or = [{ category: req.query.category }, { categories: req.query.category }];
+    }
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
+    const skip = (page - 1) * limit;
+
+    const [blogs, total] = await Promise.all([
+      Blog.find(filter).sort('-createdAt').skip(skip).limit(limit).lean(),
+      Blog.countDocuments(filter),
+    ]);
+    res.status(200).json({
+      success: true,
+      data: {
+        blogs: blogs.map(serializeBlog),
+        total,
+        page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

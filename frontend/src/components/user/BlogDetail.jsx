@@ -2,33 +2,57 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api from '../../utils/api';
 import { useShop } from '../../context/ShopContext';
-import { journalPosts } from '../../data/journalPosts';
 import { getWhatsAppHref } from '../../utils/whatsapp';
 import JharokhaBand from './JharokhaBand';
 import ContentWithAds from '../shared/ContentWithAds';
 
-const GUIDE = journalPosts[0];
-
 const BlogDetail = () => {
   const { id } = useParams();
   const { products } = useShop();
-  const seed = journalPosts.find((p) => p._id === id) || GUIDE;
-  const [blog, setBlog] = useState(seed);
+  const [blog, setBlog] = useState(null);
+  const [loadState, setLoadState] = useState('loading'); // loading | ready | error
+  const [morePosts, setMorePosts] = useState([]);
   const [openFaq, setOpenFaq] = useState(0);
   const [readPct, setReadPct] = useState(0);
   const related = products.slice(0, 4);
-  const morePosts = journalPosts.filter((p) => p._id !== seed._id).slice(0, 3);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const fallback = journalPosts.find((p) => p._id === id) || GUIDE;
-    setBlog(fallback);
+    let cancelled = false;
+    setLoadState('loading');
     api.get(`/blogs/${id}`)
       .then((res) => {
+        if (cancelled) return;
         const row = res.data?.data?.blog;
-        if (row) setBlog({ ...fallback, ...row });
+        if (row) {
+          setBlog(row);
+          setLoadState('ready');
+        } else {
+          setLoadState('error');
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setLoadState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/blogs', { params: { limit: 4 } })
+      .then((res) => {
+        if (cancelled) return;
+        const rows = (res.data?.data?.blogs || []).filter((p) => String(p._id) !== String(id)).slice(0, 3);
+        setMorePosts(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setMorePosts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -41,13 +65,34 @@ const BlogDetail = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const title = blog?.title || GUIDE.title;
-  const excerpt = blog?.excerpt || GUIDE.excerpt;
-  const image = blog?.image || GUIDE.image;
-  const category = blog?.category || GUIDE.category;
+  const title = blog?.title || '';
+  const excerpt = blog?.excerpt || '';
+  const image = blog?.image || '';
+  const category = blog?.category || '';
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = encodeURIComponent(`${title} ${shareUrl}`);
   const hasCmsBody = blog?.content && String(blog.content).length > 80;
+
+  if (loadState === 'loading') {
+    return (
+      <div className="heritage-page pb-16">
+        <JharokhaBand />
+        <div className="blog-wrap py-20 text-center text-sm text-[#70452F]">Loading article…</div>
+      </div>
+    );
+  }
+
+  if (loadState === 'error' || !blog) {
+    return (
+      <div className="heritage-page pb-16">
+        <JharokhaBand />
+        <div className="blog-wrap py-20 text-center">
+          <p className="text-sm text-red-600 mb-3">This article couldn't be found.</p>
+          <Link to="/blog" className="btn-mid">Back to the journal</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="heritage-page pb-16">
@@ -70,8 +115,8 @@ const BlogDetail = () => {
           <div className="art-author">
             <div className="art-avatar">JE</div>
             <div>
-              <div className="art-author-name">{blog.author || GUIDE.author}</div>
-              <div className="art-author-sub">{blog.date || GUIDE.date} · {blog.readTime || '8 min read'}</div>
+              <div className="art-author-name">{blog.author || 'Jaipurio Editorial'}</div>
+              <div className="art-author-sub">{blog.date || new Date(blog.createdAt || Date.now()).toLocaleDateString('en-IN')} · {blog.readTime || '8 min read'}</div>
             </div>
           </div>
           <div className="art-share">
