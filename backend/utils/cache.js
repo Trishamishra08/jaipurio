@@ -35,11 +35,21 @@ const cachePublic = (name, ttlSeconds = 60) => {
   return async (req, res, next) => {
     if (req.method !== 'GET') return next();
 
-    const extra = req.params && req.params.id
+    const paramPart = req.params && req.params.id
       ? req.params.id
       : req.params && req.params.type
         ? req.params.type
         : '';
+    // Query params (page/limit/search/category/sort/ids/...) must be part of
+    // the cache key too — otherwise every distinct request (e.g. every page
+    // of a paginated list) collapses onto the same cached entry and callers
+    // silently get back whichever query happened to populate the cache first.
+    const queryPart = Object.keys(req.query || {})
+      .sort()
+      .filter((k) => req.query[k] !== undefined && req.query[k] !== '')
+      .map((k) => `${k}=${req.query[k]}`)
+      .join('&');
+    const extra = [paramPart, queryPart].filter(Boolean).join(':');
     const key = catalogKey(name, extra);
 
     try {

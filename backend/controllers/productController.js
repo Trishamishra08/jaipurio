@@ -113,16 +113,72 @@ const syncInventory = async (product, stock, extra = {}) => {
   return inventory;
 };
 
+// Every sort ends with `_id` as a tiebreaker — `reviews`/`rating`/`price` are
+// frequently equal across many products (e.g. the same default rating), and
+// without a unique tiebreaker Mongo's tie order isn't guaranteed stable
+// between separate skip/limit calls, which silently duplicates or skips rows
+// across pages.
+const PRODUCT_SORTS = {
+  popular: { reviews: -1, rating: -1, _id: 1 },
+  new: { createdAt: -1, _id: 1 },
+  'price-low': { price: 1, _id: 1 },
+  'price-high': { price: -1, _id: 1 },
+  rating: { rating: -1, reviews: -1, _id: 1 },
+};
+
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({
+    const filter = {
       $or: [{ lifecycle: 'Published' }, { status: 'approved' }]
-    })
-      .populate('vendor', 'storeName fullName')
-      .populate('admin', 'name')
-      .lean();
+    };
+
+    const ids = String(req.query.ids || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (ids.length) filter._id = { $in: ids };
+
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+    if (req.query.vendor && mongoose.Types.ObjectId.isValid(req.query.vendor)) {
+      filter.vendor = req.query.vendor;
+    }
+    if (req.query.search) {
+      const re = new RegExp(String(req.query.search).trim(), 'i');
+      filter.$and = [{ $or: [{ name: re }, { title: re }, { tags: re }] }];
+    }
+
+    const sort = PRODUCT_SORTS[req.query.sort] || PRODUCT_SORTS.popular;
+
+    // `ids` is an exact batch lookup (cart/wishlist resolution) — always return
+    // every match rather than paginating, but keep a safety cap either way.
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = ids.length
+      ? Math.min(ids.length, 200)
+      : Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 100);
+    const skip = ids.length ? 0 : (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .populate('vendor', 'storeName fullName')
+        .populate('admin', 'name')
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Product.countDocuments(filter),
+    ]);
     const productsWithStock = await injectStock(products);
-    res.status(200).json({ success: true, data: { products: productsWithStock } });
+    res.status(200).json({
+      success: true,
+      data: {
+        products: productsWithStock,
+        total,
+        page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

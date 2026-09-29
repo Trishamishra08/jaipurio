@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { initialProducts, initialCategories, initialOffers, initialVendors, initialReviews } from '../data/products';
 import { PHOTOS } from '../data/photos';
 import api from '../utils/api';
@@ -7,22 +7,47 @@ import { ensureCustomerAuth, isDemoToken } from '../utils/customerAuth';
 
 const ShopContext = createContext();
 
-const syncCartWithCatalog = (items, catalog) => {
-  if (!Array.isArray(items) || !catalog?.length) return items || [];
-  const byId = new Map(catalog.map((p) => [String(p._id), p]));
+// `catalog` is now a bounded "bootstrap" sample (see refreshProducts), not the
+// full product collection, so a cart item can be legitimately missing from it
+// without being unavailable. Resolve anything missing by id before deciding an
+// item is actually gone — otherwise items outside the sample would silently
+// vanish from the customer's cart on every reload.
+const syncCartWithCatalog = async (items, catalog) => {
+  if (!Array.isArray(items) || !items.length) return items || [];
+  const byId = new Map((catalog || []).map((p) => [String(p._id), p]));
+  const missingIds = items.map((item) => String(item._id)).filter((id) => !byId.has(id));
+
+  let lookupFailed = false;
+  if (missingIds.length) {
+    try {
+      const res = await api.get('/products', { params: { ids: missingIds.join(',') } });
+      (res.data?.data?.products || [])
+        .map(mapApiProductToStorefront)
+        .filter(Boolean)
+        .forEach((p) => byId.set(String(p._id), p));
+    } catch {
+      lookupFailed = true;
+    }
+  }
+
   return items
     .map((item) => {
       const fresh = byId.get(String(item._id));
-      if (!fresh) return null;
-      return {
-        ...item,
-        name: fresh.name,
-        price: fresh.price,
-        oldPrice: fresh.oldPrice,
-        image: fresh.image || fresh.iconImage,
-        vendor: fresh.vendor,
-        category: fresh.category,
-      };
+      if (fresh) {
+        return {
+          ...item,
+          name: fresh.name,
+          price: fresh.price,
+          oldPrice: fresh.oldPrice,
+          image: fresh.image || fresh.iconImage,
+          vendor: fresh.vendor,
+          category: fresh.category,
+        };
+      }
+      // Confirmed gone by the server (deleted/unpublished) => drop it. If the
+      // lookup itself failed (network blip), keep the item rather than risk
+      // losing real cart data.
+      return lookupFailed ? item : null;
     })
     .filter(Boolean);
 };
@@ -42,7 +67,11 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
   const refreshProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
-      const res = await api.get('/products');
+      // Bounded bootstrap sample for homepage widgets/cart-price-refresh — the
+      // full catalog (thousands of products after the data migration) is no
+      // longer fetched in one shot; Shop.jsx paginates the real browse/search
+      // directly against the backend instead of reading from this array.
+      const res = await api.get('/products', { params: { limit: 100, sort: 'popular' } });
       const list = res.data?.data?.products;
       if (Array.isArray(list) && list.length > 0) {
         setProducts(list.map(mapApiProductToStorefront).filter(Boolean));
@@ -176,9 +205,20 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
 
   const [flyingItems, setFlyingItems] = useState([]);
 
+  const cartRef = useRef(cart);
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
+
   useEffect(() => {
     if (productsLoading || products.length === 0) return;
-    setCart((prev) => syncCartWithCatalog(prev, products));
+    let cancelled = false;
+    syncCartWithCatalog(cartRef.current, products).then((next) => {
+      if (!cancelled) setCart(next);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [products, productsLoading]);
 
   useEffect(() => {

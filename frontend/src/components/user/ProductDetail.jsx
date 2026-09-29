@@ -29,6 +29,7 @@ const ProductDetail = () => {
   const [remoteProduct, setRemoteProduct] = useState(null);
   const [loadState, setLoadState] = useState('idle'); // idle | loading | error | ready
   const [loadError, setLoadError] = useState('');
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   const contextProduct =
     products.find((p) => String(p._id) === String(id)) ||
@@ -40,7 +41,7 @@ const ProductDetail = () => {
   const product = remoteProduct || contextProduct;
 
   const vendor = vendors.find((v) => v._id === product?.vendorId) || vendors.find((v) => v.name === product?.vendor) || vendors[0];
-  const related = products.filter((p) => String(p._id) !== String(product?._id) && p.vendor === product?.vendor).slice(0, 6);
+  const related = relatedProducts;
   const together = related.slice(0, 4);
   const productReviews = (reviews || []).filter((r) => r.productName === product?.name).slice(0, 3);
 
@@ -86,6 +87,34 @@ const ProductDetail = () => {
       cancelled = true;
     };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps — fetch once per id; context is fallback only
+
+  // Related products are fetched by vendor from the backend rather than
+  // filtered from the (now bounded) shared context array, so this works for
+  // any product regardless of whether it's in that homepage sample.
+  useEffect(() => {
+    const vendorId = product?.vendorId;
+    if (!vendorId) {
+      setRelatedProducts([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api
+      .get('/products', { params: { vendor: vendorId, limit: 7 } })
+      .then((res) => {
+        if (cancelled) return;
+        const rows = (res.data?.data?.products || [])
+          .map(mapApiProductToStorefront)
+          .filter((p) => p && String(p._id) !== String(product?._id))
+          .slice(0, 6);
+        setRelatedProducts(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setRelatedProducts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.vendorId, product?._id]);
 
   // Apply SEO meta from product record (admin SEO panel → live page)
   useEffect(() => {
