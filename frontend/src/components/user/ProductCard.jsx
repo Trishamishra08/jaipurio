@@ -56,7 +56,7 @@ const ProductCard = ({ product }) => {
           <img
             src={mediaUrl(product.image)}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-[1.05] transition-transform duration-500"
+            className="absolute inset-0 w-full h-full object-cover object-center contrast-[1.06] saturate-[1.08] group-hover:scale-[1.05] transition-transform duration-500"
             loading="lazy"
             decoding="async"
           />

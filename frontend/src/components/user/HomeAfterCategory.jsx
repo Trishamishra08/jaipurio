@@ -83,17 +83,6 @@ const OFFER_TILES = [
   },
 ];
 
-const CATALOG = [
-  { name: 'Hanuman ji Statue — Divine Devotion Marble Murti', brand: 'Vinayak Art & Marble', price: 18500, oldPrice: 30000, rating: 4.3, reviews: 312, image: PHOTOS.ganesh, tag: 'Hot Sale' },
-  { name: 'Goddess Durga Marble Statue — Symbol of Power', brand: 'Vinayak Art & Marble', price: 20000, oldPrice: 35000, rating: 4.11, reviews: 98, image: PHOTOS.buddha, tag: 'Hot Sale' },
-  { name: 'Gautama Buddha Statue — Zen Meditation Decor', brand: 'Vinayak Art & Marble', price: 20000, oldPrice: 30000, rating: 4.42, reviews: 156, image: PHOTOS.jewelry, tag: 'New' },
-  { name: 'Ganesha Statue — Remover of Obstacles', brand: 'Vinayak Art & Marble', price: 26000, oldPrice: 33000, rating: 4.23, reviews: 61, image: PHOTOS.kundan, tag: 'Flash Sale' },
-  { name: 'White Marble Tulsi Pot, 33 Inch', brand: 'Vinayak Art & Marble', price: 9500, oldPrice: 14000, rating: 4.21, reviews: 88, image: PHOTOS.planter, tag: 'Hot' },
-  { name: 'Marble Tulsi Pot, White Inlay', brand: 'Vinayak Art & Marble', price: 12500, oldPrice: 19000, rating: 4.3, reviews: 54, image: PHOTOS.succulent, tag: 'New' },
-  { name: 'Surya Marble Mandir, Hexa', brand: 'Vinayak Art & Marble', price: 13500, oldPrice: 23000, rating: 4.4, reviews: 41, image: PHOTOS.pottery, tag: 'Sale' },
-  { name: 'Divya Marble Mandir', brand: 'Vinayak Art & Marble', price: 26500, oldPrice: 43000, rating: 4.5, reviews: 33, image: PHOTOS.diya, tag: 'Hot' },
-];
-
 const SectionHead = ({ title, copy, to = '/shop', link = 'View All →', compact = false }) => (
   <SectionHeading title={title} copy={copy} to={to} link={link} compact={compact} />
 );
@@ -138,7 +127,7 @@ const CatalogCard = ({ item, compact }) => {
         >
           <Heart size={12} className={liked ? 'fill-[#C45C6A] text-[#C45C6A]' : 'text-[#8B2E3A]'} />
         </button>
-        <img src={item.image} alt="" className="absolute inset-0 w-full h-full object-cover object-center" loading="lazy" />
+        <img src={item.image} alt="" className="absolute inset-0 w-full h-full object-cover object-center contrast-[1.06] saturate-[1.08]" loading="lazy" />
       </div>
       <div className="p-2.5 flex-1">
         {item.brand && (
@@ -195,13 +184,14 @@ const HomeAfterCategory = () => {
   const [left, setLeft] = useState({ h: 12, m: 44, s: 46 });
   const boutique = BOUTIQUES[tab];
   const mitti = useMemo(() => products.slice(0, 6), [products]);
+  // Live catalog slices for every "product card" rail on this page — these
+  // used to come from a hardcoded CATALOG array (real-sounding names paired
+  // with unrelated stock images and made-up prices/ratings). Every rail below
+  // now reads real products from ShopContext; only the section-describing
+  // "tag" (e.g. "Best Seller" on the Best Sellers rail) is still assigned
+  // per-section, since that labels the shelf, not a false product claim.
   const items = useMemo(
-    () =>
-      CATALOG.map((c, i) => ({
-        ...c,
-        _id: products[i]?._id,
-        to: products[i]?._id ? `/product/${products[i]._id}` : '/shop',
-      })),
+    () => products.slice(0, 8).map((p) => ({ ...p, to: `/product/${p._id}` })),
     [products]
   );
 
@@ -433,9 +423,12 @@ const HomeAfterCategory = () => {
       <Wrap>
         <SectionHead eyebrow="This Week's Workshop" title="Trending right now" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {items.slice(0, 4).map((item, i) => (
-            <CatalogCard key={`tr-${item.name}`} item={{ ...item, tag: ['Hot Sale', 'New', null, 'Flash Sale'][i] }} />
-          ))}
+          {items.slice(0, 4).map((item) => {
+            const off = item.oldPrice && item.price ? Math.round(((item.oldPrice - item.price) / item.oldPrice) * 100) : 0;
+            return (
+              <CatalogCard key={`tr-${item.name}`} item={{ ...item, tag: off > 0 ? `${off}% OFF` : undefined }} />
+            );
+          })}
         </div>
       </Wrap>
 
