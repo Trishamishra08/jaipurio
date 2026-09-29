@@ -5,7 +5,7 @@ const { seoFields } = require('../utils/seoFields');
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   title: { type: String },
-  slug: { type: String, trim: true, index: true },
+  slug: { type: String, trim: true },
   price: { type: Number, required: true },
   oldPrice: { type: Number },
   salePrice: { type: Number },
@@ -129,5 +129,15 @@ productSchema.methods.applyStock = function applyStock(qty) {
   this.stockStatus = stockStatusFromQty(qty, this.trackQuantity);
   return this.stockStatus;
 };
+
+// Essential indexes for fast sorting and memory-efficient querying
+productSchema.index({ createdAt: -1 });
+productSchema.index({ updatedAt: -1 });
+productSchema.index({ sku: 1 });
+productSchema.index({ slug: 1 });
+productSchema.index({ lifecycle: 1, createdAt: -1 });
+productSchema.index({ category: 1, createdAt: -1 });
+productSchema.index({ isFeatured: 1, createdAt: -1 });
+productSchema.index({ vendor: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Product', productSchema);

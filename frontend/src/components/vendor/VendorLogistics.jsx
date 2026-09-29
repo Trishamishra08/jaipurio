@@ -1,26 +1,39 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiTruck, FiMapPin, FiSave, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
-
-// MOCK API for Frontend-Only mode
-const api = {
-  get: async () => ({ data: { data: { products: [], categories: [], banners: [], settings: {}, orders: [], users: [], stats: [], recentTransactions: [], dailyRevenue: [], vendors: [], blogs: [], returns: [], testimonials: [], reviews: [], replacements: [], supportTickets: [], locations: [], coupons: [], logs: [] }, status: 'success' } }),
-  post: async () => ({ data: { data: { order: { orderId: 'MOCK-ORDER-123' } }, status: 'success' } }),
-  patch: async () => ({ data: { status: 'success' } }),
-  delete: async () => ({ data: { status: 'success' } })
-};
+import api from '../../utils/api';
 
 const VendorLogistics = () => {
     const [settings, setSettings] = useState({
-        pickupAddress: '123 Pottery Lane, Blue Pottery Road, Jaipur, 302001',
+        pickupAddress: '',
         preferredPartner: 'Delhivery',
         processingDays: '1-2 Days',
     });
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', content: '' });
 
-    // Assuming we fetch vendor-specific settings here
     useEffect(() => {
-        // Mock fetch
+        let cancelled = false;
+        api
+            .get('/vendors/profile')
+            .then((res) => {
+                if (cancelled) return;
+                const vendor = res.data?.data?.vendor || {};
+                setSettings({
+                    pickupAddress: vendor.pickupAddress || vendor.businessAddress || '',
+                    preferredPartner: vendor.preferredCourierPartner || 'Delhivery',
+                    processingDays: vendor.orderProcessingTime || '1-2 Days',
+                });
+            })
+            .catch((err) => {
+                if (!cancelled) setMessage({ type: 'error', content: err?.parsedMessage || err?.message || 'Failed to load logistics settings' });
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const handleChange = (e) => setSettings({ ...settings, [e.target.name]: e.target.value });
@@ -28,12 +41,20 @@ const VendorLogistics = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
-        // Simulate API call
-        setTimeout(() => {
-            setSaving(false);
+        setMessage({ type: '', content: '' });
+        try {
+            await api.put('/vendors/profile', {
+                pickupAddress: settings.pickupAddress,
+                preferredCourierPartner: settings.preferredPartner,
+                orderProcessingTime: settings.processingDays,
+            });
             setMessage({ type: 'success', content: 'Logistics settings updated successfully.' });
+        } catch (err) {
+            setMessage({ type: 'error', content: err?.parsedMessage || err?.message || 'Failed to save logistics settings' });
+        } finally {
+            setSaving(false);
             setTimeout(() => setMessage({ type: '', content: '' }), 3000);
-        }, 800);
+        }
     };
 
     return (
@@ -75,6 +96,7 @@ const VendorLogistics = () => {
                                 name="pickupAddress"
                                 value={settings.pickupAddress}
                                 onChange={handleChange}
+                                disabled={loading}
                                 className="w-full bg-gray-50 border border-transparent focus:border-admin-accent-lite focus:bg-white rounded-xl p-4 text-sm font-medium outline-none transition-all h-24 resize-none"
                                 placeholder="Enter your full warehouse or shop address..."
                                 required
@@ -101,6 +123,7 @@ const VendorLogistics = () => {
                                 name="preferredPartner"
                                 value={settings.preferredPartner}
                                 onChange={handleChange}
+                                disabled={loading}
                                 className="w-full bg-gray-50 border border-transparent focus:border-admin-accent-lite focus:bg-white rounded-xl p-3.5 text-sm font-medium outline-none transition-all"
                             >
                                 <option value="Delhivery">Delhivery</option>
@@ -116,6 +139,7 @@ const VendorLogistics = () => {
                                 name="processingDays"
                                 value={settings.processingDays}
                                 onChange={handleChange}
+                                disabled={loading}
                                 className="w-full bg-gray-50 border border-transparent focus:border-admin-accent-lite focus:bg-white rounded-xl p-3.5 text-sm font-medium outline-none transition-all"
                             >
                                 <option value="Same Day">Same Day Dispatch</option>
@@ -130,7 +154,7 @@ const VendorLogistics = () => {
                 <div className="flex justify-end pt-4">
                     <button
                         type="submit"
-                        disabled={saving}
+                        disabled={saving || loading}
                         className={`bg-admin-dark text-white px-10 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-xl flex items-center gap-2 hover:bg-black transition-all ${saving ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {saving ? (

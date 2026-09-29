@@ -7,6 +7,24 @@ const FaqCategory = require('../models/faqCategoryModel');
 
 const router = express.Router();
 
+// Vendors need read-only access to the reusable FAQ library so the product
+// editor can let them attach existing FAQs instead of only writing new ones.
+// Registered before the blanket admin-only gate below so this GET matches
+// first; full CRUD (create/update/delete) further down stays admin-only.
+router.get('/', protect, authorize('admin', 'vendor'), async (req, res) => {
+  try {
+    const q = String(req.query.q || req.query.search || '').trim();
+    const filter = {
+      ...(req.user.role === 'vendor' ? { status: 'Published' } : {}),
+      ...(q ? { question: { $regex: q, $options: 'i' } } : {}),
+    };
+    const rows = await Faq.find(filter).sort({ sortOrder: 1, updatedAt: -1 }).lean();
+    res.json({ success: true, data: rows.map((r) => ({ ...r, id: String(r._id) })), total: rows.length });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.use(protect, authorize('admin'));
 
 router.use(

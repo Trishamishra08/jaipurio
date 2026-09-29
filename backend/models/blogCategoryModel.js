@@ -4,7 +4,7 @@ const { seoFields } = require('../utils/seoFields');
 const blogCategorySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, trim: true, index: true },
+    slug: { type: String, trim: true },
     description: { type: String, default: '' },
     parent: {
       type: mongoose.Schema.Types.ObjectId,

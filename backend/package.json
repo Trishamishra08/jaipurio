@@ -9,6 +9,11 @@
     "dev:once": "node scripts/predev.js && node index.js",
     "seed:flow": "node seedMarketplaceFlow.js",
     "seed:ecommerce": "node seedEcommerceAdmin.js",
+    "migrate:categories": "node scripts/migrateOldCategories.js",
+    "migrate:products": "node scripts/migrateOldProducts.js",
+    "migrate:products:dry": "node scripts/migrateOldProducts.js --dry-run --limit=10",
+    "migrate:blogs": "node scripts/migrateOldBlogs.js",
+    "migrate:blogs:dry": "node scripts/migrateOldBlogs.js --dry-run",
     "redis:start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-redis.ps1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

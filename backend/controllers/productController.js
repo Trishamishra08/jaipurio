@@ -230,7 +230,10 @@ const createProduct = async (req, res) => {
 
 const getVendorProducts = async (req, res) => {
   try {
-    const products = await Product.find({ vendor: req.user._id }).sort('-createdAt');
+    const products = await Product.find({ vendor: req.user._id })
+      .select('-content')
+      .sort({ createdAt: -1 })
+      .lean();
     const productsWithStock = await injectStock(products);
     res.status(200).json({ success: true, data: productsWithStock });
   } catch (error) {
@@ -241,9 +244,11 @@ const getVendorProducts = async (req, res) => {
 const getAdminProducts = async (req, res) => {
   try {
     const products = await Product.find({})
+      .select('-content')
       .populate('vendor', 'storeName fullName')
       .populate('admin', 'name')
-      .sort('-createdAt');
+      .sort({ createdAt: -1 })
+      .lean();
     const productsWithStock = await injectStock(products);
     const LOW_STOCK_ALERT = 8;
     const summary = productsWithStock.reduce((acc, product) => {

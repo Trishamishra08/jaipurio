@@ -134,11 +134,15 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
   const [sku, setSku] = useState('');
   const [price, setPrice] = useState('');
   const [salePrice, setSalePrice] = useState('');
+  const [discountProductPrice, setDiscountProductPrice] = useState('');
   const [costPerItem, setCostPerItem] = useState('');
   const [barcode, setBarcode] = useState('');
   const [storehouseManagement, setStorehouseManagement] = useState(true);
   const [quantity, setQuantity] = useState('');
   const [allowBackorder, setAllowBackorder] = useState(true);
+  const [warehouse, setWarehouse] = useState('Jaipur WH-1');
+  const [stockStatus, setStockStatus] = useState('In Stock');
+  const [rejectReason, setRejectReason] = useState('');
 
   // Shipping
   const [weight, setWeight] = useState('');
@@ -186,8 +190,10 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
   // Product Images Gallery — mix of already-uploaded URL strings and freshly picked File objects
   const [images, setImages] = useState([]);
   const [featuredImage, setFeaturedImage] = useState('');
+  const [iconImage, setIconImage] = useState('');
   const [uploadingImages, setUploadingImages] = useState(false);
   const fileInputRef = useRef(null);
+  const iconInputRef = useRef(null);
 
   // Category (single-select, backed by the real Category collection)
   const [categoryList, setCategoryList] = useState([]);
@@ -202,8 +208,23 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
   const [variantValueSelections, setVariantValueSelections] = useState({});
   const [variants, setVariants] = useState([]);
 
+  // Product Options — a global, reusable catalog distinct from category Attributes
+  // (e.g. "Gift wrap", "Engraving text"), attached per-product by reference.
+  const [globalOptions, setGlobalOptions] = useState([]);
+  const [selectedOptionId, setSelectedOptionId] = useState('');
+  const [productOptions, setProductOptions] = useState([]);
+
+  // Cross-sell & related products — searched from the live published catalog.
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [crossSellIds, setCrossSellIds] = useState([]);
+  const [relatedIds, setRelatedIds] = useState([]);
+  const [crossSellQuery, setCrossSellQuery] = useState('');
+  const [relatedQuery, setRelatedQuery] = useState('');
+
   // FAQs
   const [faqs, setFaqs] = useState([]);
+  const [faqLibrary, setFaqLibrary] = useState([]);
+  const [selectedLibraryFaqId, setSelectedLibraryFaqId] = useState('');
 
   // Toast / Save State
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -216,6 +237,20 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
       .getAllCategories()
       .then((res) => setCategoryList(Array.isArray(res?.data) ? res.data : []))
       .catch(() => setCategoryList([]));
+    liveEcommerceList('product-options')
+      .then((list) => setGlobalOptions(Array.isArray(list) ? list : []))
+      .catch(() => setGlobalOptions([]));
+    api
+      .get('/faqs')
+      .then((res) => setFaqLibrary(Array.isArray(res.data?.data) ? res.data.data : []))
+      .catch(() => setFaqLibrary([]));
+    api
+      .get('/products')
+      .then((res) => {
+        const list = res.data?.data?.products;
+        setCatalogProducts(Array.isArray(list) ? list : []);
+      })
+      .catch(() => setCatalogProducts([]));
   }, []);
 
   // Fetch the vendor's own store name for a brand-new product; existing products
@@ -305,9 +340,14 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
         setSku(product.sku || '');
         setPrice(String(product.oldPrice || product.price || '').replace(/\B(?=(\d{3})+(?!\d))/g, ','));
         setSalePrice(String(product.salePrice || product.price || '').replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+        setDiscountProductPrice(String(product.discountProductPrice ?? ''));
         setCostPerItem(String(product.costPerItem || ''));
         setBarcode(product.barcode || '');
         setQuantity(String(product.stock ?? product.quantity ?? ''));
+        setWarehouse(product.warehouse || 'Jaipur WH-1');
+        setStockStatus(product.stockStatus || 'In Stock');
+        setStorehouseManagement(product.trackQuantity !== false);
+        setRejectReason(product.rejectReason || '');
         setWeight(String(product.weight ?? ''));
         setLength(String(product.length ?? ''));
         setWidth(String(product.width ?? ''));
@@ -348,6 +388,13 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
             }))
           );
         }
+        if (Array.isArray(product.options)) setProductOptions(product.options);
+        if (typeof product.crossSell === 'string' && product.crossSell) {
+          setCrossSellIds(product.crossSell.split(',').map((s) => s.trim()).filter(Boolean));
+        }
+        if (typeof product.related === 'string' && product.related) {
+          setRelatedIds(product.related.split(',').map((s) => s.trim()).filter(Boolean));
+        }
         if (Array.isArray(product.tagList) && product.tagList.length) setTags(product.tagList);
         else if (typeof product.tags === 'string' && product.tags) setTags(product.tags.split(',').map((t) => t.trim()).filter(Boolean));
         if (product.collections) setCollections((prev) => ({ ...prev, ...product.collections }));
@@ -359,6 +406,7 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
           setImages([product.image]);
           setFeaturedImage(product.image);
         }
+        setIconImage(product.iconImage || '');
         setSeo(
           normalizeSeoState(product.seo, {
             slug: product.slug,
@@ -407,11 +455,30 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
     [categoryAttrs]
   );
 
-  /** Upload any freshly-picked File objects and return resolved URL arrays for images/featuredImage. */
+  const catalogById = useMemo(() => {
+    const map = new Map();
+    catalogProducts.forEach((p) => map.set(String(p._id || p.id), p));
+    return map;
+  }, [catalogProducts]);
+
+  const searchCatalog = (query, excludeIds) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return catalogProducts
+      .filter((p) => String(p._id || p.id) !== String(mongoId) && !excludeIds.includes(String(p._id || p.id)))
+      .filter((p) => (p.title || p.name || '').toLowerCase().includes(q))
+      .slice(0, 8);
+  };
+
+  const crossSellResults = useMemo(() => searchCatalog(crossSellQuery, crossSellIds), [crossSellQuery, crossSellIds, catalogProducts, mongoId]);
+  const relatedResults = useMemo(() => searchCatalog(relatedQuery, relatedIds), [relatedQuery, relatedIds, catalogProducts, mongoId]);
+
+  /** Upload any freshly-picked File objects and return resolved URL arrays for images/featuredImage/iconImage. */
   const resolveImageUrls = async () => {
     const fileItems = images.filter((item) => item instanceof File);
-    if (!fileItems.length) {
-      return { resolvedImages: images, resolvedFeatured: featuredImage || images[0] || '' };
+    const iconIsFile = iconImage instanceof File;
+    if (!fileItems.length && !iconIsFile) {
+      return { resolvedImages: images, resolvedFeatured: featuredImage || images[0] || '', resolvedIcon: iconImage };
     }
     setUploadingImages(true);
     try {
@@ -423,7 +490,12 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
       const resolvedFeatured = wasFeaturedAFile
         ? resolvedImages[featuredIndex] || resolvedImages[0] || ''
         : featuredImage || resolvedImages[0] || '';
-      return { resolvedImages, resolvedFeatured };
+      let resolvedIcon = iconImage;
+      if (iconIsFile) {
+        const [uploadedIcon] = await uploadFilesToServer([iconImage]);
+        resolvedIcon = uploadedIcon || '';
+      }
+      return { resolvedImages, resolvedFeatured, resolvedIcon };
     } finally {
       setUploadingImages(false);
     }
@@ -447,9 +519,10 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
     setSaving(true);
     setSaveError('');
     try {
-      const { resolvedImages, resolvedFeatured } = await resolveImageUrls();
+      const { resolvedImages, resolvedFeatured, resolvedIcon } = await resolveImageUrls();
       setImages(resolvedImages);
       setFeaturedImage(resolvedFeatured);
+      if (resolvedIcon !== undefined) setIconImage(resolvedIcon);
 
       const nextSlug = seo.general?.slug || permalink || slugify(name);
       const payload = {
@@ -485,10 +558,13 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
         price: parseMoney(salePrice) || parseMoney(price),
         oldPrice: parseMoney(price),
         salePrice: parseMoney(salePrice) || parseMoney(price),
+        discountProductPrice: discountProductPrice === '' ? undefined : parseMoney(discountProductPrice),
         costPerItem: parseMoney(costPerItem),
         barcode,
         stock: Number(quantity) || 0,
         trackQuantity: storehouseManagement,
+        stockStatus: storehouseManagement ? stockStatus : 'In Stock',
+        warehouse,
         weight: parseMoney(weight),
         length: Number(length) || 0,
         width: Number(width) || 0,
@@ -500,8 +576,12 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
         lifecycle: status,
         images: resolvedImages,
         image: resolvedFeatured || resolvedImages[0] || '',
+        iconImage: iconImage instanceof File ? '' : iconImage || '',
         tagList: tags,
         tags: tags.join(', '),
+        options: productOptions,
+        crossSell: crossSellIds.join(','),
+        related: relatedIds.join(','),
         collections,
         labels,
         description: isStubHtml(descriptionHtml)
@@ -624,6 +704,29 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
     setVariants((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleAddGlobalOption = () => {
+    if (!selectedOptionId) return;
+    const opt = globalOptions.find((o) => String(o._id || o.id) === selectedOptionId);
+    if (!opt || productOptions.some((p) => p.name === opt.name)) return;
+    setProductOptions((prev) => [
+      ...prev,
+      {
+        name: opt.name,
+        type: opt.optionType || 'dropdown',
+        values: (opt.values || []).map((v) => v.label).filter(Boolean).join(', '),
+      },
+    ]);
+    setSelectedOptionId('');
+  };
+
+  const handleRemoveProductOption = (name) => {
+    setProductOptions((prev) => prev.filter((p) => p.name !== name));
+  };
+
+  const toggleCatalogSelection = (list, setList, productId) => {
+    setList(list.includes(productId) ? list.filter((id) => id !== productId) : [...list, productId]);
+  };
+
   const handleRemoveFaq = (faqId) => {
     setFaqs(faqs.filter((f) => f.id !== faqId));
   };
@@ -637,6 +740,17 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
         answer: 'Enter answer details here...'
       }
     ]);
+  };
+
+  const handleAddFromLibrary = () => {
+    if (!selectedLibraryFaqId) return;
+    const source = faqLibrary.find((f) => String(f._id || f.id) === selectedLibraryFaqId);
+    if (!source) return;
+    setFaqs((prev) => [
+      ...prev,
+      { id: Date.now(), question: source.question, answer: source.answer, sourceFaqId: String(source._id || source.id) },
+    ]);
+    setSelectedLibraryFaqId('');
   };
 
   if (loadError) {
@@ -920,6 +1034,17 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Discount product price ₹</label>
+                <input
+                  type="text"
+                  value={discountProductPrice}
+                  onChange={(e) => setDiscountProductPrice(e.target.value)}
+                  placeholder="Optional, separate from sale price"
+                  className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs font-medium"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Cost per item ₹</label>
                 <input
                   type="text"
@@ -958,14 +1083,39 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
 
               {storehouseManagement && (
                 <div className="mt-3 pl-6 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Warehouse</label>
+                      <input
+                        type="text"
+                        value={warehouse}
+                        onChange={(e) => setWarehouse(e.target.value)}
+                        className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs"
+                      />
+                    </div>
+                  </div>
                   <div className="max-w-xs">
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Quantity</label>
-                    <input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs"
-                    />
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Stock status (manual override)</label>
+                    <select
+                      value={stockStatus}
+                      onChange={(e) => setStockStatus(e.target.value)}
+                      className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs bg-white"
+                    >
+                      <option value="In Stock">In Stock</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Also auto-flips to Out of Stock when quantity hits zero.
+                    </p>
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-600">
                     <input
@@ -1254,6 +1404,47 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
             </div>
           ) : null}
 
+          {/* Card: Product Options (global catalog, distinct from category Attributes) */}
+          <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Product options</h4>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedOptionId}
+                  onChange={(e) => setSelectedOptionId(e.target.value)}
+                  className="border border-slate-300 text-xs rounded-md py-1 px-2 text-slate-700 bg-white"
+                >
+                  <option value="">Select Global Option</option>
+                  {globalOptions.map((opt) => (
+                    <option key={opt._id || opt.id} value={opt._id || opt.id}>{opt.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleAddGlobalOption}
+                  disabled={!selectedOptionId}
+                  className="text-xs bg-slate-700 text-white font-medium px-2.5 py-1 rounded-md hover:bg-slate-800 transition disabled:opacity-50"
+                >
+                  Add Global Option
+                </button>
+              </div>
+            </div>
+            {!globalOptions.length ? (
+              <p className="text-[11px] text-slate-400">No global product options have been configured yet.</p>
+            ) : null}
+            {productOptions.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {productOptions.map((opt) => (
+                  <span key={opt.name} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200">
+                    <span className="font-medium">{opt.name}</span>
+                    {opt.values ? <span className="text-slate-400">({opt.values})</span> : null}
+                    <button type="button" onClick={() => handleRemoveProductOption(opt.name)} className="text-slate-400 hover:text-red-500 font-bold ml-0.5">×</button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
           {/* Card: Related & Cross-selling Products */}
           <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-4">
             <div>
@@ -1261,11 +1452,40 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
               <div className="relative">
                 <input
                   type="text"
+                  value={relatedQuery}
+                  onChange={(e) => setRelatedQuery(e.target.value)}
                   placeholder="Search products..."
                   className="w-full border border-slate-300 rounded-md py-1.5 pl-8 pr-3 text-xs"
                 />
                 <FiSearch className="absolute left-2.5 top-2 text-slate-400" size={14} />
               </div>
+              {relatedQuery && relatedResults.length > 0 ? (
+                <div className="mt-1.5 border border-slate-200 rounded-md divide-y max-h-40 overflow-y-auto">
+                  {relatedResults.map((p) => (
+                    <button
+                      key={p._id || p.id}
+                      type="button"
+                      onClick={() => {
+                        toggleCatalogSelection(relatedIds, setRelatedIds, String(p._id || p.id));
+                        setRelatedQuery('');
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-slate-50"
+                    >
+                      {p.title || p.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {relatedIds.length ? (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {relatedIds.map((id) => (
+                    <span key={id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200">
+                      <span>{catalogById.get(id)?.title || catalogById.get(id)?.name || id}</span>
+                      <button type="button" onClick={() => setRelatedIds((prev) => prev.filter((x) => x !== id))} className="text-slate-400 hover:text-red-500 font-bold ml-0.5">×</button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div>
@@ -1275,19 +1495,40 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
               <div className="relative">
                 <input
                   type="text"
+                  value={crossSellQuery}
+                  onChange={(e) => setCrossSellQuery(e.target.value)}
                   placeholder="Search products..."
                   className="w-full border border-slate-300 rounded-md py-1.5 pl-8 pr-3 text-xs"
                 />
                 <FiSearch className="absolute left-2.5 top-2 text-slate-400" size={14} />
               </div>
-              <div className="text-[11px] text-slate-500 mt-2 space-y-1">
-                <p>
-                  <strong>* Price field:</strong> Enter the amount you want to reduce from the original price.
-                </p>
-                <p>
-                  <strong>* Type field:</strong> Choose discount type: Fixed (reduce a specific amount) or Percent.
-                </p>
-              </div>
+              {crossSellQuery && crossSellResults.length > 0 ? (
+                <div className="mt-1.5 border border-slate-200 rounded-md divide-y max-h-40 overflow-y-auto">
+                  {crossSellResults.map((p) => (
+                    <button
+                      key={p._id || p.id}
+                      type="button"
+                      onClick={() => {
+                        toggleCatalogSelection(crossSellIds, setCrossSellIds, String(p._id || p.id));
+                        setCrossSellQuery('');
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 text-xs hover:bg-slate-50"
+                    >
+                      {p.title || p.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {crossSellIds.length ? (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {crossSellIds.map((id) => (
+                    <span key={id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200">
+                      <span>{catalogById.get(id)?.title || catalogById.get(id)?.name || id}</span>
+                      <button type="button" onClick={() => setCrossSellIds((prev) => prev.filter((x) => x !== id))} className="text-slate-400 hover:text-red-500 font-bold ml-0.5">×</button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -1306,6 +1547,30 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
                 </button>
               </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedLibraryFaqId}
+                onChange={(e) => setSelectedLibraryFaqId(e.target.value)}
+                className="flex-1 border border-slate-300 rounded-md py-1.5 px-2.5 text-xs bg-white"
+              >
+                <option value="">Select from existing FAQs…</option>
+                {faqLibrary.map((f) => (
+                  <option key={f._id || f.id} value={f._id || f.id}>{f.question}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleAddFromLibrary}
+                disabled={!selectedLibraryFaqId}
+                className="text-xs font-semibold border border-slate-300 hover:bg-slate-50 text-slate-700 px-2.5 py-1.5 rounded-md disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+            {!faqLibrary.length ? (
+              <p className="text-[11px] text-slate-400">No reusable FAQs have been published yet.</p>
+            ) : null}
 
             <div className="space-y-3 pt-1">
               {faqs.map((faq, index) => (
@@ -1512,17 +1777,41 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
             <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
               Status<span className="text-red-500">*</span>
             </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs bg-white text-slate-700 focus:outline-hidden focus:border-blue-500"
-            >
-              <option value="Draft">Draft</option>
-              <option value="Pending Approval">Pending Approval</option>
-            </select>
-            <p className="text-[10px] text-slate-400">
-              Submit as "Pending Approval" to send this product to the admin team for review before it goes live.
-            </p>
+            {status === 'Published' || status === 'Rejected' ? (
+              <div className={`text-xs font-semibold px-3 py-1.5 rounded-md ${status === 'Published' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {status}
+              </div>
+            ) : (
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full border border-slate-300 rounded-md py-1.5 px-3 text-xs bg-white text-slate-700 focus:outline-hidden focus:border-blue-500"
+              >
+                <option value="Draft">Draft</option>
+                <option value="Pending Approval">Pending Approval</option>
+              </select>
+            )}
+            {status === 'Rejected' && rejectReason ? (
+              <div className="text-[11px] text-red-700 bg-red-50 border border-red-100 rounded-md px-2.5 py-2">
+                <span className="font-bold">Admin feedback:</span> {rejectReason}
+              </div>
+            ) : null}
+            {status === 'Rejected' ? (
+              <button
+                type="button"
+                onClick={() => setStatus('Draft')}
+                className="w-full text-xs font-semibold border border-slate-300 hover:bg-slate-50 text-slate-700 py-1.5 rounded-md"
+              >
+                Edit and resubmit
+              </button>
+            ) : null}
+            {status === 'Published' ? (
+              <p className="text-[10px] text-slate-400">Live in the customer-facing catalog. Edits here save immediately without a new review.</p>
+            ) : (
+              <p className="text-[10px] text-slate-400">
+                Submit as "Pending Approval" to send this product to the admin team for review before it goes live.
+              </p>
+            )}
           </div>
 
           {/* Card: Store (read-only — your own store, from your vendor profile) */}
@@ -1625,6 +1914,61 @@ export const VendorProductEdit = ({ productId: productIdProp }) => {
                 onClick={() => {
                   const url = window.prompt('Add featured image from URL');
                   if (url && url.trim()) setFeaturedImage(url.trim());
+                }}
+                className="hover:underline font-medium"
+              >
+                Add from URL
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Icon Image (separate from Featured Image) */}
+          <div className="bg-white p-4 rounded-md border border-slate-200 shadow-2xs space-y-2">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
+              Icon image (optional)
+            </h4>
+            <div className="relative group w-20 h-20 rounded-md border border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+              {iconImage ? (
+                <img
+                  src={iconImage instanceof File ? URL.createObjectURL(iconImage) : iconImage}
+                  alt="Icon"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-[9px] text-slate-400 text-center px-1">No icon</span>
+              )}
+              {iconImage ? (
+                <button
+                  type="button"
+                  onClick={() => setIconImage('')}
+                  className="absolute top-0.5 right-0.5 bg-red-600 text-white p-1 rounded-full opacity-90 group-hover:opacity-100 transition"
+                  title="Remove icon"
+                >
+                  <FiTrash2 size={10} />
+                </button>
+              ) : null}
+            </div>
+            <input
+              ref={iconInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setIconImage(file);
+                e.target.value = '';
+              }}
+            />
+            <div className="flex items-center justify-between text-xs text-blue-600 pt-1">
+              <button type="button" onClick={() => iconInputRef.current?.click()} className="hover:underline font-medium">
+                Choose image
+              </button>
+              <span className="text-slate-400">or</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = window.prompt('Add icon image from URL');
+                  if (url && url.trim()) setIconImage(url.trim());
                 }}
                 className="hover:underline font-medium"
               >

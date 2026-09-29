@@ -18,6 +18,8 @@ import LocationPage from './components/user/LocationPage';
 import CartDrawer from './components/user/CartDrawer';
 import Footer from './components/user/Footer';
 import BottomNavigation from './components/user/BottomNavigation';
+import BlogSection from './components/user/BlogSection';
+import BlogDetail from './components/user/BlogDetail';
 import Auth from './components/user/Auth';
 import Register from './components/user/Register';
 
@@ -30,6 +32,8 @@ import VendorProducts from './components/vendor/VendorProducts';
 import VendorAddProduct from './components/vendor/VendorAddProduct';
 import VendorInventory from './components/vendor/VendorInventory';
 import VendorOrders from './components/vendor/VendorOrders';
+import VendorIncompleteOrders from './components/vendor/VendorIncompleteOrders';
+import VendorShipments from './components/vendor/VendorShipments';
 import VendorReturns from './components/vendor/VendorReturns';
 import VendorLogistics from './components/vendor/VendorLogistics';
 import VendorEarnings from './components/vendor/VendorEarnings';
@@ -39,6 +43,7 @@ import VendorReviews from './components/vendor/VendorReviews';
 import VendorNotifications from './components/vendor/VendorNotifications';
 import VendorAnalytics from './components/vendor/VendorAnalytics';
 import VendorSupport from './components/vendor/VendorSupport';
+import VendorStorefront from './components/vendor/VendorStorefront';
 import VendorSettings from './components/vendor/VendorSettings';
 import AdminEcommerceReports from './components/admin/ecommerce/AdminEcommerceReports';
 import AdminEcommerceOrders from './components/admin/ecommerce/AdminEcommerceOrders';
@@ -137,6 +142,11 @@ function App() {
           <Route element={<PublicLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/blog" element={<BlogSection />} />
+            <Route path="/blogs" element={<Navigate to="/blog" replace />} />
+            <Route path="/journal" element={<Navigate to="/blog" replace />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/journal/:id" element={<BlogDetail />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/vendors" element={<Navigate to="/vendor" replace />} />
@@ -228,6 +238,8 @@ function App() {
               <Route path="add-product" element={<VendorAddProduct />} />
               <Route path="inventory" element={<VendorInventory />} />
               <Route path="orders" element={<VendorOrders />} />
+              <Route path="incomplete-orders" element={<VendorIncompleteOrders />} />
+              <Route path="shipments" element={<VendorShipments />} />
               <Route path="returns" element={<VendorReturns />} />
               <Route path="logistics" element={<VendorLogistics />} />
               <Route path="earnings" element={<VendorEarnings />} />
@@ -237,6 +249,7 @@ function App() {
               <Route path="notifications" element={<VendorNotifications />} />
               <Route path="analytics" element={<VendorAnalytics />} />
               <Route path="support" element={<VendorSupport />} />
+              <Route path="storefront" element={<VendorStorefront />} />
               <Route path="settings" element={<VendorSettings />} />
             </Route>
           </Route>

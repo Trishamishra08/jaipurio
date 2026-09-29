@@ -549,7 +549,11 @@ const getVendorDashboardStats = async (req, res, next) => {
 const updateVendorProfile = async (req, res, next) => {
   try {
     const vendorId = req.user._id;
-    const { storeName, fullName, email, phone, gstNumber, panNumber, fssaiLicense, aadharNumber, bankName, accountNumber, ifscCode, plan, storeDescription } = req.body;
+    const {
+      storeName, fullName, email, phone, gstNumber, panNumber, fssaiLicense, aadharNumber,
+      accountHolderName, bankName, accountNumber, ifscCode, upiId, plan, storeDescription,
+      pickupAddress, preferredCourierPartner, orderProcessingTime,
+    } = req.body;
 
     // Check if email is already taken by another vendor
     if (email) {
@@ -570,10 +574,15 @@ const updateVendorProfile = async (req, res, next) => {
         panNumber,
         fssaiLicense,
         aadharNumber,
+        accountHolderName,
         bankName,
         accountNumber,
         ifscCode,
+        upiId,
         storeDescription,
+        pickupAddress,
+        preferredCourierPartner,
+        orderProcessingTime,
       },
       { new: true, runValidators: true }
     ).select('-password');

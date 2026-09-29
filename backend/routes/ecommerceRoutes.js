@@ -54,6 +54,22 @@ router.get(
   }
 );
 
+// Vendors need read-only access to the global Product Options catalog (a system
+// distinct from category Attributes) so the product editor can let them attach
+// existing options to their listings. Registered before the blanket admin-only
+// gate below so this GET matches first; the full CRUD router further down still
+// governs create/update/delete and remains admin-only.
+router.get('/product-options', protect, authorize('admin', 'vendor'), async (req, res) => {
+  try {
+    const q = String(req.query.q || req.query.search || '').trim();
+    const filter = q ? { $or: [{ name: { $regex: q, $options: 'i' } }, { slug: { $regex: q, $options: 'i' } }] } : {};
+    const rows = await EcommerceProductOption.find(filter).sort({ updatedAt: -1 }).lean();
+    res.json({ success: true, data: rows.map((r) => ({ ...r, id: String(r._id) })), total: rows.length });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.use(protect, authorize('admin'));
 
 router.get('/reports', getReports);

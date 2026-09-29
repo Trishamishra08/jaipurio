@@ -278,7 +278,16 @@ const getAdminBlogs = async (req, res) => {
 
 const getBlogById = async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id).lean();
+    const raw = String(req.params.id || '').trim();
+    let query = null;
+    if (/^[0-9a-fA-F]{24}$/.test(raw)) {
+      query = { _id: raw };
+    } else if (/^\d+$/.test(raw)) {
+      query = { $or: [{ legacyId: Number(raw) }, { slug: raw }] };
+    } else {
+      query = { slug: raw };
+    }
+    const blog = await Blog.findOne(query).lean();
     if (!blog) {
       return res.status(404).json({ success: false, message: 'Blog not found' });
     }

@@ -1,0 +1,4 @@
+"id","name","parent_id","description","status","author_id","author_type","icon","order","is_featured","is_default","created_at","updated_at"
+"1","Ecommerce","0","Dive into Jaipurio's ecommerce insights. Learn about online shopping trends, artisan product marketing, and how to build a successful handicraft business in the digital age.","published","1","Botble\ACL\Models\User","0","0","0","1","2024-08-21 20:36:24","2024-10-20 17:43:17"
+"5","Fashion","0","Explore Rajasthani fashion with Jaipurio's blog. Discover traditional styles, modern trends, and how to incorporate authentic handicrafts into your wardrobe. Stay stylish.","published","1","Botble\ACL\Models\User",NULL,"1","0","0","2024-10-13 15:58:56","2024-10-20 17:43:17"
+"6","Spirituality &amp; Religion","0",,"published","1","Botble\ACL\Models\User",NULL,"2","0","0","2024-10-13 16:00:52","2024-10-20 17:43:17"

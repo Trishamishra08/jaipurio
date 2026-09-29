@@ -65,6 +65,22 @@ const VendorLayout = () => {
   const sidebarRef = useRef(null);
 
   const [toast, setToast] = useState(null);
+  const [vendorProfile, setVendorProfile] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/vendors/profile')
+      .then((res) => {
+        if (!cancelled) setVendorProfile(res.data?.data?.vendor || null);
+      })
+      .catch(() => {
+        /* header falls back to a generic label */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!showNotifications) return undefined;
@@ -126,6 +142,7 @@ const VendorLayout = () => {
     { name: 'Incomplete Orders', path: '/vendor/incomplete-orders', icon: PackageOpen },
     { name: 'Shipments', path: '/vendor/shipments', icon: Truck },
     { name: 'Returns', path: '/vendor/returns', icon: RotateCcw },
+    { name: 'Logistics', path: '/vendor/logistics', icon: Truck },
     { name: 'Earnings', path: '/vendor/earnings', icon: IndianRupee },
     { name: 'Payouts', path: '/vendor/payouts', icon: CreditCard },
     { name: 'Reviews', path: '/vendor/reviews', icon: Star },
@@ -369,10 +386,14 @@ const VendorLayout = () => {
             <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/vendor/settings')}>
               <div className="text-right hidden sm:block">
-                <p className="text-[12px] font-bold text-gray-900 font-sans leading-tight">Shyam Pottery</p>
+                <p className="text-[12px] font-bold text-gray-900 font-sans leading-tight">{vendorProfile?.storeName || vendorProfile?.fullName || 'My store'}</p>
                 <p className="text-[10px] font-medium text-gray-500 font-poppins">Vendor</p>
               </div>
-              <img src="https://ui-avatars.com/api/?name=Herbal+Essence&background=6F241D&color=fff" alt="Vendor" className="w-8 h-8 rounded-full border border-gray-100 shadow-sm" />
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(vendorProfile?.storeName || vendorProfile?.fullName || 'Vendor')}&background=6F241D&color=fff`}
+                alt="Vendor"
+                className="w-8 h-8 rounded-full border border-gray-100 shadow-sm"
+              />
             </div>
           </div>
         </header>

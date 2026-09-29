@@ -1,28 +1,50 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import VendorPage from './VendorPage';
-import { platformStore } from '../../data/platformStore';
+import { fetchVendorProducts, fetchOrders, fetchReturns, fetchPayouts } from '../../utils/marketplaceApi';
 
 const VendorHome = () => {
-  const products = platformStore.products();
-  const orders = platformStore.orders();
-  const returns = platformStore.returns();
-  const payouts = platformStore.payouts();
+  const [stats, setStats] = useState({
+    pendingProducts: 0,
+    waitingAccept: 0,
+    openReturns: 0,
+    pendingPayout: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  const stats = useMemo(() => ({
-    pendingProducts: products.filter((p) => p.lifecycle === 'Pending Approval' || p.lifecycle === 'Draft').length,
-    waitingAccept: orders.filter((o) => o.orderStatus === 'Payment Confirmed').length,
-    openReturns: returns.filter((r) => r.status === 'Vendor Review').length,
-    pendingPayout: payouts.filter((p) => p.status === 'Pending approval').length,
-  }), [products, orders, returns, payouts]);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchVendorProducts().catch(() => []),
+      fetchOrders('vendor').catch(() => []),
+      fetchReturns().catch(() => []),
+      fetchPayouts().catch(() => []),
+    ]).then(([products, orders, returns, payouts]) => {
+      if (cancelled) return;
+      const productList = Array.isArray(products) ? products : [];
+      const orderList = Array.isArray(orders) ? orders : [];
+      const returnList = Array.isArray(returns) ? returns : [];
+      const payoutList = Array.isArray(payouts) ? payouts : [];
+      setStats({
+        pendingProducts: productList.filter((p) => p.lifecycle === 'Pending Approval' || p.lifecycle === 'Draft').length,
+        waitingAccept: orderList.filter((o) => o.orderStatus === 'Payment Confirmed').length,
+        openReturns: returnList.filter((r) => r.status === 'Vendor Review').length,
+        pendingPayout: payoutList.filter((p) => p.status === 'Pending approval' || p.status === 'Pending').length,
+      });
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const steps = [
-    { n: 1, title: 'Add / submit a product', to: '/vendor/products', note: 'Open the draft jhumkas: Draft → Submit for review (C.1)' },
+    { n: 1, title: 'Add / submit a product', to: '/vendor/products', note: 'Draft → Submit for review (C.1)' },
     { n: 2, title: 'See product lifecycle', to: '/vendor/products', note: 'Draft, Pending Approval, Published' },
-    { n: 3, title: 'Restock warehouse inventory', to: '/vendor/inventory', note: 'Marble Chowki is Out of Stock — restock to In Stock' },
-    { n: 4, title: 'Accept a paid order', to: '/vendor/orders', note: 'Open #00000375 → Accept & create shipment (C.2)' },
+    { n: 3, title: 'Restock warehouse inventory', to: '/vendor/inventory', note: 'Fix any Out of Stock items' },
+    { n: 4, title: 'Accept a paid order', to: '/vendor/orders', note: 'Accept & create shipment (C.2)' },
     { n: 5, title: 'Update shipment status', to: '/vendor/shipments', note: 'Processing → Dispatched → Delivered' },
-    { n: 6, title: 'Review a return', to: '/vendor/returns', note: 'RMA-1001 — accept or reject (C.3)' },
+    { n: 6, title: 'Review a return', to: '/vendor/returns', note: 'Accept or reject (C.3)' },
     { n: 7, title: 'Check pending vs available', to: '/vendor/earnings', note: 'Commission + margin (C.4)' },
     { n: 8, title: 'Request a payout', to: '/vendor/payouts', note: 'Goes to admin for approval, then bank settlement' },
   ];
@@ -30,7 +52,7 @@ const VendorHome = () => {
   return (
     <VendorPage
       title="Vendor dashboard"
-      hint="Check the flow in this order. Each card opens the real screen from the discussion document."
+      hint={loading ? 'Loading your live numbers…' : 'Live counts from your store. Walk the flow below in order.'}
     >
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
         {[
@@ -41,7 +63,7 @@ const VendorHome = () => {
         ].map(([label, value, tone]) => (
           <div key={label} className={`admin-stat admin-stat-${tone}`}>
             <div>
-              <div className="admin-stat-value">{value}</div>
+              <div className="admin-stat-value">{loading ? '—' : value}</div>
               <div className="admin-stat-label">{label}</div>
             </div>
           </div>

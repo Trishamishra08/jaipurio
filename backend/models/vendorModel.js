@@ -26,6 +26,10 @@ const vendorSchema = new mongoose.Schema({
   categories: [{ type: String }],
   documents: [{ type: String }],
 
+  pickupAddress: { type: String, default: '' },
+  preferredCourierPartner: { type: String, default: 'Delhivery' },
+  orderProcessingTime: { type: String, default: '1-2 Days' },
+
   kycStatus: { type: String, enum: KYC_STATUS, default: 'Pending' },
   plan: { type: String, enum: Object.keys(VENDOR_PLANS), default: 'Starter' },
   pendingPlan: { type: String, default: null },
