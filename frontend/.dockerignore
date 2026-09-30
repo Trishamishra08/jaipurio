@@ -1,0 +1,8 @@
+node_modules
+dist
+npm-debug.log*
+
+# The Docker build gets its settings from build args only. This also keeps the
+# Vercel/Render URLs in .env.production out of the Docker image.
+.env
+.env.*
