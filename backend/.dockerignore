@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log*
+
+# Secrets never go into the image — Coolify injects env vars at runtime
+.env
+.env.*
+
+# Local-only files
+dump.rdb
+nodemon.json
