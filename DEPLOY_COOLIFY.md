@@ -64,7 +64,7 @@ The rest (SMTP, Stripe, PayPal, Paystack, Shiprocket, DTDC, Firebase, rate limit
 
 Don't set `NODE_ENV`, `PORT`, `TRUST_PROXY`, `REDIS_ENABLED` or `REDIS_URL`. The compose file fixes them for this stack.
 
-Create a bucket in MinIO before requesting images from imgproxy. Other services in this Compose stack can reach MinIO at `http://jaipurio-minio:9000` and imgproxy at `http://jaipurio-imgproxy:8080`; imgproxy accepts `s3://bucket-name/object-key` source URLs. Neither service publishes host ports.
+Create a bucket in MinIO before requesting images from imgproxy. Other services in this Compose stack can reach the MinIO S3 API at `http://jaipurio-minio:9000`, the MinIO console at `http://jaipurio-minio:9001`, and imgproxy at `http://jaipurio-imgproxy:8080`; imgproxy accepts `s3://bucket-name/object-key` source URLs. Neither service publishes host ports.
 
 ## 4. Deploy and verify
 

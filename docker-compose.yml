@@ -158,7 +158,7 @@ services:
 
   jaipurio-minio:
     image: cgr.dev/chainguard/minio:latest
-    command: ["server", "/data"]
+    command: ["server", "/data", "--console-address", ":9001"]
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
@@ -167,6 +167,7 @@ services:
       - minio-data:/data
     expose:
       - "9000"
+      - "9001"
 
   jaipurio-imgproxy:
     image: ghcr.io/imgproxy/imgproxy:latest
