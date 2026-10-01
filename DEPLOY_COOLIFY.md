@@ -9,6 +9,8 @@ The repo includes everything Coolify needs: `docker-compose.yml`, plus `backend/
 | `jaipurio-web` | React storefront + admin, served by nginx. Forwards `/api`, `/uploads` and `/robots.txt` to the API. | **Yes**: the only service that gets a domain |
 | `jaipurio-api` | Express backend (port 5000), connects to MongoDB Atlas | No, private network only |
 | `jaipurio-redis` | Cache for the API (in-memory, no disk) | No, private network only |
+| `jaipurio-minio` | S3-compatible object storage (persistent `minio-data` volume) | No, private network only |
+| `jaipurio-imgproxy` | Image processor fetching from MinIO over the private network | No, private network only |
 
 The site and the API share one domain, so there's no CORS setup and the frontend doesn't need to know the domain at build time.
 
@@ -23,7 +25,7 @@ The site and the API share one domain, so there's no CORS setup and the frontend
 
 Under the resource's services:
 - Give **only `jaipurio-web`** a domain, e.g. `https://jaipurio.in,https://www.jaipurio.in`.
-- Leave `jaipurio-api` and `jaipurio-redis` without a domain.
+- Leave `jaipurio-api`, `jaipurio-redis`, `jaipurio-minio` and `jaipurio-imgproxy` without a domain.
 
 Then point DNS at the server (at the domain's current DNS provider):
 
@@ -44,6 +46,7 @@ Coolify lists every variable from `docker-compose.yml` in the **Environment Vari
 |---|---|
 | `MONGODB_URI` | MongoDB Atlas connection string. In Atlas **Network Access**, allow `166.0.242.204`. |
 | `JWT_ACCESS_SECRET` | **Use the same value as today.** It also encrypts the payment-gateway keys saved in the admin panel. A new value logs everyone out and makes those saved keys unreadable. |
+| `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | MinIO credentials. imgproxy uses the same values to read objects through the internal S3 endpoint. |
 
 **Check these before go-live:**
 
@@ -61,13 +64,15 @@ The rest (SMTP, Stripe, PayPal, Paystack, Shiprocket, DTDC, Firebase, rate limit
 
 Don't set `NODE_ENV`, `PORT`, `TRUST_PROXY`, `REDIS_ENABLED` or `REDIS_URL`. The compose file fixes them for this stack.
 
+Create a bucket in MinIO before requesting images from imgproxy. Other services in this Compose stack can reach MinIO at `http://jaipurio-minio:9000` and imgproxy at `http://jaipurio-imgproxy:8080`; imgproxy accepts `s3://bucket-name/object-key` source URLs. Neither service publishes host ports.
+
 ## 4. Deploy and verify
 
 Click **Deploy**. The first start runs database migrations, so the API can take 1–2 minutes to report healthy.
 
 - `https://jaipurio.in/` loads the storefront.
 - `https://jaipurio.in/api/health` should return `{"success":true, … "cache":{"enabled":true,"connected":true,"mode":"redis"}}`.
-- Coolify shows all three services as **healthy**.
+- Coolify shows the web, API and Redis services as **healthy**; MinIO and imgproxy should be running.
 
 ## 5. After go-live
 

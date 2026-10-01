@@ -2,7 +2,7 @@
 #
 # Only jaipurio-web gets a domain in Coolify. It serves the React app and
 # forwards /api, /uploads and /robots.txt to jaipurio-api over the private
-# network. The API and Redis are never exposed to the internet.
+# network. The API, Redis, MinIO and imgproxy are never exposed to the internet.
 #
 # No secrets live in this file: Coolify lists every ${VAR} below in its
 # Environment Variables tab. `:?` = required, `:-x` = optional (default x).
@@ -155,3 +155,33 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  jaipurio-minio:
+    image: cgr.dev/chainguard/minio:latest
+    command: ["server", "/data"]
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?}
+    volumes:
+      - minio-data:/data
+    expose:
+      - "9000"
+
+  jaipurio-imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:latest
+    restart: unless-stopped
+    depends_on:
+      - jaipurio-minio
+    environment:
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: http://jaipurio-minio:9000
+      IMGPROXY_S3_ENDPOINT_USE_PATH_STYLE: "true"
+      IMGPROXY_S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?}
+    expose:
+      - "8080"
+
+volumes:
+  minio-data:
