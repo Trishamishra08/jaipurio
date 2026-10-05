@@ -10,7 +10,17 @@ const {
   sanitizeName,
   storageMode,
 } = require('../utils/mediaStorage');
+const { resolveImageUrl } = require('../utils/minioStorage');
 const { lookupIpLocation } = require('../utils/geoip');
+
+/** Re-signs any MinIO-backed `.url` on a list/single item so gallery thumbnails never go stale. Non-MinIO URLs (Cloudinary) pass through unchanged. */
+const resolveMediaUrls = async (items) => {
+  const list = Array.isArray(items) ? items : [items];
+  await Promise.all(list.map(async (item) => {
+    if (item?.url) item.url = await resolveImageUrl(item.url);
+  }));
+  return Array.isArray(items) ? list : list[0];
+};
 
 const serializeFolder = (doc) => {
   if (!doc) return null;
@@ -156,7 +166,7 @@ const listMedia = async (req, res) => {
         .lean();
     }
 
-    const items = [
+    const items = await resolveMediaUrls([
       ...folders.map(serializeFolder),
       ...images.map(serializeImage),
       ...legacyFiles.map((f) => {
@@ -165,7 +175,7 @@ const listMedia = async (req, res) => {
         o.parentFolder = f.parentFolder ? String(f.parentFolder) : null;
         return o;
       }),
-    ];
+    ]);
 
     res.json({
       success: true,
@@ -186,7 +196,7 @@ const getMedia = async (req, res) => {
     const { kind, doc } = await findImageOrFolder(req.params.id);
     if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
     if (kind === 'image') {
-      return res.json({ success: true, data: serializeImage(doc) });
+      return res.json({ success: true, data: await resolveMediaUrls(serializeImage(doc)) });
     }
     return res.json({
       success: true,
@@ -384,6 +394,9 @@ const reoptimizeMedia = async (req, res) => {
   try {
     const image = await MediaImage.findById(req.params.id);
     if (!image) return res.status(404).json({ success: false, message: 'Not found' });
+    if (image.storageProvider !== 'cloudinary') {
+      return res.status(400).json({ success: false, message: 'Re-optimize is only available for Cloudinary-stored images.' });
+    }
     const cloudinary = require('cloudinary').v2;
     const result = await cloudinary.uploader.explicit(image.storageKey, {
       type: 'upload',

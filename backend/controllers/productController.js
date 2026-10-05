@@ -7,6 +7,7 @@ const { lifecycleToLegacyStatus, stockStatusFromQty } = require('../constants/fl
 const { serializeProduct } = require('../utils/marketplace');
 const { normalizeSeo, slugify } = require('../utils/seoFields');
 const { ensureRichCopy } = require('../utils/productCopy');
+const { resolveProductImages } = require('../utils/minioStorage');
 
 const isUsableImageUrl = (url) =>
   typeof url === 'string' && url.trim() !== '' && !url.startsWith('blob:');
@@ -169,7 +170,7 @@ const getProducts = async (req, res) => {
         .lean(),
       Product.countDocuments(filter),
     ]);
-    const productsWithStock = await injectStock(products);
+    const productsWithStock = await resolveProductImages(await injectStock(products));
     res.status(200).json({
       success: true,
       data: {
@@ -178,6 +179,29 @@ const getProducts = async (req, res) => {
         page,
         totalPages: Math.max(1, Math.ceil(total / limit)),
       },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Categories that actually have at least one live product — used to build
+// the Shop page's filter chips so a chip never leads to an empty result.
+// This is deliberately computed from real Product.category usage rather than
+// the full Category taxonomy collection, since that collection also holds
+// unrelated topic categories (e.g. blog-style "Ecommerce"/"Fashion" entries)
+// that no product is actually assigned to.
+const getProductCategories = async (req, res) => {
+  try {
+    const rows = await Product.aggregate([
+      { $match: { $or: [{ lifecycle: 'Published' }, { status: 'approved' }], category: { $ne: '' } } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $match: { count: { $gt: 0 } } },
+      { $sort: { count: -1 } },
+    ]);
+    res.status(200).json({
+      success: true,
+      data: rows.map((r) => ({ name: r._id, count: r.count })),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -225,7 +249,7 @@ const getProductById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    const data = await injectStock(product);
+    const data = await resolveProductImages(await injectStock(product));
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -290,7 +314,7 @@ const getVendorProducts = async (req, res) => {
       .select('-content')
       .sort({ createdAt: -1 })
       .lean();
-    const productsWithStock = await injectStock(products);
+    const productsWithStock = await resolveProductImages(await injectStock(products));
     res.status(200).json({ success: true, data: productsWithStock });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -305,7 +329,7 @@ const getAdminProducts = async (req, res) => {
       .populate('admin', 'name')
       .sort({ createdAt: -1 })
       .lean();
-    const productsWithStock = await injectStock(products);
+    const productsWithStock = await resolveProductImages(await injectStock(products));
     const LOW_STOCK_ALERT = 8;
     const summary = productsWithStock.reduce((acc, product) => {
       const stock = Number(product.stock) || 0;
@@ -530,6 +554,7 @@ const duplicateProduct = async (req, res) => {
 
 module.exports = {
   getProducts,
+  getProductCategories,
   getProductById,
   createProduct,
   getVendorProducts,

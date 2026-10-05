@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
 import { CATEGORY_CHIPS as DEFAULT_CATEGORIES } from '../../data/categoryMedia';
-import { categoryService } from '../../services/categoryService';
+import api from '../../utils/api';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const IMAGE_MAP = {
@@ -74,22 +74,17 @@ const Categories = () => {
 
   useEffect(() => {
     let mounted = true;
-    categoryService
-      .getAllCategories()
+    // Categories that actually have a live product, not the full taxonomy —
+    // the taxonomy collection also holds topic categories (e.g. "Ecommerce",
+    // "Fashion") with zero products assigned, which would otherwise render
+    // as a clickable chip that leads to an empty shop page.
+    api
+      .get('/products/categories')
       .then((res) => {
         if (!mounted) return;
-        const list = Array.isArray(res) ? res : res?.data || [];
+        const list = res.data?.data || [];
         if (list.length > 0) {
-          const activeList = list
-            .filter((c) => c.isActive !== false)
-            .map((c) => ({
-              id: c._id,
-              name: c.title || c.name,
-              title: c.title || c.name,
-              slug: c.slug,
-              image: c.image || null,
-            }));
-          setCategories(activeList);
+          setCategories(list.map((c) => ({ id: c.name, name: c.name, title: c.name, image: null })));
         }
       })
       .catch((err) => {

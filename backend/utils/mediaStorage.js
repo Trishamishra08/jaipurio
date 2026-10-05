@@ -1,11 +1,14 @@
 /**
- * Media binary storage via Cloudinary.
+ * Media binary storage. New uploads go to MinIO; Cloudinary is kept read/write
+ * for older items already tagged storageProvider: 'cloudinary' so existing
+ * media isn't orphaned.
  * Image catalog lives in MongoDB MediaImage collection — two-layer gallery.
  */
 const path = require('path');
 const { randomUUID } = require('crypto');
 const cloudinary = require('cloudinary').v2;
 const { toWebpUrl } = require('./imageOptimize');
+const minioStorage = require('./minioStorage');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -24,7 +27,7 @@ const isVideo = (name = '', mime = '') =>
 
 const isPdf = (name = '', mime = '') => mime === 'application/pdf' || /\.pdf$/i.test(name);
 
-const uploadBuffer = (file, folderPath = 'media') =>
+const uploadToCloudinary = (file, folderPath = 'media') =>
   new Promise((resolve, reject) => {
     const originalname = file.originalname || 'file';
     const mimetype = file.mimetype || '';
@@ -59,15 +62,27 @@ const uploadBuffer = (file, folderPath = 'media') =>
     stream.end(file.buffer);
   });
 
+/** New uploads default to MinIO. Pass { provider: 'cloudinary' } to force the old path if ever needed. */
+const uploadBuffer = (file, folderPath = 'media', opts = {}) =>
+  opts.provider === 'cloudinary' ? uploadToCloudinary(file, folderPath) : minioStorage.uploadBuffer(file, folderPath);
+
 const deleteStored = async (provider, key) => {
-  if (!key || provider !== 'cloudinary') return;
+  if (!key) return;
+  if (provider === 'minio') return minioStorage.deleteObject(key);
+  if (provider !== 'cloudinary') return;
   const resource_type = /\.(mp4|mov|webm)$/i.test(key) ? 'video' : 'image';
   await cloudinary.uploader.destroy(key, { resource_type }).catch(() => {});
 };
 
 const copyStored = async (provider, key) => {
-  if (provider !== 'cloudinary' || !key) {
-    throw new Error('Cannot copy: Cloudinary asset missing');
+  if (!key) throw new Error('Cannot copy: source key missing');
+  if (provider === 'minio') {
+    const destKey = await minioStorage.copyObjectKey(key);
+    const url = minioStorage.getPublicUrl(destKey);
+    return { provider: 'minio', key: destKey, url };
+  }
+  if (provider !== 'cloudinary') {
+    throw new Error('Cannot copy: unsupported storage provider');
   }
   const url = cloudinary.url(key, { secure: true });
   const copied = await cloudinary.uploader.upload(url, {
@@ -82,13 +97,13 @@ const copyStored = async (provider, key) => {
 };
 
 const getDownloadUrl = async (provider, key) => {
-  if (provider === 'cloudinary' && key) {
-    return cloudinary.url(key, { secure: true, resource_type: 'image' });
-  }
+  if (!key) return null;
+  if (provider === 'minio') return minioStorage.getPublicUrl(key);
+  if (provider === 'cloudinary') return cloudinary.url(key, { secure: true, resource_type: 'image' });
   return null;
 };
 
-const storageMode = () => 'cloudinary';
+const storageMode = () => 'minio';
 
 module.exports = {
   storageMode,

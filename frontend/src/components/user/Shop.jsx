@@ -5,15 +5,6 @@ import { SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../utils/api';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 
-const TOP_CATEGORIES = [
-  { name: 'All', value: '' },
-  { name: 'Matkas', value: 'Matkas' },
-  { name: 'Kulhads', value: 'Kulhads' },
-  { name: 'Planters', value: 'Planters' },
-  { name: 'Home Decor', value: 'Home Decor' },
-  { name: 'Puja Essentials', value: 'Puja Essentials' },
-];
-
 const SORT_MAP = {
   popular: 'popular',
   rating: 'rating',
@@ -37,6 +28,28 @@ const Shop = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+
+  // Real category chips — only categories that actually have a live product,
+  // fetched from the database rather than a hardcoded guess, so a chip never
+  // filters to an empty result.
+  const [categoryChips, setCategoryChips] = useState([{ name: 'All', value: '' }]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/products/categories')
+      .then((res) => {
+        if (cancelled) return;
+        const rows = res.data?.data || [];
+        setCategoryChips([{ name: 'All', value: '' }, ...rows.map((r) => ({ name: r.name, value: r.name }))]);
+      })
+      .catch(() => {
+        /* keep just the "All" chip if this fails */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +136,7 @@ const Shop = () => {
           className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 -mx-0.5 px-0.5 mb-2"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {TOP_CATEGORIES.map((cat) => {
+          {categoryChips.map((cat) => {
             const active = selectedCategory === cat.value;
             return (
               <button

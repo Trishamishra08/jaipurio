@@ -20,8 +20,8 @@ const mediaImageSchema = new mongoose.Schema(
     storageKey: { type: String, default: '', index: true },
     storageProvider: {
       type: String,
-      enum: ['cloudinary', 'none'],
-      default: 'cloudinary',
+      enum: ['cloudinary', 'minio', 'none'],
+      default: 'minio',
     },
     mimeType: { type: String, default: 'image/webp' },
     size: { type: Number, default: 0 },
