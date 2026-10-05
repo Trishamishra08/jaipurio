@@ -24,7 +24,13 @@ api.interceptors.request.use(
         } else if (isVendorScope) {
             token = localStorage.getItem('vendor_token') || localStorage.getItem('vendor_auth');
         } else {
-            token = localStorage.getItem('customer_token') || localStorage.getItem('admin_token');
+            // No fallback to admin_token here on purpose — a customer-scope
+            // request with no customer_token means "not logged in as a
+            // customer", full stop. Falling back silently reused the admin's
+            // token for any logged-in-admin browser session, attributing
+            // every customer action (cart, wishlist, affiliate applications,
+            // orders) to the admin account instead of the real customer.
+            token = localStorage.getItem('customer_token');
         }
 
         // Attach token if available

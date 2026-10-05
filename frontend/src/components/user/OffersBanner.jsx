@@ -51,6 +51,8 @@ const OffersBanner = () => {
             <img
               src={offer.image}
               alt={offer.title}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105"
             />
           )}

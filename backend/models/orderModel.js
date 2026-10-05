@@ -109,6 +109,8 @@ const orderSchema = new mongoose.Schema({
     default: 0
   },
   couponCode: { type: String },
+  affiliate: { type: mongoose.Schema.Types.ObjectId, ref: 'Affiliate', default: null },
+  affiliateCommissionRate: { type: Number, default: 0 },
   discountAmount: { type: Number, default: 0 },
   taxRate: { type: Number, default: 0 },
   isPaid: {

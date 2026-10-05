@@ -4,6 +4,7 @@ import { PHOTOS } from '../data/photos';
 import api from '../utils/api';
 import { mapApiProductToStorefront } from '../utils/storefrontProduct';
 import { ensureCustomerAuth, isDemoToken } from '../utils/customerAuth';
+import { captureReferralFromUrl } from '../utils/referralTracking';
 
 const ShopContext = createContext();
 
@@ -63,6 +64,13 @@ export const useShop = () => {
 export const ShopProvider = ({ children, loadCatalog = true }) => {
   const [products, setProducts] = useState(initialProducts);
   const [productsLoading, setProductsLoading] = useState(true);
+
+  // One-time, app-wide: pick up ?ref=<code> on any page load (not just the
+  // homepage — a shared product link can carry it too) and store it for the
+  // 30-day attribution window. Checkout reads it back when placing an order.
+  useEffect(() => {
+    captureReferralFromUrl();
+  }, []);
 
   const refreshProducts = useCallback(async () => {
     setProductsLoading(true);

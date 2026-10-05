@@ -14,6 +14,8 @@ const NewArrivalBanner = () => {
           <img
             src={mediaUrl('/jaipurio_banner_art.png')}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover object-[55%_42%] select-none"
             draggable={false}
           />

@@ -18,6 +18,7 @@ import {
   Shield,
   Sliders,
   ListChecks,
+  Share2,
 } from 'lucide-react';
 
 /** Sidebar structure mirrored from https://jaipurio.in/admin */
@@ -91,7 +92,14 @@ export const adminNav = [
       { title: 'Transactions', path: '/admin/payments' },
       { title: 'Logs', path: '/admin/payments/logs' },
       { title: 'Payment methods', path: '/admin/payments/methods' },
+      { title: 'Transaction Ledger', path: '/admin/ledger' },
     ],
+  },
+  {
+    id: 'affiliates',
+    title: 'Affiliate Program',
+    path: '/admin/affiliates',
+    icon: Share2,
   },
   {
     id: 'ads',

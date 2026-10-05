@@ -4,6 +4,7 @@ import { useShop } from '../../context/ShopContext';
 import api from '../../utils/api';
 import { payWithRazorpay } from '../../utils/razorpay';
 import { ensureCustomerAuth } from '../../utils/customerAuth';
+import { getActiveReferralCode } from '../../utils/referralTracking';
 import { 
   CheckCircle, 
   MapPin, 
@@ -104,6 +105,7 @@ const Checkout = () => {
       const items = orderItemsPayload();
       const shippingAddress = shippingPayload();
       const couponCode = appliedCoupon?.code || '';
+      const referralCode = getActiveReferralCode() || '';
 
       if (paymentMethod === 'cod') {
         const res = await api.post('/orders', {
@@ -111,6 +113,7 @@ const Checkout = () => {
           shippingAddress,
           paymentMethod: 'COD',
           couponCode,
+          referralCode,
         });
         const serverOrder = res.data?.data?.order;
         persistSuccess(serverOrder);
@@ -137,7 +140,7 @@ const Checkout = () => {
 
       const verifyRes = await api.post('/orders/razorpay/verify', {
         ...payment,
-        orderDetails: { items, shippingAddress, couponCode },
+        orderDetails: { items, shippingAddress, couponCode, referralCode },
       });
 
       const serverOrder = verifyRes.data?.data?.order;

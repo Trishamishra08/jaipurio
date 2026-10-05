@@ -37,6 +37,7 @@ const CategoryItem = ({ cat, mobile }) => {
             alt={displayName}
             className="absolute inset-0 w-full h-full object-cover object-center scale-[1.08]"
             loading="lazy"
+            decoding="async"
             draggable={false}
           />
         </div>
@@ -58,6 +59,7 @@ const CategoryItem = ({ cat, mobile }) => {
           alt={displayName}
           className="absolute inset-0 w-full h-full object-cover object-center scale-[1.08]"
           loading="lazy"
+          decoding="async"
           draggable={false}
         />
       </div>

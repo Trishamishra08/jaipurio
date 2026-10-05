@@ -13,6 +13,7 @@ import Checkout from './components/user/Checkout';
 import StandaloneCheckout from './components/user/StandaloneCheckout';
 import UserOrders from './components/user/UserOrders';
 import Wishlist from './components/user/Wishlist';
+import Affiliate from './components/user/Affiliate';
 import Profile from './components/user/Profile';
 import LocationPage from './components/user/LocationPage';
 import CartDrawer from './components/user/CartDrawer';
@@ -95,6 +96,16 @@ import AdminBlogEdit from './components/admin/AdminBlogEdit';
 import AdminBlogCategories from './components/admin/AdminBlogCategories';
 import AdminRoutes from './components/admin/AdminRoutes';
 
+import { captureReferralFromUrl } from './utils/referralTracking';
+
+const ReferralTracker = () => {
+  const location = useLocation();
+  React.useEffect(() => {
+    captureReferralFromUrl();
+  }, [location]);
+  return null;
+};
+
 const PublicLayout = () => {
   const { pathname } = useLocation();
   const showFooter = pathname === '/home';
@@ -126,6 +137,7 @@ function App() {
     <ShopProvider>
       <AdsenseInjector />
       <Router>
+        <ReferralTracker />
         <Routes>
           {/* App load → splash → login */}
           <Route path="/" element={<SplashPage />} />
@@ -154,6 +166,7 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/orders" element={<UserOrders />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/affiliate" element={<Affiliate />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/location" element={<LocationPage />} />
             <Route

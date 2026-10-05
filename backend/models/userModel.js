@@ -53,6 +53,13 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'vendor', 'admin'],
     default: 'user'
   },
+  // Only meaningful when role === 'admin' — finer-grained permission set on
+  // top of the coarse role gate. Null = no sub-role assigned yet.
+  adminRole: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

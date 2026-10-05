@@ -99,11 +99,54 @@ export function parseProductFaqs(faqs) {
   return rows.filter((row) => row.q);
 }
 
+export function formatProductWeight(rawWeight) {
+  if (rawWeight == null || rawWeight === '') return '';
+  const str = String(rawWeight).trim();
+  if (!str) return '';
+  // If unit is already specified (e.g. "3.2 kg", "900 g", "1.5kg", "500 gm")
+  if (/[a-zA-Z]/.test(str)) {
+    return str;
+  }
+  const num = parseFloat(str.replace(/,/g, ''));
+  if (isNaN(num) || num <= 0) return '';
+  // If >= 1000, value is in grams -> convert to kg (e.g. 1700g -> 1.7 kg, 2500g -> 2.5 kg)
+  if (num >= 1000) {
+    const kg = num / 1000;
+    return `${Number(kg.toFixed(2))} kg`;
+  }
+  // If between 100 and 999 (e.g. 250g, 500g, 750g), show in grams
+  if (num >= 100) {
+    return `${Number(num.toFixed(0))} g`;
+  }
+  // If between 1 and 99, it is already kg (e.g. 1.2 -> 1.2 kg, 3.5 -> 3.5 kg, 45 -> 45 kg)
+  if (num >= 1) {
+    return `${Number(num.toFixed(2))} kg`;
+  }
+  // If fractional kg < 1 (e.g. 0.5 -> 500 g)
+  return `${Number((num * 1000).toFixed(0))} g (${Number(num.toFixed(2))} kg)`;
+}
+
+export function formatInr(n) {
+  const num = typeof n === 'number' ? n : parseFloat(String(n || 0).replace(/,/g, ''));
+  if (isNaN(num) || num === 0) return '₹0';
+  if (Number.isInteger(num)) {
+    return `₹${num.toLocaleString('en-IN')}`;
+  }
+  return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+const parseCleanPrice = (val) => {
+  if (val == null || val === '') return 0;
+  const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/,/g, '').replace(/[^\d.]/g, ''));
+  if (isNaN(num) || num <= 0) return 0;
+  return Math.round(num * 100) / 100;
+};
+
 export function mapApiProductToStorefront(raw) {
   if (!raw) return null;
-  const listPrice = Number(raw.price) || 0;
-  const salePrice = Number(raw.salePrice) || 0;
-  const markedOld = Number(raw.oldPrice) || 0;
+  const listPrice = parseCleanPrice(raw.price);
+  const salePrice = parseCleanPrice(raw.salePrice);
+  const markedOld = parseCleanPrice(raw.oldPrice);
   const sellingPrice = salePrice > 0 ? salePrice : listPrice;
   const comparePrice =
     markedOld > sellingPrice
@@ -124,6 +167,11 @@ export function mapApiProductToStorefront(raw) {
   const name = raw.title || raw.name || '';
   const copy = ensureRichCopy(name, raw.description, raw.content);
 
+  const formattedWeight = formatProductWeight(raw.weight);
+  const weightKgNumber = typeof raw.weight === 'number'
+    ? (raw.weight >= 100 ? raw.weight / 1000 : raw.weight)
+    : parseFloat(String(raw.weight || '').replace(/,/g, '')) || null;
+
   return {
     _id: String(raw._id || raw.id),
     name,
@@ -143,8 +191,8 @@ export function mapApiProductToStorefront(raw) {
     brand: raw.brand || '',
     sku: raw.sku || '',
     tags: raw.tags || '',
-    weight: raw.weight != null && raw.weight !== '' ? `${raw.weight} kg` : '',
-    weightKg: raw.weight,
+    weight: formattedWeight,
+    weightKg: weightKgNumber,
     length: raw.length,
     width: raw.width,
     height: raw.height,

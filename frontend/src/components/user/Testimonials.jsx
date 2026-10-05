@@ -27,6 +27,8 @@ const ReviewCard = ({ rev }) => (
         <img
           src={rev.productImage}
           alt={rev.productName || ''}
+          loading="lazy"
+          decoding="async"
           className="w-11 h-11 rounded-lg object-cover border border-[#E8D4B5] shrink-0"
         />
       )}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiInstagram } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import api from '../../utils/api';
@@ -70,6 +70,8 @@ const InstagramFeed = () => {
               <img 
                 src={post.image} 
                 alt={`Instagram Post ${post.id}`} 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">

@@ -127,7 +127,7 @@ const CatalogCard = ({ item, compact }) => {
         >
           <Heart size={12} className={liked ? 'fill-[#C45C6A] text-[#C45C6A]' : 'text-[#8B2E3A]'} />
         </button>
-        <img src={item.image} alt="" className="absolute inset-0 w-full h-full object-cover object-center contrast-[1.06] saturate-[1.08]" loading="lazy" />
+        <img src={item.image} alt={item.name} className="absolute inset-0 w-full h-full object-cover object-center contrast-[1.06] saturate-[1.08]" loading="lazy" />
       </div>
       <div className="p-2.5 flex-1">
         {item.brand && (
@@ -291,7 +291,7 @@ const HomeAfterCategory = () => {
               to="/shop"
               className={`relative overflow-hidden rounded-xl min-h-[110px] ${b.className || ''}`}
             >
-              <img src={b.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={b.img} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#8B2E3A]/80 via-[#C45C6A]/20 to-transparent" />
               <div className="absolute bottom-2.5 left-2.5 right-2 text-white">
                 <p className="font-dm text-[8px] sm:text-[9px] uppercase tracking-[0.14em] text-[#F8D0C8]">{b.kicker}</p>
@@ -488,7 +488,7 @@ const HomeAfterCategory = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
           <div className="rounded-2xl overflow-hidden aspect-[4/3] bg-[#F7F3EE]">
-            <img src={boutique.image} alt="" className="w-full h-full object-cover" />
+            <img src={boutique.image} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
           <div>
             <p className="font-dm text-[10px] uppercase tracking-[0.16em] text-[#C45C6A]">{boutique.label}</p>
@@ -558,7 +558,7 @@ const HomeAfterCategory = () => {
           ].map((m) => (
             <div key={m.name} className="bg-white rounded-xl overflow-hidden border border-[#F3D5D0]">
               <div className="aspect-[4/3] overflow-hidden bg-[#F7F3EE]">
-                <img src={m.img} alt="" className="w-full h-full object-cover" />
+                <img src={m.img} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               </div>
               <div className="p-3">
                 <h4 className="font-playfair font-semibold text-[14px] text-[#3F261B]">{m.name}</h4>
@@ -597,7 +597,7 @@ const HomeAfterCategory = () => {
               <div className="grid grid-cols-2 gap-1.5 mb-2">
                 {d.imgs.map((src, i) => (
                   <div key={i} className="aspect-square rounded-lg overflow-hidden bg-[#F7F3EE]">
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                 ))}
               </div>
@@ -637,7 +637,7 @@ const HomeAfterCategory = () => {
         <SectionHeading title="The Marble Route" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-white rounded-2xl border border-[#F3D5D0] overflow-hidden">
           <div className="aspect-[4/3] md:aspect-auto md:min-h-[260px] overflow-hidden bg-[#F7F3EE]">
-            <img src={PHOTOS.handsClay} alt="" className="w-full h-full object-cover" />
+            <img src={PHOTOS.handsClay} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </div>
           <div className="p-4 sm:p-6">
             <h3 className="font-playfair font-semibold text-[18px] sm:text-[22px] md:text-[24px] text-[#3F261B] leading-tight">
@@ -653,7 +653,7 @@ const HomeAfterCategory = () => {
               {items.slice(0, 3).map((item) => (
                 <Link key={item.name} to={item.to || '/shop'} className="w-[92px] shrink-0">
                   <div className="aspect-square rounded-lg overflow-hidden bg-[#F7F3EE]">
-                    <img src={item.image} alt="" className="w-full h-full object-cover" />
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                   <p className="font-playfair text-[11px] font-semibold text-[#3F261B] mt-1 line-clamp-1">{item.name}</p>
                   <p className="font-dm text-[10px] text-[#C45C6A]">₹{(item.price || 0).toLocaleString('en-IN')}</p>

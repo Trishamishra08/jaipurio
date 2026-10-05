@@ -58,6 +58,8 @@ import AdminMenus from './AdminMenus';
 import AdminMenuEdit from './AdminMenuEdit';
 import AdminWidgets from './AdminWidgets';
 import AdminProfile from './AdminProfile';
+import AdminRoles from './AdminRoles';
+import AdminTransactionLedger from './AdminTransactionLedger';
 import ProductEditorForm from '../shared/ProductEditorForm';
 import AdminPageHeader from './AdminPageHeader';
 import './admin.css';
@@ -164,6 +166,8 @@ const AdminRoutes = () => (
       <Route path="appearance/menus" element={<Navigate to="/admin/menus" replace />} />
       <Route path="widgets" element={<AdminWidgets />} />
       <Route path="appearance/widgets" element={<Navigate to="/admin/widgets" replace />} />
+      <Route path="roles" element={<AdminRoles />} />
+      <Route path="ledger" element={<AdminTransactionLedger />} />
       <Route path="profile" element={<AdminProfile />} />
       <Route path="system/users/profile/:id" element={<AdminProfile />} />
       <Route path="*" element={<AdminCrudPage />} />

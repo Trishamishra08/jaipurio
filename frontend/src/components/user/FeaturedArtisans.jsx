@@ -49,6 +49,8 @@ const FeaturedArtisans = () => {
                   <img
                     src={vendor.avatar}
                     alt={vendor.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-14 h-14 rounded-full object-cover border-2 border-[#A94E2C] shadow-xs"
                   />
                   <div>

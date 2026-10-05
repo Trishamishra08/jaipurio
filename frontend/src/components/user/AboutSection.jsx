@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 
@@ -62,7 +62,7 @@ const AboutSection = () => {
                 delay: img.delay 
               }}
             >
-              <img src={img.src} alt="About context" className="w-full h-full object-cover" />
+              <img src={img.src} alt="About context" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </motion.div>
           ))}
         </div>
@@ -218,7 +218,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src={mediaUrl('/matka.png')} alt="Matkas" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src={mediaUrl('/matka.png')} alt="Matkas" loading="lazy" decoding="async" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
             <motion.div
@@ -234,7 +234,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src={mediaUrl('/kulhad.png')} alt="Kulhads" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src={mediaUrl('/kulhad.png')} alt="Kulhads" loading="lazy" decoding="async" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
 
             <motion.div
@@ -250,7 +250,7 @@ const AboutSection = () => {
                   </span>
                 </div>
               </div>
-              <img src={mediaUrl('/jaipurio_banner_art.png')} alt="Jaipurio Brand" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
+              <img src={mediaUrl('/jaipurio_banner_art.png')} alt="Jaipurio Brand" loading="lazy" decoding="async" className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700" />
             </motion.div>
           </div>
         </div>

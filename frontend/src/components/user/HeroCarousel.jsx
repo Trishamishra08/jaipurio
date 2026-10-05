@@ -46,7 +46,10 @@ const HeroCarousel = () => {
                 <img
                   key={slide.src}
                   src={slide.src}
-                  alt=""
+                  alt="Jaipurio Banner"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
                   className={`absolute inset-0 w-full h-full object-cover max-md:object-[55%_38%] md:object-[50%_72%] lg:object-[50%_78%] xl:object-[center_82%] select-none transition-opacity duration-700 ${
                     isActive ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
                   }`}

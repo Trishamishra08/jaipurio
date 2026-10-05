@@ -31,7 +31,7 @@ const SYSTEM_CARDS = [
     title: 'Roles And Permissions',
     description: 'View and update your roles and permissions',
     icon: ShieldCheck,
-    action: 'roles',
+    link: '/admin/roles',
   },
   {
     id: 'activity-logs',
@@ -90,6 +90,9 @@ const AdminSystemPage = () => {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [loginActivity, setLoginActivity] = useState([]);
+  const [cronJobs, setCronJobs] = useState([]);
+  const [cronLoading, setCronLoading] = useState(false);
+  const [systemInfo, setSystemInfo] = useState(null);
   const [loginActivityLoading, setLoginActivityLoading] = useState(false);
 
   const showToast = (type, message) => {
@@ -132,23 +135,18 @@ const AdminSystemPage = () => {
     if (card.action === 'backup') {
       setBusy(true);
       try {
-        const res = await api.get('/settings').catch(() => null);
-        const dump = {
-          app: 'Jaipurio Admin',
-          timestamp: new Date().toISOString(),
-          version: '1.22.1',
-          settings: res?.data?.data?.settings || {},
-        };
-        const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+        const res = await api.get('/admins/backup', { responseType: 'blob' });
+        const collectionCount = res.headers?.['x-backup-collections'];
+        const blob = res.data;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `jaipurio-backup-${Date.now()}.json`;
+        a.download = `jaipurio-backup-${Date.now()}.json.gz`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast('success', 'Backup archive snapshot generated and downloaded.');
+        showToast('success', `Full backup downloaded${collectionCount ? ` — ${collectionCount} collections` : ''}.`);
       } catch (err) {
-        showToast('error', 'Backup failed.');
+        showToast('error', err?.parsedMessage || 'Backup failed.');
       } finally {
         setBusy(false);
       }
@@ -161,6 +159,20 @@ const AdminSystemPage = () => {
         .then((res) => setLoginActivity(res.data?.data || []))
         .catch(() => setLoginActivity([]))
         .finally(() => setLoginActivityLoading(false));
+    }
+
+    if (card.action === 'cron') {
+      setCronLoading(true);
+      api.get('/jobs/runs')
+        .then((res) => setCronJobs(res.data?.data?.jobs || []))
+        .catch(() => setCronJobs([]))
+        .finally(() => setCronLoading(false));
+    }
+
+    if (card.action === 'info') {
+      api.get('/admins/system-info')
+        .then((res) => setSystemInfo(res.data?.data || null))
+        .catch(() => setSystemInfo(null));
     }
 
     setActiveModal(card);
@@ -255,32 +267,6 @@ const AdminSystemPage = () => {
               </div>
             </div>
 
-            {activeModal.action === 'roles' && (
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-slate-800 block">Super Administrator</span>
-                    <span className="text-slate-400 text-[11px]">Full platform access across all modules</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-sm font-medium text-[10px]">Active</span>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-slate-800 block">Vendor / Artisan</span>
-                    <span className="text-slate-400 text-[11px]">Access to product upload, inventory, orders & payouts</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-sm font-medium text-[10px]">Active</span>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-slate-800 block">Support Manager</span>
-                    <span className="text-slate-400 text-[11px]">Tickets, customer inquiries, and order tracking</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded-sm font-medium text-[10px]">Active</span>
-                </div>
-              </div>
-            )}
-
             {activeModal.action === 'logs' && (
               <div className="space-y-2 text-xs max-h-72 overflow-y-auto">
                 {loginActivityLoading && <p className="text-slate-400 text-center py-4">Loading…</p>}
@@ -305,30 +291,45 @@ const AdminSystemPage = () => {
 
             {activeModal.action === 'cron' && (
               <div className="space-y-2 text-xs">
-                <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-slate-800 block">Orders & Incomplete Cart Cleanup</span>
-                    <span className="text-slate-400 text-[11px]">Runs every 6 hours</span>
+                {cronLoading && <p className="text-slate-400 text-center py-4">Loading…</p>}
+                {!cronLoading && cronJobs.map((job) => (
+                  <div key={job.name} className="p-3 bg-slate-50 rounded-md border border-slate-100 flex justify-between items-center">
+                    <div>
+                      <span className="font-semibold text-slate-800 block">{job.name}</span>
+                      <span className="text-slate-400 text-[11px]">
+                        {job.schedule === '0 */6 * * *' ? 'Runs every 6 hours' : job.schedule === '0 0 * * *' ? 'Runs daily at 00:00' : job.schedule}
+                      </span>
+                      {job.lastRun && <span className="block text-[10px] text-slate-400 mt-0.5">{job.lastRun.detail}</span>}
+                    </div>
+                    {job.lastRun ? (
+                      <div className="text-right">
+                        <span className={`font-semibold text-[11px] block ${job.lastRun.status === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {job.lastRun.status === 'success' ? 'Last run OK' : 'Last run failed'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{new Date(job.lastRun.startedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 text-[11px]">Not run yet</span>
+                    )}
                   </div>
-                  <span className="text-emerald-600 font-semibold text-[11px]">Running</span>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-md border border-slate-100 flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-slate-800 block">Vendor Payout Reconciliation</span>
-                    <span className="text-slate-400 text-[11px]">Runs daily at 00:00</span>
-                  </div>
-                  <span className="text-emerald-600 font-semibold text-[11px]">Running</span>
-                </div>
+                ))}
               </div>
             )}
 
             {activeModal.action === 'info' && (
               <div className="space-y-2 text-xs divide-y divide-slate-100">
-                <div className="flex justify-between py-1.5"><span className="text-slate-500">Framework</span><span className="font-mono font-medium text-slate-800">Jaipurio Botble v1.22.1</span></div>
-                <div className="flex justify-between py-1.5"><span className="text-slate-500">Environment</span><span className="font-mono font-medium text-emerald-600">Production Ready</span></div>
-                <div className="flex justify-between py-1.5"><span className="text-slate-500">Node.js Version</span><span className="font-mono font-medium text-slate-800">v20+ LTS</span></div>
-                <div className="flex justify-between py-1.5"><span className="text-slate-500">Database</span><span className="font-mono font-medium text-slate-800">MongoDB Atlas / Replica</span></div>
-                <div className="flex justify-between py-1.5"><span className="text-slate-500">Cache Layer</span><span className="font-mono font-medium text-slate-800">Redis / In-Memory</span></div>
+                {!systemInfo ? (
+                  <p className="text-slate-400 text-center py-4">Loading…</p>
+                ) : (
+                  <>
+                    <div className="flex justify-between py-1.5"><span className="text-slate-500">Environment</span><span className={`font-mono font-medium ${systemInfo.environment === 'production' ? 'text-emerald-600' : 'text-amber-600'}`}>{systemInfo.environment}</span></div>
+                    <div className="flex justify-between py-1.5"><span className="text-slate-500">Node.js Version</span><span className="font-mono font-medium text-slate-800">{systemInfo.nodeVersion}</span></div>
+                    <div className="flex justify-between py-1.5"><span className="text-slate-500">Server Uptime</span><span className="font-mono font-medium text-slate-800">{Math.floor(systemInfo.uptimeSeconds / 3600)}h {Math.floor((systemInfo.uptimeSeconds % 3600) / 60)}m</span></div>
+                    <div className="flex justify-between py-1.5"><span className="text-slate-500">Database</span><span className={`font-mono font-medium ${systemInfo.database === 'connected' ? 'text-emerald-600' : 'text-rose-600'}`}>{systemInfo.database} ({systemInfo.databaseName})</span></div>
+                    <div className="flex justify-between py-1.5"><span className="text-slate-500">Cache Layer</span><span className="font-mono font-medium text-slate-800">{systemInfo.cacheLayer}</span></div>
+                    <div className="flex justify-between py-1.5"><span className="text-slate-500">Memory Used</span><span className="font-mono font-medium text-slate-800">{systemInfo.memoryUsedMb} MB</span></div>
+                  </>
+                )}
               </div>
             )}
 

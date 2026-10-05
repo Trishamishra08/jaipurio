@@ -31,6 +31,8 @@ const { connectRedis, getRedisStatus } = require('./config/redis');
 const connectDB = require('./config/db');
 const { freePort } = require('./scripts/free-port');
 const ensureDemoAdmin = require('./scripts/ensureDemoAdmin');
+const ensureDemoCustomer = require('./scripts/ensureDemoCustomer');
+const ensureDefaultRoles = require('./scripts/ensureDefaultRoles');
 const ensurePaymentMethods = require('./scripts/ensurePaymentMethods');
 const migrateAttributeSetGroups = require('./scripts/migrateAttributeSetGroups');
 const ensureCountries = require('./scripts/ensureCountries');
@@ -144,6 +146,12 @@ const redirectRoutes = require('./routes/redirectRoutes');
 app.use('/api/redirects', redirectRoutes);
 const affiliateRoutes = require('./routes/affiliateRoutes');
 app.use('/api/affiliates', affiliateRoutes);
+const roleRoutes = require('./routes/roleRoutes');
+app.use('/api/roles', roleRoutes);
+const jobRoutes = require('./routes/jobRoutes');
+app.use('/api/jobs', jobRoutes);
+const ledgerRoutes = require('./routes/ledgerRoutes');
+app.use('/api/ledger', ledgerRoutes);
 
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -187,6 +195,7 @@ const startServer = () => {
 
   server.once('listening', () => {
     console.log(`Server running on port ${PORT}`);
+    require('./utils/scheduler').startScheduler();
   });
 
   server.on('error', (err) => {
@@ -201,6 +210,8 @@ const startServer = () => {
 
 connectDB()
   .then(() => ensureDemoAdmin())
+  .then(() => ensureDemoCustomer())
+  .then(() => ensureDefaultRoles())
   .then(() => ensurePaymentMethods())
   .then(() => migrateAttributeSetGroups())
   .then(() => ensureCountries())

@@ -71,7 +71,7 @@ const BlogSection = () => {
             <div className="blog-grid">
               {blogs.map((blog) => (
                 <Link key={blog._id || blog.id} to={`/blog/${blog._id || blog.id}`} className="blog-card">
-                  <div className="blog-media"><img src={blog.image} alt={blog.title} /></div>
+                  <div className="blog-media"><img src={blog.image} alt={blog.title} loading="lazy" decoding="async" /></div>
                   <div className="blog-card-body">
                     <div className="blog-meta">{blog.category || 'Journal'} · {blog.readTime || '5 min'}</div>
                     <h4>{blog.title}</h4>

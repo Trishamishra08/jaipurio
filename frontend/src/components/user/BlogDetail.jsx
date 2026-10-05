@@ -132,7 +132,7 @@ const BlogDetail = () => {
             </button>
           </div>
         </div>
-        <div className="art-hero-img"><img src={image} alt={title} /></div>
+        <div className="art-hero-img"><img src={image} alt={title} loading="eager" decoding="async" fetchpriority="high" /></div>
 
         <div className="article-layout">
           <div>
@@ -243,7 +243,7 @@ const BlogDetail = () => {
               <h4>Shop this guide</h4>
               {related.slice(0, 2).map((p) => (
                 <Link key={p._id} to={`/product/${p._id}`} className="sb-product">
-                  <img src={p.image} alt="" />
+                  <img src={p.image} alt="" loading="lazy" decoding="async" />
                   <div>
                     <div className="sb-product-name">{p.name}</div>
                     <div className="sb-product-price">₹{Number(p.price).toLocaleString('en-IN')}</div>
@@ -278,7 +278,7 @@ const BlogDetail = () => {
           <div className="rel-prod-grid">
             {related.map((p) => (
               <Link key={p._id} to={`/product/${p._id}`} className="rel-prod-card">
-                <div className="rel-prod-media"><img src={p.image} alt={p.name} /></div>
+                <div className="rel-prod-media"><img src={p.image} alt={p.name} loading="lazy" decoding="async" /></div>
                 <div className="rel-prod-body"><h5>{p.name}</h5><span className="price">₹{Number(p.price).toLocaleString('en-IN')}</span></div>
               </Link>
             ))}
@@ -305,7 +305,7 @@ const BlogDetail = () => {
           <div className="rel-art-grid">
             {morePosts.map((post) => (
               <Link key={post._id} to={`/blog/${post._id}`} className="article-card">
-                <div className="article-media"><img src={post.image} alt="" /></div>
+                <div className="article-media"><img src={post.image} alt="" loading="lazy" decoding="async" /></div>
                 <div className="article-body">
                   <div className="article-meta">{post.category}</div>
                   <h4>{post.title}</h4>

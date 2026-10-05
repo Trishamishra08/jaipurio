@@ -140,6 +140,8 @@ const TrendingOffers = () => {
                     <img
                       src={`${offer.src}?v=3`}
                       alt={offer.alt}
+                      loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 w-full h-full object-cover object-center scale-[1.04] select-none"
                       draggable={false}
                     />

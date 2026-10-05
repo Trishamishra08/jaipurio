@@ -2,6 +2,7 @@ const Order = require('../models/orderModel');
 const Earning = require('../models/earningModel');
 const Product = require('../models/productModel');
 const Vendor = require('../models/vendorModel');
+const AffiliateEarning = require('../models/affiliateEarningModel');
 const { ORDER_STATUS, SHIPMENT_STATUS } = require('../constants/flow');
 const {
   serializeOrder,
@@ -21,31 +22,51 @@ const canAccessOrder = (req, order) => {
 };
 
 const ensureEarnings = async (order) => {
-  const existing = await Earning.find({ order: order._id });
-  if (existing.length) return existing;
+  if (!order) return [];
 
+  const existingVendorEarnings = await Earning.find({ order: order._id });
   const created = [];
-  for (const item of order.orderItems) {
-    if (!item.vendor) continue;
-    const vendor = await Vendor.findById(item.vendor);
-    const rate = commissionForVendor(vendor);
-    const itemTotal = item.lineTotal != null ? item.lineTotal : item.price * item.qty;
-    const product = item.product ? await Product.findById(item.product).select('costPerItem') : null;
-    const commissionAmount = (itemTotal * rate) / 100;
-    created.push(await Earning.create({
-      vendor: item.vendor,
-      order: order._id,
-      orderItem: item._id,
-      productName: item.name,
-      totalAmount: itemTotal,
-      costPerItem: product?.costPerItem || 0,
-      commissionRate: rate,
-      commissionAmount,
-      netEarning: itemTotal - commissionAmount,
-      status: 'Pending',
-    }));
+  if (!existingVendorEarnings.length) {
+    for (const item of order.orderItems || []) {
+      if (!item.vendor) continue;
+      const vendor = await Vendor.findById(item.vendor);
+      const rate = commissionForVendor(vendor);
+      const itemTotal = item.lineTotal != null ? item.lineTotal : item.price * item.qty;
+      const product = item.product ? await Product.findById(item.product).select('costPerItem') : null;
+      const commissionAmount = (itemTotal * rate) / 100;
+      created.push(await Earning.create({
+        vendor: item.vendor,
+        order: order._id,
+        orderItem: item._id,
+        productName: item.name,
+        totalAmount: itemTotal,
+        costPerItem: product?.costPerItem || 0,
+        commissionRate: rate,
+        commissionAmount,
+        netEarning: itemTotal - commissionAmount,
+        status: 'Pending',
+      }));
+    }
   }
-  return created;
+
+  if (order.affiliate) {
+    const existingAffiliateEarning = await AffiliateEarning.findOne({ order: order._id });
+    if (!existingAffiliateEarning) {
+      const rate = Number(order.affiliateCommissionRate || 0);
+      const orderTotal = Number(order.totalPrice || 0);
+      const commissionAmount = (orderTotal * rate) / 100;
+      await AffiliateEarning.create({
+        affiliate: order.affiliate,
+        order: order._id,
+        orderTotal,
+        commissionRate: rate,
+        commissionAmount,
+        status: 'Pending',
+      });
+    }
+  }
+
+  return created.length ? created : existingVendorEarnings;
 };
 
 const releaseAvailableIfReady = async (order) => {
@@ -53,6 +74,10 @@ const releaseAvailableIfReady = async (order) => {
   const closeAt = order.returnWindowClosesAt || returnWindowDate(order.completedAt || order.updatedAt);
   if (closeAt > new Date()) return;
   await Earning.updateMany(
+    { order: order._id, status: 'Pending' },
+    { $set: { status: 'Available', availableAt: new Date() } }
+  );
+  await AffiliateEarning.updateMany(
     { order: order._id, status: 'Pending' },
     { $set: { status: 'Available', availableAt: new Date() } }
   );
@@ -234,5 +259,6 @@ module.exports = {
   listShipments,
   canAccessOrder,
   ensureEarnings,
+  releaseAvailableIfReady,
   serializeOrder,
 };

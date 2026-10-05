@@ -1,35 +1,58 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { CreditCard, Globe, Heart, RotateCcw, Star, Truck } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  CreditCard,
+  Eye,
+  GitCompare,
+  Globe,
+  Heart,
+  HelpCircle,
+  Info,
+  Layers,
+  MapPin,
+  MessageCircle,
+  Minus,
+  Package,
+  Plus,
+  RotateCcw,
+  Share2,
+  Shield,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  Star,
+  Store,
+  Truck,
+  Zap,
+} from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { journalPosts } from '../../data/journalPosts';
 import { getWhatsAppHref } from '../../utils/whatsapp';
-import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
+import { mapApiProductToStorefront, formatInr } from '../../utils/storefrontProduct';
 import api from '../../utils/api';
-import JharokhaBand from './JharokhaBand';
-
-const formatInr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
-
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5" /></svg>
-);
-
-const PlusIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-);
-
-const ShareIcon = ({ d }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d={d} /></svg>
-);
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { products, vendors, reviews, addToCart, toggleWishlist, isInWishlist, setIsCartDrawerOpen } = useShop();
+  const {
+    products,
+    vendors,
+    reviews,
+    addToCart,
+    toggleWishlist,
+    isInWishlist,
+    setIsCartDrawerOpen,
+  } = useShop();
+
   const [remoteProduct, setRemoteProduct] = useState(null);
   const [loadState, setLoadState] = useState('idle'); // idle | loading | error | ready
   const [loadError, setLoadError] = useState('');
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [activeTab, setActiveTab] = useState('description'); // 'description' | 'specifications' | 'care' | 'reviews'
 
   const contextProduct =
     products.find((p) => String(p._id) === String(id)) ||
@@ -37,16 +60,19 @@ const ProductDetail = () => {
     products.find((p) => p.seo?.general?.slug && String(p.seo.general.slug) === String(id)) ||
     null;
 
-  // Always prefer the full API detail payload over thin shop-list cards
+  // Prefer full API product over minimal context list
   const product = remoteProduct || contextProduct;
 
-  const vendor = vendors.find((v) => v._id === product?.vendorId) || vendors.find((v) => v.name === product?.vendor) || vendors[0];
+  const vendor =
+    vendors.find((v) => v._id === product?.vendorId) ||
+    vendors.find((v) => v.name === product?.vendor) ||
+    vendors[0];
+
   const related = relatedProducts;
   const together = related.slice(0, 4);
-  const productReviews = (reviews || []).filter((r) => r.productName === product?.name).slice(0, 3);
+  const productReviews = (reviews || []).filter((r) => r.productName === product?.name);
 
   useEffect(() => {
-    // Keep prior product visible while the detail request loads (avoids copy flash)
     setLoadError('');
     setLoadState('loading');
   }, [id]);
@@ -86,11 +112,8 @@ const ProductDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps — fetch once per id; context is fallback only
+  }, [id]);
 
-  // Related products are fetched by vendor from the backend rather than
-  // filtered from the (now bounded) shared context array, so this works for
-  // any product regardless of whether it's in that homepage sample.
   useEffect(() => {
     const vendorId = product?.vendorId;
     if (!vendorId) {
@@ -116,7 +139,7 @@ const ProductDetail = () => {
     };
   }, [product?.vendorId, product?._id]);
 
-  // Apply SEO meta from product record (admin SEO panel → live page)
+  // SEO metadata synchronization
   useEffect(() => {
     if (!product) return undefined;
     const seo = product.seo?.general || {};
@@ -183,17 +206,6 @@ const ProductDetail = () => {
     return [primary, ...extras].slice(0, 3);
   }, [product]);
 
-  const faqItems = useMemo(() => {
-    if (product?.faqs?.length) {
-      return product.faqs.map((item) => [item.q, item.a || '']);
-    }
-    return [
-      ['Is this piece heavy?', `Weight is listed as ${product?.weight || 'varies by size'}.`],
-      ['Is it handmade?', product?.description || 'Yes — finished by artisan houses in Jaipur.'],
-      ['Do you ship outside Jaipur?', product?.shippingNotes || 'Yes. Dispatch is typically 3–5 days.'],
-    ];
-  }, [product]);
-
   const [imgIndex, setImgIndex] = useState(0);
   const [sizeIndex, setSizeIndex] = useState(0);
   const [finish, setFinish] = useState('');
@@ -201,9 +213,8 @@ const ProductDetail = () => {
   const [qty, setQty] = useState(1);
   const [pin, setPin] = useState('');
   const [pinMsg, setPinMsg] = useState('');
-  const [openAcc, setOpenAcc] = useState('craft');
-  const [openFaq, setOpenFaq] = useState(0);
   const [toast, setToast] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -218,25 +229,32 @@ const ProductDetail = () => {
   if (!product) {
     if (loadState === 'error') {
       return (
-        <div className="heritage-page p-12 text-center space-y-3">
-          <p className="text-sm text-slate-700 font-medium">Product not found</p>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">{loadError}</p>
-          <Link to="/shop" className="inline-block text-xs text-blue-600 hover:underline">
+        <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center space-y-4 font-sans">
+          <p className="text-lg text-gray-800 font-semibold">Product not found</p>
+          <p className="text-sm text-gray-500 max-w-md">{loadError}</p>
+          <Link
+            to="/shop"
+            className="px-5 py-2.5 bg-[#8B2E3A] text-white text-sm font-medium rounded-full hover:bg-[#6F241D] transition-colors"
+          >
             Back to shop
           </Link>
         </div>
       );
     }
-    return <div className="heritage-page p-12 text-center text-sm">Loading piece…</div>;
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center p-12 text-sm text-gray-500 font-sans">
+        Loading piece…
+      </div>
+    );
   }
 
   const liked = isInWishlist(product._id);
   const selected = sizes[sizeIndex] || sizes[0];
   const unitPrice = selected.now;
-  const packOff = pack === 3 ? 0.08 : pack === 2 ? 0.05 : 0;
-  const lineTotal = Math.round(unitPrice * pack * (1 - packOff));
-  const shipNeed = Math.max(0, 499 - lineTotal);
-  const shipPct = Math.min(100, (lineTotal / 499) * 100);
+  const originalPrice = selected.was > selected.now ? selected.was : (product.oldPrice || 0);
+  const discountPercent = originalPrice > unitPrice ? Math.round(((originalPrice - unitPrice) / originalPrice) * 100) : 0;
+  const stockCount = product.stockCount || product.quantity || 9;
+
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = encodeURIComponent(`${product.name} ${shareUrl}`);
 
@@ -252,380 +270,768 @@ const ProductDetail = () => {
     navigate('/checkout');
   };
 
-  return (
-    <div className="heritage-page pb-16 md:pb-0">
-      <style>{`
-        .pdp-html { font-size: 14px; line-height: 1.65; color: inherit; }
-        .pdp-html p { margin: 0 0 0.85em; }
-        .pdp-html h3 { font-size: 1.05rem; margin: 1.1em 0 0.5em; font-weight: 700; }
-        .pdp-html ul { margin: 0 0 0.85em; padding-left: 1.2em; list-style: disc; }
-        .pdp-html li { margin-bottom: 0.35em; }
-        .pdp-html table { width: 100%; border-collapse: collapse; margin: 0.75em 0; font-size: 13px; }
-        .pdp-html th, .pdp-html td { border: 1px solid rgba(0,0,0,0.12); padding: 8px 10px; text-align: left; }
-        .pdp-html img { max-width: 100%; height: auto; }
-      `}</style>
-      <JharokhaBand />
-      <div className="pdp-wrap">
-        <div className="breadcrumb">
-          <Link to="/home">Home</Link><span>/</span>
-          <Link to="/shop">Shop</Link><span>/</span>
-          {product.category}<span>/</span>
-          {product.name}
-        </div>
+  const copyLink = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
-        <div className="pdp">
-          <div className="gallery">
-            <div className="gallery-main">
-              <div className="gallery-badges">
-                {product.badge === 'bestseller' || product.bestseller ? <span className="g-badge">Hot Sale</span> : null}
-                {selected.off > 0 ? <span className="g-badge" style={{ background: 'var(--pink-city)' }}>−{selected.off}%</span> : null}
+  return (
+    <div className="w-full bg-white text-[#2B1E1A] font-sans pb-16">
+      {/* Dynamic Style for clean rich HTML content & full-width tables */}
+      <style>{`
+        .pdp-full-html {
+          font-family: 'Poppins', 'DM Sans', system-ui, sans-serif;
+          font-size: 14.5px;
+          line-height: 1.75;
+          color: #374151;
+        }
+        .pdp-full-html p {
+          margin: 0 0 1em;
+        }
+        .pdp-full-html h2 {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 1.45rem;
+          font-weight: 700;
+          color: #1F2937;
+          margin: 1.5em 0 0.6em;
+          border-bottom: 2px solid #F3F4F6;
+          padding-bottom: 0.35em;
+        }
+        .pdp-full-html h3 {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #1F2937;
+          margin: 1.3em 0 0.5em;
+        }
+        .pdp-full-html h4 {
+          font-size: 1.05rem;
+          font-weight: 600;
+          color: #1F2937;
+          margin: 1.1em 0 0.4em;
+        }
+        .pdp-full-html ul {
+          margin: 0 0 1.1em;
+          padding-left: 1.4em;
+          list-style: disc;
+        }
+        .pdp-full-html li {
+          margin-bottom: 0.45em;
+        }
+        .pdp-full-html table {
+          width: 100% !important;
+          border-collapse: collapse;
+          margin: 1.5em 0;
+          font-size: 13.5px;
+          background: #FFFFFF;
+          border: 1px solid #E5E7EB;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .pdp-full-html th, .pdp-full-html td {
+          border: 1px solid #E5E7EB;
+          padding: 10px 16px;
+          text-align: left;
+        }
+        .pdp-full-html th {
+          background-color: #F9FAFB;
+          font-weight: 600;
+          color: #111827;
+        }
+        .pdp-full-html td:first-child {
+          font-weight: 600;
+          color: #1F2937;
+          background-color: #FAFAFA;
+          width: 28%;
+        }
+        .pdp-full-html img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 10px;
+          margin: 1.25em 0;
+        }
+      `}</style>
+
+      {/* Top Floating Action Header Bar (matches Image 4 & 5 top bar) */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs hidden md:block">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src={images[0]}
+              alt={product.name}
+              className="w-9 h-9 rounded-md object-cover border border-gray-200 shrink-0"
+            />
+            <div className="min-w-0">
+              <h2 className="text-xs sm:text-sm font-semibold text-gray-900 truncate max-w-md">
+                {product.name}
+              </h2>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-gray-400">Category: {product.category || 'Handicrafts'}</span>
               </div>
-              <button type="button" className="gallery-arrow prev" aria-label="Previous" onClick={() => setImgIndex((i) => (i - 1 + images.length) % images.length)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-              </button>
-              <button type="button" className="gallery-arrow next" aria-label="Next" onClick={() => setImgIndex((i) => (i + 1) % images.length)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-              </button>
-              <img src={images[imgIndex]} alt={product.name} />
-            </div>
-            <div className="gallery-thumbs">
-              {images.map((src, i) => (
-                <button key={src + i} type="button" className={`g-thumb ${i === imgIndex ? 'active' : ''}`} onClick={() => setImgIndex(i)}>
-                  <img src={src} alt="" />
-                </button>
-              ))}
             </div>
           </div>
 
-          <div>
-            <div className="p-trust-row">
-              <span><CheckIcon /> 100% Handmade</span>
-              <span><CheckIcon /> Artisan verified</span>
-              <span><CheckIcon /> From Jaipur</span>
-            </div>
-            <div className="p-brand-line">{product.brand || vendor?.name || product.vendor}</div>
-            <h1 className="p-title">{product.name}</h1>
-            <div className="p-rating">
-              <span className="inline-flex text-[#A9782F]">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} size={14} fill={i < Math.round(product.rating || 0) ? 'currentColor' : 'none'} />
-                ))}
-              </span>
-              <span>{product.rating}</span>
-              <a href="#reviews">{product.reviews} Verified Reviews</a>
-            </div>
-            <div className="price-block">
-              <span className="price now">{formatInr(unitPrice)}</span>
-              {selected.was > selected.now ? <span className="price was">{formatInr(selected.was)}</span> : null}
-              {selected.off > 0 ? <span className="off">−{selected.off}%</span> : null}
-            </div>
-            <div className="price-note">Inclusive of all taxes · Ships in 3–5 days, hand-packed to order</div>
-
-            <div className="sel-block">
-              <div className="sel-label">Select Size <span className="sel-current">{selected.label}</span></div>
-              <div className="size-grid">
-                {sizes.map((size, i) => (
-                  <button key={size.label} type="button" className={`size-card ${i === sizeIndex ? 'active' : ''}`} onClick={() => setSizeIndex(i)}>
-                    {size.popular ? <span className="sc-best">Most Popular</span> : null}
-                    <strong>{size.label}</strong>
-                    <span className="sc-price">{formatInr(size.now)}</span>
-                    {size.was > size.now ? <span className="sc-was">{formatInr(size.was)}</span> : null}
-                    {size.off > 0 ? <span className="sc-off">−{size.off}%</span> : null}
-                  </button>
-                ))}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="text-right">
+              <div className="flex items-baseline gap-2">
+                <span className="text-base font-bold text-[#E5A835] sm:text-[#C45C6A]">
+                  ₹{Number(unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                </span>
+                {originalPrice > unitPrice && (
+                  <span className="text-xs text-gray-400 line-through">
+                    ₹{Number(originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  </span>
+                )}
               </div>
             </div>
 
-            <div className="sel-block">
-              <div className="sel-label">Finish</div>
-              <div className="finish-grid">
-                {finishOptions.map((opt) => (
-                  <button key={opt} type="button" className={`finish-card ${finish === opt ? 'active' : ''}`} onClick={() => setFinish(opt)}>
-                    <span className="finish-dot" style={{ background: opt.includes('Polish') ? '#E8DFC8' : '#C4A574' }} />
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="save-ladder">
-              <div className="save-ladder-head">
-                <strong>Buy More, Save More</strong>
-                <span>SAVE ON SETS</span>
-              </div>
-              {[
-                { n: 1, title: '1 piece', sub: 'For a single gift or shelf', extra: 0 },
-                { n: 2, title: 'Pair of 2', sub: 'Free diya with eligible orders', extra: 5, tag: 'Most Chosen' },
-                { n: 3, title: 'Set of 3', sub: 'Best value + free shipping closer', extra: 8, tag: 'Best Value', best: true },
-              ].map((row) => (
-                <button key={row.n} type="button" className={`ladder-row ${pack === row.n ? 'active' : ''} ${row.best ? 'best' : ''}`} onClick={() => { setPack(row.n); setQty(1); }}>
-                  {row.tag ? <span className="ladder-tag">{row.tag}</span> : null}
-                  <div className="ladder-left">
-                    <span className="ladder-check">{pack === row.n ? '✓' : ''}</span>
-                    <div>
-                      <div className="ladder-title">{row.title}</div>
-                      <div className="ladder-sub">{row.sub}</div>
-                    </div>
-                  </div>
-                  <div className="ladder-right">
-                    <div className="ladder-price">{formatInr(Math.round(unitPrice * row.n * (1 - row.extra / 100)))}</div>
-                    <div className="ladder-off">−{selected.off + row.extra}% off</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            <div className="ship-progress">
-              <div className="ship-progress-text">
-                {shipNeed === 0
-                  ? <>This order already qualifies for <strong>free shipping</strong></>
-                  : <>Add <strong>{formatInr(shipNeed)}</strong> more for <strong>free shipping</strong></>}
-              </div>
-              <div className="ship-track"><div className="ship-fill" style={{ width: `${shipPct}%` }} /></div>
-            </div>
-
-            <div className="qty-cart-row">
-              <div className="qty-stepper">
-                <button type="button" onClick={() => setQty((n) => Math.max(1, n - 1))}>−</button>
-                <span>{qty}</span>
-                <button type="button" onClick={() => setQty((n) => n + 1)}>+</button>
-              </div>
-              <button type="button" className="pdp-btn pdp-btn-outline" onClick={() => toggleWishlist(product)}>
-                <Heart size={16} className={liked ? 'fill-current text-[#8C2F2B]' : ''} /> Wishlist
-              </button>
-            </div>
-            <div className="buy-now-row">
-              <button type="button" className="pdp-btn pdp-btn-outline" onClick={add}>Add to Cart</button>
-              <button type="button" className="pdp-btn pdp-btn-primary" onClick={buyNow}>Buy Now</button>
-            </div>
-            {toast ? <p className="price-note">Added to cart</p> : null}
-
-            <div className="pincode-box">
-              <strong>Check Delivery & Estimated Arrival</strong>
-              <div className="pincode-row">
-                <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter pincode" inputMode="numeric" />
-                <button type="button" onClick={() => setPinMsg(pin.length === 6 ? 'Delivery in 5–9 days. Cash on delivery available.' : 'Enter a 6-digit pincode.')}>Check</button>
-              </div>
-              {pinMsg ? <div className="pincode-result">{pinMsg}</div> : null}
-            </div>
-
-            <div className="gift-banner">
-              <div>
-                <strong>Buy 2, get a complimentary diya pair</strong>
-                <span>Added automatically on eligible sets — no code needed</span>
-              </div>
-            </div>
-
-            <div className="pdp-trust-icons">
-              <div><CreditCard size={20} /><span>Secure Payment</span></div>
-              <div><RotateCcw size={20} /><span>7-Day Returns</span></div>
-              <div><Truck size={20} /><span>Cash on Delivery*</span></div>
-              <div><Globe size={20} /><span>Ships Worldwide</span></div>
-            </div>
-
-            <div className="share-row">
-              <span>Share this piece:</span>
-              <div className="share-icons">
-                <a href={`https://wa.me/?text=${shareText}`} aria-label="Share on WhatsApp"><ShareIcon d="M21 11.5a8.5 8.5 0 01-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1121 11.5z" /></a>
-                <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} aria-label="Share on Facebook" target="_blank" rel="noreferrer"><ShareIcon d="M15 8h3V4h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V9a1 1 0 011-1z" /></a>
-                <a href={`mailto:?subject=${encodeURIComponent(product.name)}&body=${encodeURIComponent(shareUrl)}`} aria-label="Share by Email"><ShareIcon d="M2 7l10 6 10-6" /></a>
-              </div>
-            </div>
-
-            <div className="pdp-accordion">
-              {[
-                ['craft', 'Materials & Craftsmanship', (
-                  <div
-                    className="pdp-html"
-                    dangerouslySetInnerHTML={{
-                      __html: product.description || product.content || '<p>Handmade craft from Jaipur artisans.</p>',
-                    }}
-                  />
-                )],
-                ['care', 'Care Instructions', product.careInstructions || 'Wipe with a soft dry cloth. Avoid harsh acids.'],
-                ['ship', 'Shipping & Delivery', product.shippingNotes || 'Hand-packed and dispatched in 3–5 business days. Domestic delivery typically 5–9 days.'],
-                ['returns', 'Returns & Refunds', product.returnNotes || '7-day window from delivery for manufacturing defects or transit damage.'],
-              ].map(([key, title, body]) => (
-                <div key={key} className={`pdp-acc-item ${openAcc === key ? 'open' : ''}`}>
-                  <button type="button" className="pdp-acc-head" onClick={() => setOpenAcc(openAcc === key ? '' : key)}>
-                    {title} <PlusIcon />
-                  </button>
-                  <div className="pdp-acc-panel">
-                    <div className="pdp-acc-panel-inner">
-                      {typeof body === 'string' ? body : body}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
+            <button
+              type="button"
+              onClick={add}
+              className="px-4 py-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs font-bold rounded-md shadow-xs transition-colors flex items-center gap-1.5"
+            >
+              <ShoppingCart size={13} />
+              Add to cart
+            </button>
+            <button
+              type="button"
+              onClick={buyNow}
+              className="px-4 py-1.5 bg-[#111827] hover:bg-black text-white text-xs font-bold rounded-md shadow-xs transition-colors"
+            >
+              Buy Now
+            </button>
           </div>
         </div>
       </div>
 
-      <section className="pdp-section" style={{ background: 'var(--marble-deep)' }}>
-        <div className="pdp-wrap">
-          <div className="pdp-section-head">
-            <span className="eyebrow">From workshop to doorstep</span>
-            <h2>How this piece is made</h2>
-            <p>Every workshop piece follows the same six-step process, kept close to traditional methods.</p>
-          </div>
-          <div className="made-grid">
-            {[
-              ['Clay / stone chosen', 'The block or clay is checked for density, colour, and flaws before forming begins.'],
-              ['Hand forming', 'The basic form is made by hand — wheel, coil, or chisel — following traditional iconography.'],
-              ['Detail carving', 'Surface pattern, jewellery, or brushwork is finished under natural light.'],
-              ['Firing or polish', 'Kiln fire or stone polish brings out the material without chemical brighteners.'],
-              ['Artisan check', 'Each piece is inspected for cracks, symmetry, and finish before it is packed.'],
-              ['Protective packing', 'Foam corners and a rigid outer wrap, sized to the weight of the piece.'],
-            ].map(([title, copy], i) => (
-              <div key={title} className="made-card">
-                <div className="made-num">{i + 1}</div>
-                <h3>{title}</h3>
-                <p>{copy}</p>
+      {/* Main Container */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-xs text-gray-500 mb-4 overflow-x-auto py-1 whitespace-nowrap">
+          <Link to="/" className="hover:text-[#8B2E3A]">Home</Link>
+          <span>/</span>
+          <Link to="/shop" className="hover:text-[#8B2E3A]">Shop</Link>
+          <span>/</span>
+          {product.category && (
+            <>
+              <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-[#8B2E3A]">
+                {product.category}
+              </Link>
+              <span>/</span>
+            </>
+          )}
+          <span className="text-gray-800 font-medium truncate max-w-[280px]">{product.name}</span>
+        </nav>
+
+        {/* Top Product Section: 3-Column Responsive Grid (Gallery + Center Buy Box + Right Trust Column) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
+          {/* Column 1: Image Gallery (5 cols on Desktop) */}
+          <div className="lg:col-span-5 flex flex-col-reverse md:flex-row gap-3">
+            {/* Thumbnails strip */}
+            {images.length > 1 && (
+              <div className="flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto max-h-[460px] scrollbar-none shrink-0 py-1">
+                {images.map((src, i) => (
+                  <button
+                    key={src + i}
+                    type="button"
+                    onClick={() => setImgIndex(i)}
+                    className={`w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-all shrink-0 bg-gray-50 ${
+                      i === imgIndex ? 'border-[#8B2E3A] ring-1 ring-[#8B2E3A]/40' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            )}
 
-      <section className="pdp-section">
-        <div className="pdp-wrap spec-seo-grid">
-          <div className="seo-content">
-            <h2>About {product.name}</h2>
-            <div
-              className="pdp-html"
-              dangerouslySetInnerHTML={{
-                __html:
-                  product.content ||
-                  product.description ||
-                  '<p>Each piece is made with the same care as temple and household crafts from Rajasthan.</p>',
-              }}
-            />
-          </div>
-          <div>
-            <h3 style={{ fontSize: 16, marginBottom: 16 }}>Specifications</h3>
-            <table className="spec-table">
-              <tbody>
-                <tr><td>Material</td><td>{finish || product.material || 'Handmade craft'}</td></tr>
-                <tr><td>Brand</td><td>{product.brand || '—'}</td></tr>
-                <tr><td>Origin</td><td>{product.location || 'Jaipur, Rajasthan'}</td></tr>
-                <tr><td>Artisan house</td><td>{vendor?.name || product.vendor}</td></tr>
-                <tr><td>Size</td><td>{selected.label}</td></tr>
-                <tr><td>Weight</td><td>{product.weight || (product.weightKg ? `${product.weightKg} kg` : '—')}</td></tr>
-                <tr><td>Dimensions (L×W×H cm)</td><td>{[product.length, product.width, product.height].filter(Boolean).join(' × ') || '—'}</td></tr>
-                <tr><td>SKU</td><td>{product.sku || product._id}</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+            {/* Main Image Frame */}
+            <div className="relative w-full aspect-square md:aspect-[4/4.2] rounded-2xl overflow-hidden bg-[#FAF6EE] border border-gray-200 shadow-xs group flex-1">
+              {/* Badges */}
+              <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+                {(product.badge === 'bestseller' || product.bestseller) && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#8B2E3A] text-white uppercase tracking-wider shadow-xs">
+                    Hot Sale
+                  </span>
+                )}
+                {discountPercent > 0 && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C45C6A] text-white shadow-xs">
+                    −{discountPercent}%
+                  </span>
+                )}
+              </div>
 
-      <section className="pdp-section" style={{ background: 'var(--marble-deep)' }}>
-        <div className="pdp-wrap" style={{ maxWidth: 800 }}>
-          <div className="pdp-section-head"><span className="eyebrow">Product FAQs</span><h2>Questions about this piece</h2></div>
-          {faqItems.map(([q, a], i) => (
-            <div key={q} className={`pdp-acc-item ${openFaq === i ? 'open' : ''}`}>
-              <button type="button" className="pdp-acc-head" onClick={() => setOpenFaq(openFaq === i ? -1 : i)}>
-                {q} <PlusIcon />
+              {/* Prev / Next Arrows */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous image"
+                    onClick={() => setImgIndex((i) => (i - 1 + images.length) % images.length)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next image"
+                    onClick={() => setImgIndex((i) => (i + 1) % images.length)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              )}
+
+              <img
+                src={images[imgIndex]}
+                alt={product.name}
+                loading="eager"
+                decoding="async"
+                fetchpriority="high"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
+              />
+            </div>
+          </div>
+
+          {/* Column 2: Product Info & Actions (4 cols on Desktop / Main Center) */}
+          <div className="lg:col-span-4 flex flex-col space-y-4">
+            <div>
+              <div className="text-xs font-semibold text-[#8B2E3A] uppercase tracking-wider mb-1">
+                {product.brand || vendor?.name || 'Jaipurio Heritage'}
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+                {product.name}
+              </h1>
+            </div>
+
+            {/* Rating */}
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              <div className="flex items-center text-amber-500">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    size={14}
+                    fill={i < Math.round(product.rating || 4.8) ? 'currentColor' : 'none'}
+                  />
+                ))}
+              </div>
+              <span className="font-semibold text-gray-800">{product.rating || '4.9'}</span>
+              <span className="text-gray-400">•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('reviews');
+                  document.getElementById('pdp-tabs-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="text-[#8B2E3A] hover:underline"
+              >
+                ({product.reviews || productReviews.length || 18} Verified Reviews)
               </button>
-              <div className="pdp-acc-panel"><div className="pdp-acc-panel-inner">{a}</div></div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      <section className="pdp-section" id="reviews">
-        <div className="pdp-wrap" style={{ maxWidth: 900 }}>
-          <div className="pdp-section-head"><span className="eyebrow">Verified Reviews</span><h2>What customers say</h2></div>
-          <div className="review-summary">
-            <div className="review-score">
-              <div className="big">{product.rating}</div>
-              <span>Based on {product.reviews} reviews</span>
+            {/* Price Section */}
+            <div className="flex items-baseline gap-3 pt-1 border-t border-gray-100">
+              <span className="text-2xl sm:text-3xl font-bold text-[#E5A835] sm:text-[#C45C6A]">
+                ₹{Number(unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+              </span>
+              {originalPrice > unitPrice && (
+                <span className="text-base text-gray-400 line-through">
+                  ₹{Number(originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="px-2 py-0.5 text-xs font-bold text-emerald-700 bg-emerald-100 rounded-md">
+                  {discountPercent}% OFF
+                </span>
+              )}
             </div>
-            <div className="review-bars">
-              {[['5 star', 72], ['4 star', 18], ['3 star', 7], ['2 star', 2], ['1 star', 2]].map(([label, pct]) => (
-                <div key={label} className="rb-row"><span className="rb-label">{label}</span><div className="rb-track"><div className="rb-fill" style={{ width: `${pct}%` }} /></div></div>
+
+            {/* Short Highlights / Key bullet points if available */}
+            <div className="text-xs text-gray-600 leading-relaxed bg-[#FAF6EE] p-3 rounded-xl border border-[#E8D4B5]/60 space-y-1">
+              <p className="font-semibold text-gray-800">
+                🌿 Pure handcrafted craftsmanship from Jaipur, Rajasthan.
+              </p>
+              <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-gray-600">
+                <li>100% Genuine Makrana Marble / Terracotta Clay</li>
+                <li>Carefully packaged in heavy-duty break-proof carton</li>
+                <li>Ships within 24–48 hours direct from master artisans</li>
+              </ul>
+            </div>
+
+            {/* Stock Availability Pill (matching Image 5) */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300 w-fit">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Availability: <strong>{stockCount} products available</strong></span>
+            </div>
+
+            {/* Size & Finish Options if present */}
+            {sizes.length > 1 && (
+              <div className="space-y-1.5 pt-2">
+                <label className="text-xs font-semibold text-gray-700">Size: {selected.label}</label>
+                <div className="flex flex-wrap gap-2">
+                  {sizes.map((size, idx) => (
+                    <button
+                      key={size.label}
+                      type="button"
+                      onClick={() => setSizeIndex(idx)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                        idx === sizeIndex
+                          ? 'border-[#8B2E3A] bg-[#8B2E3A]/5 text-[#8B2E3A]'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {size.label} - {formatInr(size.now)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quantity + Add to Cart + Buy Now Buttons (matching Image 5) */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-gray-700">Quantity:</span>
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setQty((n) => Math.max(1, n - 1))}
+                    className="w-8 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="w-10 text-center text-xs font-bold text-gray-800">{qty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQty((n) => n + 1)}
+                    className="w-8 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={add}
+                  className="w-full py-2.5 px-4 bg-[#F59E0B] hover:bg-[#D97706] text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                >
+                  <ShoppingCart size={16} />
+                  Add to cart
+                </button>
+                <button
+                  type="button"
+                  onClick={buyNow}
+                  className="w-full py-2.5 px-4 bg-[#111827] hover:bg-black text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                >
+                  Buy Now
+                </button>
+              </div>
+              {toast && (
+                <div className="text-center text-xs font-semibold text-emerald-600 animate-fade-in">
+                  ✓ Added to cart successfully!
+                </div>
+              )}
+            </div>
+
+            {/* Wishlist & Compare & Share Links */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-600">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => toggleWishlist(product)}
+                  className="inline-flex items-center gap-1.5 hover:text-[#8B2E3A] font-medium transition-colors"
+                >
+                  <Heart
+                    size={15}
+                    className={liked ? 'fill-rose-500 text-rose-500' : 'text-gray-500'}
+                  />
+                  <span>{liked ? 'Saved' : 'Wishlist'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyLink}
+                  className="inline-flex items-center gap-1.5 hover:text-[#8B2E3A] font-medium transition-colors"
+                >
+                  {copied ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                  <span>{copied ? 'Link Copied' : 'Share'}</span>
+                </button>
+              </div>
+
+              <a
+                href={getWhatsAppHref(`Hi, I'm interested in ${product.name}`)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
+              >
+                <MessageCircle size={15} />
+                Ask on WhatsApp
+              </a>
+            </div>
+
+            {/* Pincode checker */}
+            <div className="pt-2">
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
+                  Check Delivery & Estimated Arrival
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Enter 6-digit pincode"
+                    className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#8B2E3A]"
+                    inputMode="numeric"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPinMsg(
+                        pin.length === 6
+                          ? '✓ Available: Estimated delivery in 4–7 business days. Cash on Delivery supported.'
+                          : 'Please enter a valid 6-digit pincode.'
+                      )
+                    }
+                    className="px-4 py-1.5 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    Check
+                  </button>
+                </div>
+                {pinMsg && (
+                  <p className="mt-1.5 text-[11px] font-medium text-emerald-700 leading-tight">
+                    {pinMsg}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Trust & Vendor Box (3 cols on Desktop / Right Sidebar matching Image 5) */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Vendor card */}
+            <div className="bg-[#FAF6EE] p-4 rounded-2xl border border-[#E8D4B5] text-center space-y-2">
+              <span className="text-xs text-gray-500">Become a Vendor?</span>
+              <Link
+                to="/vendor/register"
+                className="block text-sm font-bold text-[#A94E2C] hover:text-[#6F241D] hover:underline"
+              >
+                Register now →
+              </Link>
+            </div>
+
+            {/* Trust Features Box (Image 5 style) */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Truck size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900">Free Shipping</h4>
+                  <p className="text-[11px] text-gray-500">For all orders over ₹499</p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-rose-50 text-[#C45C6A] flex items-center justify-center shrink-0">
+                  <RotateCcw size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900">7-Day Returns</h4>
+                  <p className="text-[11px] text-gray-500">Transit damage guarantee</p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900">Secure Payment</h4>
+                  <p className="text-[11px] text-gray-500">100% encrypted checkout</p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Store size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900">Artisan Certified</h4>
+                  <p className="text-[11px] text-gray-500">Direct from Jaipur workshops</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Full-Width Section: Tab Navigation & Detailed Specifications (matching Image 4) */}
+        <div id="pdp-tabs-section" className="mt-8 pt-8 border-t border-gray-200">
+          {/* Tab Headers */}
+          <div className="flex border-b border-gray-200 gap-8 overflow-x-auto scrollbar-none mb-6">
+            <button
+              type="button"
+              onClick={() => setActiveTab('description')}
+              className={`pb-3 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap ${
+                activeTab === 'description'
+                  ? 'text-[#8B2E3A] border-b-2 border-[#8B2E3A]'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Description
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('specifications')}
+              className={`pb-3 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap ${
+                activeTab === 'specifications'
+                  ? 'text-[#8B2E3A] border-b-2 border-[#8B2E3A]'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Detailed Specifications
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('care')}
+              className={`pb-3 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap ${
+                activeTab === 'care'
+                  ? 'text-[#8B2E3A] border-b-2 border-[#8B2E3A]'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Care & Delivery
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('reviews')}
+              className={`pb-3 text-sm sm:text-base font-bold transition-all relative whitespace-nowrap ${
+                activeTab === 'reviews'
+                  ? 'text-[#8B2E3A] border-b-2 border-[#8B2E3A]'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              Reviews ({product.reviews || productReviews.length || 0})
+            </button>
+          </div>
+
+          {/* Tab 1: Description (Full Width HTML Content matching Image 4) */}
+          {activeTab === 'description' && (
+            <div className="w-full space-y-6">
+              <div
+                className="pdp-full-html w-full overflow-x-auto"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    product.content ||
+                    product.description ||
+                    `<p>Handcrafted ${product.name} from authentic Rajasthan artisans.</p>`,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Tab 2: Specifications Table */}
+          {activeTab === 'specifications' && (
+            <div className="w-full max-w-4xl space-y-4">
+              <h3 className="text-lg font-bold text-gray-900 font-serif">Product Specifications</h3>
+              <div className="overflow-hidden border border-gray-200 rounded-xl bg-white shadow-xs">
+                <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                  <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50 w-1/3">Material</td>
+                      <td className="py-3 px-4 text-gray-800">{finish || product.material || 'Handmade Craft'}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Brand</td>
+                      <td className="py-3 px-4 text-gray-800">{product.brand || 'Jaipurio Heritage'}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Origin</td>
+                      <td className="py-3 px-4 text-gray-800">{product.location || 'Jaipur, Rajasthan'}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Artisan House</td>
+                      <td className="py-3 px-4 text-gray-800">{vendor?.name || product.vendor || 'Master Potters Guild'}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Weight</td>
+                      <td className="py-3 px-4 text-gray-800">{product.weight || (product.weightKg ? `${product.weightKg} kg` : '—')}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Dimensions (L×W×H)</td>
+                      <td className="py-3 px-4 text-gray-800">{[product.length, product.width, product.height].filter(Boolean).join(' × ') || 'Standard proportion'}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">SKU Code</td>
+                      <td className="py-3 px-4 text-gray-800 font-mono text-xs">{product.sku || product._id}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Care & Delivery */}
+          {activeTab === 'care' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-[#FAF6EE] p-6 rounded-2xl border border-[#E8D4B5]">
+                <h4 className="text-base font-bold text-[#6F241D] mb-3 flex items-center gap-2">
+                  <Shield size={18} /> Care Instructions
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                  {product.careInstructions ||
+                    'Clean gently with a soft microfiber cloth. Avoid harsh chemical cleaners or acidic detergents. For marble and terracotta, natural aging and subtle patina enhance its authentic character.'}
+                </p>
+              </div>
+
+              <div className="bg-[#FAF6EE] p-6 rounded-2xl border border-[#E8D4B5]">
+                <h4 className="text-base font-bold text-[#6F241D] mb-3 flex items-center gap-2">
+                  <Truck size={18} /> Shipping & Transit
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                  {product.shippingNotes ||
+                    'Custom multi-layered foam and corner guards ensure your delicate pottery or stone piece reaches your doorstep in pristine condition. Dispatched within 24–48 hours.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 4: Reviews */}
+          {activeTab === 'reviews' && (
+            <div className="w-full space-y-6">
+              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                <div className="text-center sm:text-left">
+                  <div className="text-4xl font-bold text-gray-900">{product.rating || '4.9'}</div>
+                  <div className="flex items-center justify-center sm:justify-start text-amber-500 my-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={16} fill="currentColor" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">Based on {product.reviews || productReviews.length || 18} verified buyer ratings</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {(productReviews.length ? productReviews : [
+                  {
+                    id: '1',
+                    name: 'Priya Sharma',
+                    date: '2 weeks ago',
+                    comment: 'Stunning piece! The carving detail on the marble is immaculate. Packaging was extremely secure with heavy foam.',
+                    rating: 5,
+                  },
+                  {
+                    id: '2',
+                    name: 'Rajesh Meena',
+                    date: '1 month ago',
+                    comment: 'Authentic quality, exactly as shown in photos. Brings a sacred aura to our home courtyard.',
+                    rating: 5,
+                  },
+                ]).map((rev) => (
+                  <div key={rev.id || rev.name} className="p-4 bg-white border border-gray-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-gray-900">{rev.name}</span>
+                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Verified Buyer
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400">{rev.date}</span>
+                    </div>
+                    <div className="flex text-amber-500">
+                      {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                        <Star key={i} size={13} fill="currentColor" />
+                      ))}
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-700">{rev.comment}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Related Products Section */}
+        {related.length > 0 && (
+          <div className="mt-14 pt-8 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D]">
+                You May Also Like
+              </h3>
+              <Link to="/shop" className="text-xs font-semibold text-[#8B2E3A] hover:underline">
+                View All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+              {related.map((item) => (
+                <Link
+                  key={item._id}
+                  to={`/product/${item._id}`}
+                  className="group bg-white rounded-xl overflow-hidden border border-gray-200 p-2.5 hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 mb-2">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-[#8B2E3A]">
+                      {item.name}
+                    </h4>
+                    <p className="text-xs font-bold text-[#8B2E3A] mt-1">
+                      {formatInr(item.price)}
+                    </p>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
-          {(productReviews.length ? productReviews : [
-            { name: 'Priya M.', date: '2 weeks ago', comment: 'Packaging was excellent and the piece looks handmade, not factory. Exactly what I wanted for the home shelf.', rating: 5 },
-            { name: 'Arjun S.', date: '1 month ago', comment: 'Heavier than I expected — in a good way. Delivery was within what they promised.', rating: 4 },
-          ]).map((review) => (
-            <div key={review.id || review.name} className="review-card">
-              <div className="rc-top">
-                <span className="inline-flex text-[#A9782F]">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={12} fill={i < (review.rating || 5) ? 'currentColor' : 'none'} />)}</span>
-                <span className="rc-date">{review.date}</span>
-              </div>
-              <p>{review.comment}</p>
-              <div className="rc-author">{review.name} <span className="rc-verified">Verified Buyer</span></div>
-            </div>
-          ))}
-        </div>
-      </section>
+        )}
+      </div>
 
-      <section className="pdp-section" style={{ background: 'var(--marble-deep)' }}>
-        <div className="pdp-wrap">
-          <div className="pdp-section-head"><span className="eyebrow">Complete the set</span><h2 style={{ fontSize: 22 }}>Frequently bought together</h2></div>
-          <div className="p-scroll">
-            {together.map((item) => (
-              <Link key={item._id} to={`/product/${item._id}`} className="mini-card">
-                <div className="mini-media"><img src={item.image} alt={item.name} /></div>
-                <div className="mini-body"><h5>{item.name}</h5><span className="price">{formatInr(item.price)}</span></div>
-              </Link>
-            ))}
-          </div>
+      {/* Mobile Sticky Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 shadow-lg flex items-center gap-3">
+        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shrink-0">
+          <button
+            type="button"
+            onClick={() => setQty((n) => Math.max(1, n - 1))}
+            className="w-8 h-8 flex items-center justify-center text-gray-600"
+          >
+            <Minus size={13} />
+          </button>
+          <span className="w-8 text-center text-xs font-bold">{qty}</span>
+          <button
+            type="button"
+            onClick={() => setQty((n) => n + 1)}
+            className="w-8 h-8 flex items-center justify-center text-gray-600"
+          >
+            <Plus size={13} />
+          </button>
         </div>
-      </section>
-
-      <section className="pdp-section">
-        <div className="pdp-wrap">
-          <div className="pdp-section-head"><span className="eyebrow">More from this house</span><h2 style={{ fontSize: 22 }}>You may also like</h2></div>
-          <div className="p-scroll">
-            {related.map((item) => (
-              <Link key={item._id} to={`/product/${item._id}`} className="mini-card">
-                <div className="mini-media"><img src={item.image} alt={item.name} /></div>
-                <div className="mini-body"><h5>{item.name}</h5><span className="price">{formatInr(item.price)}</span></div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="pdp-section" style={{ background: 'var(--marble-deep)' }}>
-        <div className="pdp-wrap">
-          <div className="pdp-section-head">
-            <span className="eyebrow">From the Journal</span>
-            <h2 style={{ fontSize: 24 }}>Articles & craft stories related to this piece</h2>
-          </div>
-          <div className="article-grid">
-            {journalPosts.slice(0, 3).map((post) => (
-              <Link key={post._id} to={`/blog/${post._id}`} className="article-card">
-                <div className="article-media"><img src={post.image} alt={post.title} /></div>
-                <div className="article-body">
-                  <div className="article-meta">{post.category}</div>
-                  <h4>{post.title}</h4>
-                  <p>{post.excerpt}</p>
-                  <span className="article-read">Read article →</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="pdp-sticky-bar">
-        <div className="qty-stepper">
-          <button type="button" onClick={() => setQty((n) => Math.max(1, n - 1))}>−</button>
-          <span>{qty}</span>
-          <button type="button" onClick={() => setQty((n) => n + 1)}>+</button>
-        </div>
-        <button type="button" className="pdp-btn pdp-btn-outline" onClick={add}>Add to Cart</button>
-        <button type="button" className="pdp-btn pdp-btn-primary" onClick={buyNow}>Buy Now</button>
-        <a className="btn-whatsapp" href={getWhatsAppHref(`Hi, I'm interested in ${product.name}`)} aria-label="WhatsApp">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a8.5 8.5 0 01-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1121 11.5z" /></svg>
-        </a>
+        <button
+          type="button"
+          onClick={add}
+          className="flex-1 py-2.5 bg-[#F59E0B] text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <ShoppingCart size={15} /> Add to Cart
+        </button>
+        <button
+          type="button"
+          onClick={buyNow}
+          className="flex-1 py-2.5 bg-[#111827] text-white text-xs font-bold rounded-lg shadow-sm"
+        >
+          Buy Now
+        </button>
       </div>
     </div>
   );

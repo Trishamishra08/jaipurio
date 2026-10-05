@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getFinanceStats, updateEarningCommission, getAdminPayouts, clearVendorPayout, getDashboardStats, getUserAnalytics, getPendingCounts, clearCache, runCleanup } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
+const { createBackupBuffer } = require('../utils/mongoBackup');
 
 // Using basic protect and authorize for admin routes
 // In production, ensure admin users have role 'admin'
@@ -12,6 +13,41 @@ router.route('/finance-stats').get(protect, authorize('admin'), getFinanceStats)
 router.route('/finance/earnings/:id/commission').patch(protect, authorize('admin'), updateEarningCommission);
 router.route('/clear-cache').post(protect, authorize('admin'), clearCache);
 router.route('/cleanup').post(protect, authorize('admin'), runCleanup);
+
+router.route('/system-info').get(protect, authorize('admin'), (req, res) => {
+  const mongoose = require('mongoose');
+  const READY_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  res.json({
+    success: true,
+    data: {
+      environment: process.env.NODE_ENV || 'development',
+      nodeVersion: process.version,
+      uptimeSeconds: Math.round(process.uptime()),
+      database: READY_STATES[mongoose.connection.readyState] || 'unknown',
+      databaseName: mongoose.connection.name || '',
+      cacheLayer: process.env.REDIS_ENABLED === 'true' ? 'Redis' : 'In-Memory',
+      memoryUsedMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    },
+  });
+});
+
+// Real full-database backup — every collection, gzip-compressed, streamed
+// back as a download. Replaces the old fake "Backup" button that only
+// downloaded the settings document.
+router.route('/backup').get(protect, authorize('admin'), async (req, res) => {
+  try {
+    const { buffer, summary } = await createBackupBuffer();
+    const filename = `jaipurio-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json.gz`;
+    res.set({
+      'Content-Type': 'application/gzip',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'X-Backup-Collections': String(summary.length),
+    });
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Payouts routes
 router.route('/payouts').get(protect, authorize('admin'), getAdminPayouts);

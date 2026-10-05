@@ -24,17 +24,20 @@ const clearCache = async (req, res) => {
   }
 };
 
+/** Shared by the manual admin button (runCleanup below) and the scheduled cron job. */
+const runCleanupLogic = async () => {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const result = await IncompleteOrder.deleteMany({ createdAt: { $lt: cutoff } });
+  return `Removed ${result.deletedCount} abandoned checkout record(s) older than 30 days.`;
+};
+
 // @desc    Delete stale unused data (abandoned incomplete-order records older than 30 days)
 // @route   POST /api/admins/cleanup
 // @access  Private/Admin
 const runCleanup = async (req, res) => {
   try {
-    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const result = await IncompleteOrder.deleteMany({ createdAt: { $lt: cutoff } });
-    res.status(200).json({
-      success: true,
-      message: `Removed ${result.deletedCount} abandoned checkout record(s) older than 30 days.`,
-    });
+    const message = await runCleanupLogic();
+    res.status(200).json({ success: true, message });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -760,4 +763,5 @@ module.exports = {
   getPendingCounts,
   clearCache,
   runCleanup,
+  runCleanupLogic,
 };

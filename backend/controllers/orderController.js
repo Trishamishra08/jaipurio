@@ -1,9 +1,10 @@
 const Order = require('../models/orderModel');
 const Coupon = require('../models/couponModel');
+const Affiliate = require('../models/affiliateModel');
 const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
 const { computeOrderQuote } = require('../utils/pricing');
 const { nextOrderNumber, serializeOrder } = require('../utils/marketplace');
-const { canAccessOrder } = require('./orderFlowController');
+const { canAccessOrder, ensureEarnings } = require('./orderFlowController');
 const { logTransaction } = require('./paymentTransactionController');
 const PaymentMethod = require('../models/paymentMethodModel');
 const { decryptConfig } = require('./paymentMethodController');
@@ -22,7 +23,22 @@ const quoteItemsPayload = (items = []) => items.map((item) => ({
   image: item.image
 }));
 
-const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, paymentResult, isPaid }) => {
+const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, paymentResult, isPaid, referralCode }) => {
+  // Affiliate attribution — resolved here rather than via computeOrderQuote
+  // like couponCode, since a referral doesn't change pricing at all, only
+  // who gets credited. Only an Approved affiliate's code counts.
+  let affiliate = null;
+  if (referralCode) {
+    const cleanRef = String(referralCode).trim();
+    affiliate = await Affiliate.findOne({
+      referralCode: { $regex: new RegExp(`^${cleanRef}$`, 'i') },
+      status: 'Approved'
+    });
+    if (!affiliate) {
+      affiliate = await Affiliate.findOne({ referralCode: cleanRef, status: 'Approved' });
+    }
+  }
+
   const orderItems = quote.items.map((item) => ({
     product: item.product,
     name: item.name,
@@ -51,6 +67,8 @@ const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, 
     shippingPrice: quote.shippingAmount,
     totalPrice: quote.total,
     couponCode: quote.coupon?.code || '',
+    affiliate: affiliate?._id || null,
+    affiliateCommissionRate: affiliate?.commissionRate || 0,
     discountAmount: quote.discountAmount || 0,
     taxRate: quote.taxRate || 0,
     isPaid: Boolean(isPaid),
@@ -63,6 +81,13 @@ const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, 
 
   if (quote.coupon?.code) {
     await Coupon.updateOne({ code: quote.coupon.code }, { $inc: { usedCount: 1 } });
+  }
+
+  // Create initial ledger records (vendor earnings & affiliate earnings as Pending)
+  try {
+    await ensureEarnings(order);
+  } catch (err) {
+    console.error('Error creating initial earnings for order:', err);
   }
 
   logTransaction({
@@ -92,7 +117,7 @@ const quoteOrder = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod, couponCode } = req.body;
+    const { items, shippingAddress, paymentMethod, couponCode, referralCode } = req.body;
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'No order items' });
     }
@@ -115,7 +140,8 @@ const createOrder = async (req, res) => {
       quote,
       shippingAddress,
       paymentMethod: paymentMethod || 'COD',
-      isPaid: false
+      isPaid: false,
+      referralCode
     });
 
     // Trigger push notifications
@@ -211,7 +237,7 @@ const verifyRazorpayOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid signature sent!" });
     }
 
-    const { items, shippingAddress, couponCode } = orderDetails || {};
+    const { items, shippingAddress, couponCode, referralCode } = orderDetails || {};
     const quote = await computeOrderQuote({
       items: quoteItemsPayload(items || []),
       couponCode,
@@ -228,7 +254,8 @@ const verifyRazorpayOrder = async (req, res) => {
         status: 'completed',
         update_time: new Date().toISOString()
       },
-      isPaid: true
+      isPaid: true,
+      referralCode
     });
 
     // Trigger push notifications

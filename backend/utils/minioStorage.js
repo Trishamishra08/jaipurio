@@ -6,6 +6,7 @@
 const Minio = require('minio');
 const path = require('path');
 const { randomUUID } = require('crypto');
+const sharp = require('sharp');
 
 const endpointHost = (process.env.S3_ENDPOINT || '').replace(/^https?:\/\//, '');
 const useSSL = (process.env.S3_ENDPOINT || '').startsWith('https://');
@@ -53,25 +54,78 @@ const sanitizeName = (name = 'file') =>
     .replace(/-+/g, '-')
     .slice(0, 180);
 
-/** Upload a buffer (from multer memoryStorage) to MinIO under uploads/<folderPath>/. */
+const isVideo = (name = '', mime = '') => mime.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm)$/i.test(name);
+const isPdf = (name = '', mime = '') => mime === 'application/pdf' || /\.pdf$/i.test(name);
+const isSvg = (name = '', mime = '') => mime.includes('svg') || /\.svg$/i.test(name);
+
+// Matches the quality/size ceiling Cloudinary used to apply automatically —
+// without this, raw camera/phone uploads land in the bucket unresized and
+// uncompressed: slower page loads (hurts Core Web Vitals / LCP, a real
+// ranking factor) and inconsistent visual quality between photos.
+const MAX_DIMENSION = 2000;
+const WEBP_QUALITY = 82;
+
+/**
+ * Resize/compress/convert an image buffer to WebP, same as Cloudinary did.
+ * `.rotate()` with no args auto-applies the file's EXIF orientation before
+ * stripping it, so phone photos never come out sideways.
+ * Returns null (caller keeps the original buffer) for anything sharp
+ * shouldn't touch — videos, PDFs, SVGs, or a file sharp can't decode.
+ */
+const optimizeImage = async (buffer, originalname, mimetype) => {
+  if (isVideo(originalname, mimetype) || isPdf(originalname, mimetype) || isSvg(originalname, mimetype)) return null;
+  try {
+    const image = sharp(buffer).rotate();
+    const metadata = await image.metadata();
+    const resized = image.resize({
+      width: MAX_DIMENSION,
+      height: MAX_DIMENSION,
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+    const output = await resized.webp({ quality: WEBP_QUALITY }).toBuffer({ resolveWithObject: true });
+    return {
+      buffer: output.data,
+      width: output.info.width,
+      height: output.info.height,
+      // Original (pre-rotation) dimensions, only used as a fallback if the resize somehow yields nothing.
+      originalWidth: metadata.width,
+      originalHeight: metadata.height,
+    };
+  } catch {
+    // Not a format sharp can decode (or a corrupt file) — upload as-is rather than failing the request.
+    return null;
+  }
+};
+
+/** Upload a buffer (from multer memoryStorage) to MinIO under uploads/<folderPath>/. Images are resized/compressed to WebP first; video/PDF/SVG pass through untouched. */
 const uploadBuffer = async (file, folderPath = 'media') => {
   const originalname = file.originalname || 'file';
-  const ext = path.extname(originalname) || '';
   const base = sanitizeName(path.parse(originalname).name);
-  const key = `uploads/${String(folderPath || 'media').replace(/^\/|\/$/g, '')}/${Date.now()}-${randomUUID().slice(0, 8)}-${base}${ext}`;
+  const folder = String(folderPath || 'media').replace(/^\/|\/$/g, '');
+  const stamp = `${Date.now()}-${randomUUID().slice(0, 8)}`;
 
-  await minioClient.putObject(bucketName, key, file.buffer, file.buffer.length, {
-    'Content-Type': file.mimetype || 'application/octet-stream',
+  const optimized = await optimizeImage(file.buffer, originalname, file.mimetype);
+  const buffer = optimized ? optimized.buffer : file.buffer;
+  const ext = optimized ? '.webp' : (path.extname(originalname) || '');
+  const mimeType = optimized ? 'image/webp' : (file.mimetype || 'application/octet-stream');
+  const key = `uploads/${folder}/${stamp}-${base}${ext}`;
+
+  // Keys are unique (timestamp + uuid) and never overwritten, so the content
+  // behind a URL can never change — safe to let browsers/CDNs cache it for a year.
+  await minioClient.putObject(bucketName, key, buffer, buffer.length, {
+    'Content-Type': mimeType,
+    'Cache-Control': 'public, max-age=31536000, immutable',
   });
 
   return {
     provider: 'minio',
     key,
     url: getPublicUrl(key),
-    mimeType: file.mimetype || '',
-    size: file.buffer.length,
-    width: null,
-    height: null,
+    mimeType,
+    size: buffer.length,
+    width: optimized?.width || null,
+    height: optimized?.height || null,
   };
 };
 

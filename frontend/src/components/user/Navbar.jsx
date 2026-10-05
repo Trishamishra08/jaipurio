@@ -30,6 +30,7 @@ const MOBILE_NAV = [
   { to: '/orders', label: 'My Orders' },
   { to: '/wishlist', label: 'Saved Wishlist' },
   { to: '/profile', label: 'My Profile' },
+  { to: '/affiliate', label: 'Affiliate Program' },
   { to: '/contact', label: 'Help & Support' },
 ];
 

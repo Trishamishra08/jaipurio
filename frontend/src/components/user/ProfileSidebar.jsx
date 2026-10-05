@@ -3,7 +3,7 @@ import { useShop } from '../../context/ShopContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   FiUser, FiShoppingBag, FiMapPin, FiHeart, FiStar, FiTag, 
-  FiBell, FiLock, FiSettings, FiLogOut, FiCheck, FiMessageSquare
+  FiBell, FiLock, FiSettings, FiLogOut, FiCheck, FiMessageSquare, FiShare2
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import ChatWindow from '../shared/ChatWindow';
@@ -45,6 +45,7 @@ const ProfileSidebar = ({ activeTab = 'profile' }) => {
     { id: 'wishlist', name: 'Wishlist', icon: FiHeart, link: '/wishlist' },
     { id: 'reviews', name: 'My Reviews', icon: FiStar, link: '/reviews' },
     { id: 'coupons', name: 'Coupons', icon: FiTag, link: '/coupons' },
+    { id: 'affiliate', name: 'Affiliate Program', icon: FiShare2, link: '/affiliate' },
     { id: 'notifications', name: 'Notifications', icon: FiBell, link: '/notifications' },
     { id: 'password', name: 'Change Password', icon: FiLock, link: '/change-password' },
     { id: 'settings', name: 'Settings', icon: FiSettings, link: '/settings' },
