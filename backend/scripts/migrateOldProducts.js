@@ -9,7 +9,7 @@
  *  - Parent products (is_variation=0) → Product documents
  *  - Variant rows (is_variation=1) → grouped into variants[] of their parent
  *  - Upsert by SKU: existing products updated, new ones created
- *  - Prices: paise → ÷100 → INR
+ *  - Prices: CSV stores plain INR already, used as-is
  *  - Images: prefixed with IMAGE_BASE_URL
  *  - Category: keyword-matched to MongoDB Category collection
  *
@@ -47,10 +47,10 @@ function stripHtml(s = '') {
   return s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function fromPaise(val) {
+function parsePrice(val) {
   if (val === null || val === undefined || val === '' || val === 'NULL') return null;
   const n = parseFloat(val);
-  return isNaN(n) || n === 0 ? null : parseFloat((n / 100).toFixed(2));
+  return isNaN(n) || n === 0 ? null : n;
 }
 
 function prefixImage(p) {
@@ -251,12 +251,12 @@ async function migrateProducts() {
         const rawName = decodeHtml(row.name || '').trim();
         if (!rawName) { skipped++; continue; }
 
-        const price = fromPaise(row.price);
+        const price = parsePrice(row.price);
         if (!price) { skipped++; continue; }
 
         const productSlug = slugify(rawName);
-        const salePrice = fromPaise(row.sale_price);
-        const costPerItem = fromPaise(row.cost_per_item);
+        const salePrice = parsePrice(row.sale_price);
+        const costPerItem = parsePrice(row.cost_per_item);
         const oldPrice = (salePrice && salePrice < price) ? price : null;
 
         // Images
@@ -269,9 +269,9 @@ async function migrateProducts() {
         const hasVariants = variantRows.length > 0;
         const variantDocs = variantRows.map(v => ({
           sku: v.sku || '',
-          price: fromPaise(v.price) || price,
-          oldPrice: fromPaise(v.sale_price) ? fromPaise(v.price) : null,
-          salePrice: fromPaise(v.sale_price),
+          price: parsePrice(v.price) || price,
+          oldPrice: parsePrice(v.sale_price) ? parsePrice(v.price) : null,
+          salePrice: parsePrice(v.sale_price),
           stock: v.quantity && v.quantity !== 'NULL' ? (parseInt(v.quantity) || 0) : 0,
           weight: parseDim(v.weight),
           barcode: v.barcode || '',
