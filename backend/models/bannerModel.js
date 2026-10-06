@@ -13,6 +13,10 @@ const bannerSchema = new mongoose.Schema({
   description: { type: String },
   badge: { type: String },
   heading: { type: String },
+  // Short value-prop chips shown under the subtitle (e.g. "Premium Marble
+  // Craftsmanship", "Pan India Delivery") — mirrors the feature row in
+  // marketing banner mockups.
+  features: [{ type: String }],
   price: { type: String },
   btnText: { type: String, default: 'SHOP NOW' },
   isVideo: { type: Boolean, default: false },

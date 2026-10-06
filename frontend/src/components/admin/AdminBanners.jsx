@@ -6,7 +6,7 @@ import realApi from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminBanners = () => {
-  const { banners, fetchData } = useShop();
+  const { banners, refreshBanners } = useShop();
   const [activeTab, setActiveTab] = useState('Store Banners');
   const [isAdding, setIsAdding] = useState(false);
   const [editingBanner, setEditingBanner] = useState(null);
@@ -18,7 +18,9 @@ const AdminBanners = () => {
     link: '',
     type: 'Main Slider',
     description: '',
+    badge: '',
     subtitle: '',
+    features: '',
     price: '',
     btnText: 'SHOP NOW',
     isVideo: false,
@@ -66,7 +68,7 @@ const AdminBanners = () => {
     if (window.confirm('Securely remove this visual asset? This will reflect on the live storefront.')) {
       try {
         await realApi.delete(`/banners/${id}`);
-        fetchData();
+        refreshBanners();
       } catch (err) {
         alert('Failed to remove banner');
       }
@@ -81,7 +83,9 @@ const AdminBanners = () => {
       link: banner.link || '',
       type: banner.type || 'Main Slider',
       description: banner.description || '',
+      badge: banner.badge || '',
       subtitle: banner.subtitle || '',
+      features: Array.isArray(banner.features) ? banner.features.join(', ') : '',
       price: banner.price || '',
       btnText: banner.btnText || 'SHOP NOW',
       isVideo: banner.isVideo || false,
@@ -99,15 +103,22 @@ const AdminBanners = () => {
 
     setLoading(true);
     try {
+      const payload = {
+        ...form,
+        features: form.features
+          .split(',')
+          .map((f) => f.trim())
+          .filter(Boolean),
+      };
       if (editingBanner) {
-        await realApi.put(`/banners/${editingBanner._id}`, form);
+        await realApi.put(`/banners/${editingBanner._id}`, payload);
       } else {
-        await realApi.post('/banners', form);
+        await realApi.post('/banners', payload);
       }
       setIsAdding(false);
       setEditingBanner(null);
-      setForm({ title: '', image: '', link: '', type: 'Main Slider', description: '', subtitle: '', price: '', btnText: 'SHOP NOW', isVideo: false, sequence: 1, seoTitle: '', seoDescription: '', seoKeywords: '' });
-      fetchData();
+      setForm({ title: '', image: '', link: '', type: 'Main Slider', description: '', badge: '', subtitle: '', features: '', price: '', btnText: 'SHOP NOW', isVideo: false, sequence: 1, seoTitle: '', seoDescription: '', seoKeywords: '' });
+      refreshBanners();
     } catch (err) {
       console.error('API Error:', err);
       alert(editingBanner ? `Error updating banner: ${err.response?.data?.message || err.message}` : `Error creating banner: ${err.response?.data?.message || err.message}`);
@@ -119,7 +130,7 @@ const AdminBanners = () => {
   const handleCancel = () => {
     setIsAdding(false);
     setEditingBanner(null);
-    setForm({ title: '', image: '', link: '', type: 'Main Slider', description: '', subtitle: '', price: '', btnText: 'SHOP NOW', isVideo: false, sequence: 1, seoTitle: '', seoDescription: '', seoKeywords: '' });
+    setForm({ title: '', image: '', link: '', type: 'Main Slider', description: '', badge: '', subtitle: '', features: '', price: '', btnText: 'SHOP NOW', isVideo: false, sequence: 1, seoTitle: '', seoDescription: '', seoKeywords: '' });
   };
 
   return (
@@ -176,6 +187,14 @@ const AdminBanners = () => {
               <div className="space-y-1">
                 <label className="text-[8px] font-black uppercase text-gray-400">Subtitle</label>
                 <input type="text" value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} className="w-full bg-gray-50 border-none text-[10px] font-bold p-2 outline-none" placeholder="Seasonal Sale | 50% Off" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black uppercase text-gray-400">Eyebrow / Kicker Text</label>
+                <input type="text" value={form.badge} onChange={e => setForm({ ...form, badge: e.target.value })} className="w-full bg-gray-50 border-none text-[10px] font-bold p-2 outline-none" placeholder="e.g. Divine Spaces, Timeless Beauty" />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-[8px] font-black uppercase text-gray-400">Feature Highlights (comma-separated)</label>
+                <input type="text" value={form.features} onChange={e => setForm({ ...form, features: e.target.value })} className="w-full bg-gray-50 border-none text-[10px] font-bold p-2 outline-none" placeholder="Premium Craftsmanship, Pan India Delivery" />
               </div>
               <div className="space-y-1">
                 <label className="text-[8px] font-black uppercase text-gray-400">Display Type</label>
@@ -288,7 +307,7 @@ const AdminBanners = () => {
       </AnimatePresence>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {banners.filter(b => activeTab === 'Store Banners' ? b.type !== 'Vendor Dashboard' : b.type === 'Vendor Dashboard').map((banner) => {
+        {(banners || []).filter(b => activeTab === 'Store Banners' ? b.type !== 'Vendor Dashboard' : b.type === 'Vendor Dashboard').map((banner) => {
           return (
             <div key={banner._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm group relative overflow-hidden flex flex-col">
               <div className="p-3 pb-0">

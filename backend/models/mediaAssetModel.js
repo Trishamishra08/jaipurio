@@ -12,7 +12,7 @@ const mediaAssetSchema = new mongoose.Schema(
     },
     /** Storage backend key / public_id */
     storageKey: { type: String, default: '' },
-    storageProvider: { type: String, enum: ['cloudinary', 'none'], default: 'none' },
+    storageProvider: { type: String, enum: ['cloudinary', 'minio', 'none'], default: 'none' },
     url: { type: String, default: '' },
     mimeType: { type: String, default: '' },
     size: { type: Number, default: 0 },

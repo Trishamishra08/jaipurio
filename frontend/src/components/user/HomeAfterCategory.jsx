@@ -29,59 +29,89 @@ const IMG = {
   succulent: PHOTOS.succulent,
 };
 
-const CRAFT = {
-  matka: PHOTOS.matka,
-  ghada: PHOTOS.matkaRow,
-  kulhad: PHOTOS.kulhad,
-  kulhadPack: PHOTOS.teaCups,
-  planter: PHOTOS.planter,
-  elephantPlanter: PHOTOS.garden,
-  diya: PHOTOS.diya,
-  camelDiya: PHOTOS.diwali,
+/** Groups real products by category into up-to-4 offer tiles — replaces the
+ * old hardcoded OFFER_TILES (fake names/prices paired with stock photos). */
+const buildOfferTiles = (products) => {
+  const byCategory = new Map();
+  products.forEach((p) => {
+    if (!p.category || !p.image) return;
+    if (!byCategory.has(p.category)) byCategory.set(p.category, []);
+    byCategory.get(p.category).push(p);
+  });
+
+  return Array.from(byCategory.entries())
+    .map(([category, list]) => {
+      const withDiscount = list
+        .map((p) => ({
+          ...p,
+          discount: p.oldPrice && p.price ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : 0,
+        }))
+        .sort((a, b) => b.discount - a.discount);
+      const maxDiscount = withDiscount[0]?.discount || 0;
+      return {
+        title: maxDiscount > 0 ? `Up to ${maxDiscount}% off ${category}` : `Shop ${category}`,
+        badge: maxDiscount > 0 ? `${maxDiscount}% OFF` : 'New',
+        to: `/shop?category=${encodeURIComponent(category)}`,
+        link: `Shop ${category}`,
+        maxDiscount,
+        items: withDiscount.slice(0, 2),
+      };
+    })
+    .sort((a, b) => b.maxDiscount - a.maxDiscount)
+    .slice(0, 4);
 };
 
-const OFFER_TILES = [
-  {
-    title: 'Up to 33% off Matkas',
-    badge: '33% OFF',
-    to: '/shop?category=Matkas',
-    link: 'Shop Matkas',
-    items: [
-      { name: 'Design Matka (5L)', price: 399, oldPrice: 599, image: CRAFT.matka },
-      { name: 'Clay Ghada (3L)', price: 349, oldPrice: 499, image: CRAFT.ghada },
-    ],
-  },
-  {
-    title: 'Min. 28% off Kulhads',
-    badge: 'Combo',
-    to: '/shop?category=Kulhads',
-    link: 'Shop Kulhads',
-    items: [
-      { name: 'Kulhad Pack of 6', price: 249, oldPrice: 349, image: CRAFT.kulhad },
-      { name: 'Kulhad Pack of 12', price: 399, oldPrice: 549, image: CRAFT.kulhadPack },
-    ],
-  },
-  {
-    title: 'New: Handmade Planters',
-    badge: 'New',
-    to: '/shop?category=Planters',
-    link: 'Shop Planters',
-    items: [
-      { name: 'Mitti Planter (8in)', price: 349, oldPrice: 499, image: CRAFT.planter },
-      { name: 'Elephant Planter', price: 449, oldPrice: 649, image: CRAFT.elephantPlanter },
-    ],
-  },
-  {
-    title: 'Starting ₹299 — Puja Sets',
-    badge: 'Festive',
-    to: '/shop?category=Puja Essentials',
-    link: 'Shop Puja',
-    items: [
-      { name: 'Diya Set (8 pcs)', price: 299, oldPrice: 450, image: CRAFT.diya },
-      { name: 'Camel Diya Stand', price: 349, oldPrice: 499, image: CRAFT.camelDiya },
-    ],
-  },
+/** One tile per real category, pictured with an actual product photo from
+ * that category — replaces the old hardcoded 5-tile stock-photo grid. */
+const buildCategoryTiles = (products) => {
+  const byCategory = new Map();
+  products.forEach((p) => {
+    if (!p.category || !p.image) return;
+    if (!byCategory.has(p.category)) byCategory.set(p.category, p);
+  });
+
+  return Array.from(byCategory.entries())
+    .slice(0, 5)
+    .map(([category, product], i) => ({
+      title: category,
+      kicker: product.brand || 'Shop the collection',
+      img: product.image,
+      className: i === 0 ? 'col-span-2 row-span-2 min-h-[180px]' : '',
+    }));
+};
+
+/** "Shop by occasion" tiles — each pictured with a real catalog product whose
+ * name best matches the occasion's keywords, instead of a bare color gradient
+ * with no image. Falls back to any product with an image if nothing matches. */
+const OCCASIONS = [
+  { label: 'Wedding & Bridal', to: '#8B2E3A', keywords: ['radha krishna', 'krishna', 'wedding', 'bridal', 'couple'] },
+  { label: 'Housewarming', to: '#C45C6A', keywords: ['lakshmi', 'ganesha', 'ganesh', 'home', 'mandir'] },
+  { label: 'Festive Gifting', to: '#A94E2C', keywords: ['diya', 'festive', 'lamp', 'tealight'] },
+  { label: 'Corporate Gifting', to: '#6F241D', keywords: ['buddha', 'nataraja', 'sculpture'] },
+  { label: 'Just for You', to: '#873A24', keywords: [] },
 ];
+
+const buildOccasionTiles = (products) => {
+  const withImage = products.filter((p) => p.image);
+  const used = new Set();
+
+  return OCCASIONS.map((o) => {
+    const match = withImage.find((p) => {
+      if (used.has(p._id)) return false;
+      const name = (p.name || '').toLowerCase();
+      return o.keywords.some((k) => name.includes(k));
+    }) || withImage.find((p) => !used.has(p._id));
+
+    if (match) used.add(match._id);
+
+    return {
+      label: o.label,
+      link: match?.category ? `/shop?category=${encodeURIComponent(match.category)}` : '/shop',
+      img: match?.image || null,
+      toColor: o.to,
+    };
+  });
+};
 
 const SectionHead = ({ title, copy, to = '/shop', link = 'View All →', compact = false }) => (
   <SectionHeading title={title} copy={copy} to={to} link={link} compact={compact} />
@@ -161,28 +191,9 @@ const Wrap = ({ children, alt, className = '', compact = false }) => (
   </section>
 );
 
-const HOUSES = [
-  { label: 'Water Pots', name: 'Shyam Pottery', copy: 'Hand-painted matkas from Jaipur kilns', image: PHOTOS.matka, to: '/shop?category=Matkas' },
-  { label: 'Chai Cups', name: 'Kulhad House', copy: 'Earthen kulhads with saunda aroma', image: PHOTOS.kulhad, to: '/shop?category=Kulhads' },
-  { label: 'Garden Pots', name: 'Meera Terracotta', copy: 'Breathable mitti planters for home', image: PHOTOS.planter, to: '/shop?category=Planters' },
-  { label: 'Folk Decor', name: 'Rajputana Crafts', copy: 'Hand-sculpted elephants & figurines', image: PHOTOS.elephantCraft, to: '/shop?category=Home Decor' },
-  { label: 'Puja Essentials', name: 'Pushkar Clay Arts', copy: 'Festive diyas, thalis and kalash', image: PHOTOS.diya, to: '/shop?category=Puja Essentials' },
-  { label: 'Flagship', name: 'Jaipurio', copy: "Rajasthan's heritage, one roof", image: PHOTOS.jaipur, to: '/shop' },
-];
-
-const BOUTIQUES = [
-  { key: 'vinayak', tab: 'Vinayak Art & Marble', label: 'Marble & Sandstone', copy: 'Six generations of Makrana marble carvers. Every murti is finished under natural light.', stats: [['420+', 'Pieces in the house'], ['6th gen', 'Family of carvers'], ['4.8★', 'House rating']], image: PHOTOS.ganesh },
-  { key: 'gems', tab: 'Jaipurgems', label: 'Fine Jewellery', copy: 'BIS hallmarked silver and certified gemstones, set in kundan and meenakari traditions.', stats: [['860+', 'Pieces in the house'], ['100%', 'Hallmarked silver'], ['4.9★', 'House rating']], image: PHOTOS.jewelry },
-  { key: 'leather', tab: 'LeatherMart', label: 'Leather & Jute', copy: 'Vegetable-tanned leather, hand-cut and stitched so it ages the way leather should.', stats: [['310+', 'Pieces in the house'], ['Veg-tanned', 'Leather only'], ['4.6★', 'House rating']], image: PHOTOS.leather },
-  { key: 'rangtara', tab: 'Rangtara', label: 'Home Décor', copy: 'Colour-led décor from Jaipur block-print workshops and blue pottery studios.', stats: [['510+', 'Pieces in the house'], ['28', 'Block-print motifs'], ['4.7★', 'House rating']], image: PHOTOS.pichwai },
-  { key: 'royal', tab: 'Royalsuits', label: 'Ethnic Wear', copy: 'Bandhgalas and sherwanis cut to order by Jaipur royal darzis.', stats: [['270+', 'Pieces in the house'], ['Made', 'to order'], ['4.8★', 'House rating']], image: PHOTOS.sherwani },
-];
-
 const HomeAfterCategory = () => {
   const { products } = useShop();
-  const [tab, setTab] = useState(0);
   const [left, setLeft] = useState({ h: 12, m: 44, s: 46 });
-  const boutique = BOUTIQUES[tab];
   const mitti = useMemo(() => products.slice(0, 6), [products]);
   // Live catalog slices for every "product card" rail on this page — these
   // used to come from a hardcoded CATALOG array (real-sounding names paired
@@ -192,6 +203,17 @@ const HomeAfterCategory = () => {
   // per-section, since that labels the shelf, not a false product claim.
   const items = useMemo(
     () => products.slice(0, 8).map((p) => ({ ...p, to: `/product/${p._id}` })),
+    [products]
+  );
+  const offerTiles = useMemo(() => buildOfferTiles(products), [products]);
+  const categoryTiles = useMemo(() => buildCategoryTiles(products), [products]);
+  const occasionTiles = useMemo(() => buildOccasionTiles(products), [products]);
+  const maxDiscount = useMemo(
+    () =>
+      products.reduce((max, p) => {
+        const d = p.oldPrice && p.price ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : 0;
+        return d > max ? d : max;
+      }, 0),
     [products]
   );
 
@@ -222,13 +244,13 @@ const HomeAfterCategory = () => {
       <Wrap compact>
         <SectionHead
           title="Today's Offers"
-          copy="Handmade mitti deals — matkas, kulhads, planters and puja sets."
+          copy="Real deals across our catalog, updated live."
           to="/shop"
           link="View All →"
           compact
         />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2">
-          {OFFER_TILES.map((d, i) => (
+          {offerTiles.map((d, i) => (
             <Link
               key={d.title}
               to={d.to}
@@ -246,7 +268,7 @@ const HomeAfterCategory = () => {
               </div>
               <div className="grid grid-cols-2 gap-1 sm:gap-1.5">
                 {d.items.map((p) => (
-                  <div key={p.name} className="min-w-0 flex flex-col items-center text-center">
+                  <div key={p._id || p.name} className="min-w-0 flex flex-col items-center text-center">
                     <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 shrink-0 rounded-full overflow-hidden bg-[#F7EFE0]">
                       <img
                         src={p.image}
@@ -258,10 +280,12 @@ const HomeAfterCategory = () => {
                       {p.name}
                     </p>
                     <p className="font-body text-[9px] sm:text-[10px] font-semibold text-[#3F261B] leading-tight">
-                      ₹{p.price.toLocaleString('en-IN')}
-                      <span className="ml-0.5 font-normal text-[7px] sm:text-[8px] text-[#9A8B7A] line-through">
-                        ₹{p.oldPrice.toLocaleString('en-IN')}
-                      </span>
+                      ₹{(p.price || 0).toLocaleString('en-IN')}
+                      {p.oldPrice > p.price && (
+                        <span className="ml-0.5 font-normal text-[7px] sm:text-[8px] text-[#9A8B7A] line-through">
+                          ₹{p.oldPrice.toLocaleString('en-IN')}
+                        </span>
+                      )}
                     </p>
                   </div>
                 ))}
@@ -275,20 +299,15 @@ const HomeAfterCategory = () => {
         </div>
       </Wrap>
 
-      {/* 2. Explore Jaipurio */}
+      {/* 2. Explore Jaipurio — real catalog categories, each tile using an
+          actual product photo from that category instead of stock art. */}
       <Wrap alt>
         <SectionHead eyebrow="Shop the Look" title="Explore Jaipurio" />
         <div className="grid grid-cols-2 md:grid-cols-4 md:grid-rows-2 gap-2.5 min-h-[280px] md:min-h-[360px]">
-          {[
-            { className: 'col-span-2 row-span-2 min-h-[180px]', img: IMG.ganesh, kicker: 'Marble & Brass', title: 'Idols & Mandirs' },
-            { img: IMG.jewellery, kicker: 'Fine Jewellery', title: 'Kundan & Silver' },
-            { img: IMG.pottery, kicker: 'Home Decor', title: 'Jaipur Blue Pottery' },
-            { img: IMG.pichwai, kicker: 'Art & Décor', title: 'Pichwai & Paintings' },
-            { img: IMG.sherwani, kicker: 'Ethnic Wear', title: 'Bandhgala Suits' },
-          ].map((b) => (
+          {categoryTiles.map((b) => (
             <Link
               key={b.title}
-              to="/shop"
+              to={`/shop?category=${encodeURIComponent(b.title)}`}
               className={`relative overflow-hidden rounded-xl min-h-[110px] ${b.className || ''}`}
             >
               <img src={b.img} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
@@ -350,10 +369,10 @@ const HomeAfterCategory = () => {
             Limited Time
           </p>
           <h3 className="font-playfair font-semibold text-[16px] sm:text-[24px] leading-tight mt-0.5">
-            Festive Flash Sale — 35% off
+            {maxDiscount > 0 ? `Festive Flash Sale — Up to ${maxDiscount}% off` : 'Festive Flash Sale'}
           </h3>
           <p className="font-body text-[10px] sm:text-[12px] text-white/80 mt-0.5 leading-snug">
-            On matkas, kulhads & puja sets. Ends soon.
+            Across our handcrafted catalog. Ends soon.
           </p>
           <div className="flex items-center gap-1.5 sm:gap-2.5 mt-2.5">
             {[
@@ -380,42 +399,6 @@ const HomeAfterCategory = () => {
               Shop the Sale
             </Link>
           </div>
-        </div>
-      </Wrap>
-
-      {/* 7. Six houses */}
-      <Wrap alt>
-        <SectionHead
-          title="Six houses, six crafts"
-          copy="Each workshop runs its own storefront — browse them or shop everything together."
-        />
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-          {HOUSES.map((h, i) => (
-            <Link
-              key={h.name}
-              to={h.to}
-              className="house-card-in group relative overflow-hidden rounded-xl min-h-[108px] sm:min-h-[148px] flex flex-col justify-end"
-              style={{ animationDelay: `${i * 70}ms` }}
-            >
-              <img
-                src={h.image}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover object-center scale-[1.16] group-hover:scale-[1.22] transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#3F261B]/92 via-[#3F261B]/40 to-transparent" />
-              <div className="relative z-10 p-2 sm:p-3 text-white">
-                <p className="font-body text-[8px] sm:text-[9px] uppercase tracking-[0.14em] text-white/80">
-                  {h.label}
-                </p>
-                <h3 className="font-playfair font-semibold text-[13px] sm:text-[18px] leading-tight mt-0.5">
-                  {h.name}
-                </h3>
-                <p className="font-body text-[9px] sm:text-[11px] text-white/85 mt-0.5 leading-snug line-clamp-2">
-                  {h.copy}
-                </p>
-              </div>
-            </Link>
-          ))}
         </div>
       </Wrap>
 
@@ -464,54 +447,6 @@ const HomeAfterCategory = () => {
         </div>
       </Wrap>
 
-      {/* 11. Boutique */}
-      <Wrap alt>
-        <SectionHeading
-          title="Step into each boutique"
-          copy="Every house on Jaipurio runs its own workshop — switch between them the way you would walk Johari Bazaar."
-        />
-        <div className="flex gap-4 overflow-x-auto border-b border-[#F3D5D0] mb-4">
-          {BOUTIQUES.map((b, i) => (
-            <button
-              key={b.key}
-              type="button"
-              onClick={() => setTab(i)}
-              className={`font-dm text-[12px] whitespace-nowrap pb-2 ${
-                i === tab
-                  ? 'text-[#C45C6A] font-semibold border-b-2 border-[#C45C6A]'
-                  : 'text-[#5B4638]'
-              }`}
-            >
-              {b.tab}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-          <div className="rounded-2xl overflow-hidden aspect-[4/3] bg-[#F7F3EE]">
-            <img src={boutique.image} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-          </div>
-          <div>
-            <p className="font-dm text-[10px] uppercase tracking-[0.16em] text-[#C45C6A]">{boutique.label}</p>
-            <h3 className="font-playfair font-semibold text-[18px] sm:text-[22px] md:text-[24px] text-[#3F261B] mt-1">{boutique.tab}</h3>
-            <p className="font-dm text-[13px] text-[#8A6A68] mt-2 leading-relaxed">{boutique.copy}</p>
-            <div className="flex gap-5 mt-4">
-              {boutique.stats.map(([v, l]) => (
-                <div key={l}>
-                  <p className="font-playfair font-semibold text-[18px] text-[#6F241D]">{v}</p>
-                  <p className="font-dm text-[10px] text-[#8A6A68]">{l}</p>
-                </div>
-              ))}
-            </div>
-            <Link
-              to="/shop"
-              className="inline-flex mt-4 bg-[#C45C6A] text-white font-dm text-[12px] font-semibold px-5 py-2.5 rounded-full"
-            >
-              Enter the boutique
-            </Link>
-          </div>
-        </div>
-      </Wrap>
-
       {/* 12. Styled edits */}
       <Wrap>
         <SectionHead
@@ -539,43 +474,6 @@ const HomeAfterCategory = () => {
                 <p className="font-dm text-[11px] text-[#8A6A68] mt-1 leading-snug">{e.copy}</p>
               </div>
             </Link>
-          ))}
-        </div>
-      </Wrap>
-
-      {/* 13. Maker's Ledger */}
-      <Wrap alt>
-        <SectionHead
-          eyebrow="The Maker's Ledger"
-          title="Every piece, traced back"
-          copy="Origin, artisan, and material — recorded the way a gallery would catalogue it, not hidden in a spec tab."
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {[
-            { name: 'White Marble Nataraja, 18in', origin: 'Makrana, Rajasthan', house: 'Vinayak Art & Marble', material: 'Single-block Makrana marble', time: '~40 hours, hand tools', quote: '"I finish every face by lamplight — daylight hides the small mistakes." — Ramesh, master carver', img: IMG.mandir },
-            { name: 'Kundan Meenakari Choker Set', origin: 'Johari Bazaar, Jaipur', house: 'Jaipurgems', material: '92.5 silver, uncut kundan', time: '~65 hours, 3 artisans', quote: '"Meenakari is the part you never see until you turn it over." — Sunita, enamel setter', img: IMG.kundan },
-            { name: 'Hand-tooled Saddle Leather Satchel', origin: 'Amer Road, Jaipur', house: 'LeatherMart', material: 'Vegetable-tanned buffalo hide', time: '~12 hours, saddle stitch', quote: '"Good leather should smell like leather, not like a factory." — Iqbal, master stitcher', img: IMG.leather },
-          ].map((m) => (
-            <div key={m.name} className="bg-white rounded-xl overflow-hidden border border-[#F3D5D0]">
-              <div className="aspect-[4/3] overflow-hidden bg-[#F7F3EE]">
-                <img src={m.img} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-              </div>
-              <div className="p-3">
-                <h4 className="font-playfair font-semibold text-[14px] text-[#3F261B]">{m.name}</h4>
-                {[
-                  ['Origin', m.origin],
-                  ['Artisan House', m.house],
-                  ['Material', m.material],
-                  ['Carve Time', m.time],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-2 font-dm text-[10px] mt-1 text-[#8A6A68]">
-                    <span>{k}</span>
-                    <span className="text-[#3F261B] text-right">{v}</span>
-                  </div>
-                ))}
-                <p className="font-dm text-[10px] italic text-[#8A6A68] mt-2 leading-snug">{m.quote}</p>
-              </div>
-            </div>
           ))}
         </div>
       </Wrap>
@@ -609,58 +507,33 @@ const HomeAfterCategory = () => {
         </div>
       </Wrap>
 
-      {/* 15. Shop by occasion */}
+      {/* 15. Shop by occasion — pictured with real catalog product photos,
+          chosen to fit each occasion, instead of a bare gradient. */}
       <Wrap alt>
         <SectionHead eyebrow="Gifting, Sorted" title="Shop by occasion" />
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          {[
-            ['Wedding & Bridal', '#E8A0A8', '#8B2E3A'],
-            ['Housewarming', '#F4C2C2', '#C45C6A'],
-            ['Festive Gifting', '#F8D0C8', '#A94E2C'],
-            ['Corporate Gifting', '#E8B4C8', '#6F241D'],
-            ['Just for You', '#F5C6CE', '#873A24'],
-          ].map(([label, from, to]) => (
+          {occasionTiles.map((o) => (
             <Link
-              key={label}
-              to="/shop"
-              className="rounded-xl min-h-[88px] flex items-end p-3 text-white font-playfair font-semibold text-[14px]"
-              style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
+              key={o.label}
+              to={o.link}
+              className="relative overflow-hidden rounded-xl aspect-[3/4] sm:aspect-[4/5] flex items-end p-3 text-white font-playfair font-semibold text-[14px] group bg-[#F7EFE0]"
             >
-              {label}
+              {o.img && (
+                <img
+                  src={o.img}
+                  alt={o.label}
+                  className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
+              <div
+                className="absolute inset-0"
+                style={{ background: `linear-gradient(180deg, transparent 55%, ${o.toColor}F2 100%)` }}
+              />
+              <span className="relative z-10">{o.label}</span>
             </Link>
           ))}
-        </div>
-      </Wrap>
-
-      {/* 16. Editorial */}
-      <Wrap>
-        <SectionHeading title="The Marble Route" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-white rounded-2xl border border-[#F3D5D0] overflow-hidden">
-          <div className="aspect-[4/3] md:aspect-auto md:min-h-[260px] overflow-hidden bg-[#F7F3EE]">
-            <img src={PHOTOS.handsClay} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-          </div>
-          <div className="p-4 sm:p-6">
-            <h3 className="font-playfair font-semibold text-[18px] sm:text-[22px] md:text-[24px] text-[#3F261B] leading-tight">
-              Makrana to Your Mandir
-            </h3>
-            <p className="font-dm text-[12px] text-[#8A6A68] mt-2 leading-relaxed">
-              We followed a single block of Makrana marble for three weeks — from the quarry, through the Vinayak workshop, to the hands that carved it into a foot-tall Ganesh.
-            </p>
-            <Link to="/shop" className="inline-flex mt-3 font-dm text-[12px] font-semibold text-[#C45C6A]">
-              Read the story →
-            </Link>
-            <div className="flex gap-2.5 mt-4 overflow-x-auto">
-              {items.slice(0, 3).map((item) => (
-                <Link key={item.name} to={item.to || '/shop'} className="w-[92px] shrink-0">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-[#F7F3EE]">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                  </div>
-                  <p className="font-playfair text-[11px] font-semibold text-[#3F261B] mt-1 line-clamp-1">{item.name}</p>
-                  <p className="font-dm text-[10px] text-[#C45C6A]">₹{(item.price || 0).toLocaleString('en-IN')}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
         </div>
       </Wrap>
 

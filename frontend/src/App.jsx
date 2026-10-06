@@ -89,6 +89,8 @@ import AdminMarketplaceStores from './components/admin/marketplace/AdminMarketpl
 import AdminMarketplaceStoreEdit from './components/admin/marketplace/AdminMarketplaceStoreEdit';
 import AdminMarketplaceWithdrawals from './components/admin/marketplace/AdminMarketplaceWithdrawals';
 import AdminMarketplaceWithdrawalEdit from './components/admin/marketplace/AdminMarketplaceWithdrawalEdit';
+import AdminBanners from './components/admin/AdminBanners';
+import AdminMedia from './components/admin/AdminMedia';
 import AdminPages from './components/admin/AdminPages';
 import AdminPageEdit from './components/admin/AdminPageEdit';
 import AdminBlogs from './components/admin/AdminBlogs';
@@ -338,6 +340,8 @@ function App() {
             path="/admin/marketplaces/withdrawals/edit/:id"
             element={<AdminMarketplaceWithdrawalEdit />}
           />
+          <Route path="/admin/banners" element={<AdminBanners />} />
+          <Route path="/admin/media" element={<AdminMedia />} />
           <Route path="/admin/pages" element={<AdminPages />} />
           <Route path="/admin/pages/create" element={<AdminPageEdit />} />
           <Route path="/admin/pages/edit/:id" element={<AdminPageEdit />} />

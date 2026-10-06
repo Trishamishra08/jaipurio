@@ -104,6 +104,26 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
   const [vendors, setVendors] = useState(initialVendors);
   const [reviews, setReviews] = useState(initialReviews);
 
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
+
+  const refreshBanners = useCallback(async () => {
+    setBannersLoading(true);
+    try {
+      const res = await api.get('/banners');
+      const list = res.data?.data?.banners;
+      setBanners(Array.isArray(list) ? list : []);
+    } catch {
+      /* keep previous banners if the API is unavailable */
+    } finally {
+      setBannersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBanners();
+  }, [refreshBanners]);
+
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('jaipurio_cart');
@@ -332,6 +352,9 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
         offers,
         vendors,
         reviews,
+        banners,
+        bannersLoading,
+        refreshBanners,
         cart,
         cartCount,
         cartTotal,

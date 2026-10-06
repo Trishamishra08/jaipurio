@@ -149,6 +149,7 @@ export const adminNav = [
     title: 'Appearance',
     icon: Palette,
     children: [
+      { title: 'Banners', path: '/admin/banners' },
       { title: 'Menus', path: '/admin/menus' },
       { title: 'Widgets', path: '/admin/widgets' },
       { title: 'Theme Options', path: '/admin/theme/options/opt-text-subsection-general' },
