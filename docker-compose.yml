@@ -1,8 +1,9 @@
 # Jaipurio production stack — deploy in Coolify with the "Docker Compose" build pack.
 #
 # Only jaipurio-web gets a domain in Coolify. It serves the React app and
-# forwards /api, /uploads and /robots.txt to jaipurio-api over the private
-# network. The API and Redis are never exposed to the internet.
+# forwards /api, /uploads and /robots.txt to jaipurio-api and /images to
+# imgproxy over the private network. The API, Redis, MinIO and imgproxy have
+# no domains or published ports.
 #
 # No secrets live in this file: Coolify lists every ${VAR} below in its
 # Environment Variables tab. `:?` = required, `:-x` = optional (default x).
@@ -155,3 +156,36 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  jaipurio-minio:
+    image: cgr.dev/chainguard/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?}
+    volumes:
+      - minio-data:/data
+    expose:
+      - "9000"
+      - "9001"
+
+  jaipurio-imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:latest
+    restart: unless-stopped
+    depends_on:
+      - jaipurio-minio
+    environment:
+      # The jaipurio bucket has anonymous read access in production. Fetch
+      # only that bucket via MinIO's private HTTP endpoint; no S3 keys needed.
+      IMGPROXY_ALLOWED_SOURCES: http://jaipurio-minio:9000/jaipurio/
+      IMGPROXY_MAX_REDIRECTS: "0"
+      IMGPROXY_MAX_RESULT_DIMENSION: "1600"
+      IMGPROXY_MAX_SRC_FILE_SIZE: "26214400"
+      # Object keys can be overwritten, so don't cache their old pixels for a year.
+      IMGPROXY_TTL: "3600"
+    expose:
+      - "8080"
+
+volumes:
+  minio-data:
