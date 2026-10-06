@@ -161,12 +161,17 @@ app.get('/robots.txt', async (req, res) => {
   try {
     const Settings = require('./models/settingsModel');
     const settings = await Settings.findOne({});
-    const content = settings?.robotsTxt || "User-agent: *\nAllow: /\n\nSitemap: https://jaipurio.in/sitemap.xml";
+    const content = settings?.robotsTxt || Settings.schema.path('robotsTxt').defaultValue;
     res.type('text/plain').send(content);
   } catch {
-    res.type('text/plain').send("User-agent: *\nAllow: /\n");
+    res.type('text/plain').send('User-agent: *\nAllow: /\n');
   }
 });
+
+// Sitemaps (products/categories/brands/blog) — public, reached via a Vercel
+// rewrite exception so the SPA catch-all doesn't swallow these paths.
+const sitemapRoutes = require('./routes/sitemapRoutes');
+app.use('/', sitemapRoutes);
 
 // Root Route
 app.get('/', (req, res) => {

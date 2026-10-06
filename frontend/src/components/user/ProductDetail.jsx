@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Minus,
   Package,
+  Phone,
   Plus,
   RotateCcw,
   Share2,
@@ -31,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { journalPosts } from '../../data/journalPosts';
-import { getWhatsAppHref } from '../../utils/whatsapp';
+import { getWhatsAppHref, WHATSAPP_PHONE } from '../../utils/whatsapp';
 import { mapApiProductToStorefront, formatInr } from '../../utils/storefrontProduct';
 import api from '../../utils/api';
 
@@ -177,10 +178,55 @@ const ProductDetail = () => {
     const href = `${window.location.origin}/products/${slug}`;
     canonical.setAttribute('href', seo.canonicalUrl || href);
 
+    // Product JSON-LD schema (Rule 8) — admin-authored schema wins if set,
+    // otherwise a Product schema is generated from live product data.
+    const customSchema = product.seo?.advanced?.schemaMarkup;
+    let schemaJson = customSchema && customSchema.trim();
+    if (!schemaJson) {
+      const inStock = String(product.stockStatus || '').toLowerCase().includes('out')
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock';
+      schemaJson = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name || product.title,
+        image: images.length ? images : undefined,
+        description,
+        sku: product.sku || undefined,
+        brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+        offers: {
+          '@type': 'Offer',
+          url: href,
+          priceCurrency: 'INR',
+          price: String(unitPrice ?? product.price ?? ''),
+          availability: inStock,
+          itemCondition: 'https://schema.org/NewCondition',
+        },
+        ...(product.reviews
+          ? {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: String(product.rating || 4.8),
+                reviewCount: String(product.reviews),
+              },
+            }
+          : {}),
+      });
+    }
+    let schemaScript = document.querySelector('script[data-pdp-schema="true"]');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.setAttribute('type', 'application/ld+json');
+      schemaScript.setAttribute('data-pdp-schema', 'true');
+      document.head.appendChild(schemaScript);
+    }
+    schemaScript.textContent = schemaJson;
+
     return () => {
       document.title = prevTitle;
       metaDesc.setAttribute('content', prevDesc);
       canonical.setAttribute('href', prevCanonical);
+      schemaScript.remove();
     };
   }, [product, id]);
 
@@ -323,7 +369,8 @@ const ProductDetail = () => {
         }
         .pdp-full-html table {
           width: 100% !important;
-          border-collapse: collapse;
+          border-collapse: separate;
+          border-spacing: 0;
           margin: 1.5em 0;
           font-size: 13.5px;
           background: #FFFFFF;
@@ -333,20 +380,49 @@ const ProductDetail = () => {
           box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .pdp-full-html th, .pdp-full-html td {
-          border: 1px solid #E5E7EB;
+          border-bottom: 1px solid #E5E7EB;
+          border-right: 1px solid #E5E7EB;
           padding: 10px 16px;
           text-align: left;
+        }
+        .pdp-full-html th:last-child, .pdp-full-html td:last-child {
+          border-right: none;
+        }
+        .pdp-full-html tbody tr:last-child td {
+          border-bottom: none;
         }
         .pdp-full-html th {
           background-color: #F9FAFB;
           font-weight: 600;
           color: #111827;
         }
-        .pdp-full-html td:first-child {
-          font-weight: 600;
-          color: #1F2937;
+        .pdp-full-html tbody tr:nth-child(even) td {
           background-color: #FAFAFA;
-          width: 28%;
+        }
+        .pdp-full-html strong, .pdp-full-html b {
+          color: #1F2937;
+          font-weight: 600;
+        }
+        .pdp-full-html a {
+          color: #B45309;
+          text-decoration: underline;
+        }
+        .pdp-full-html ol {
+          margin: 0 0 1.1em;
+          padding-left: 1.4em;
+          list-style: decimal;
+        }
+        .pdp-full-html blockquote {
+          margin: 1.2em 0;
+          padding: 0.75em 1.1em;
+          border-left: 3px solid #E5E7EB;
+          color: #4B5563;
+          background: #F9FAFB;
+        }
+        .pdp-full-html hr {
+          border: none;
+          border-top: 1px solid #E5E7EB;
+          margin: 1.5em 0;
         }
         .pdp-full-html img {
           max-width: 100%;
@@ -443,7 +519,13 @@ const ProductDetail = () => {
                       i === imgIndex ? 'border-[#8B2E3A] ring-1 ring-[#8B2E3A]/40' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    <img
+                      src={src}
+                      alt={`${product.name} — view ${i + 1}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </button>
                 ))}
               </div>
@@ -492,7 +574,7 @@ const ProductDetail = () => {
                 alt={product.name}
                 loading="eager"
                 decoding="async"
-                fetchpriority="high"
+                fetchPriority="high"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
               />
             </div>
@@ -664,15 +746,24 @@ const ProductDetail = () => {
                 </button>
               </div>
 
-              <a
-                href={getWhatsAppHref(`Hi, I'm interested in ${product.name}`)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
-              >
-                <MessageCircle size={15} />
-                Ask on WhatsApp
-              </a>
+              <div className="flex items-center gap-4">
+                <a
+                  href={getWhatsAppHref(`Hi, I'm interested in ${product.name}`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
+                >
+                  <MessageCircle size={15} />
+                  Ask on WhatsApp
+                </a>
+                <a
+                  href={`tel:+${WHATSAPP_PHONE}`}
+                  className="inline-flex items-center gap-1 text-[#8B2E3A] hover:text-[#6F241D] font-semibold"
+                >
+                  <Phone size={15} />
+                  Call Us
+                </a>
+              </div>
             </div>
 
             {/* Pincode checker */}

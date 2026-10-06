@@ -3,6 +3,9 @@
   "outputDirectory": "frontend/dist",
   "framework": null,
   "rewrites": [
+    { "source": "/robots.txt", "destination": "https://jaipurio-ysbo.onrender.com/robots.txt" },
+    { "source": "/sitemap.xml", "destination": "https://jaipurio-ysbo.onrender.com/sitemap.xml" },
+    { "source": "/sitemap-:name.xml", "destination": "https://jaipurio-ysbo.onrender.com/sitemap-:name.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "build": {

@@ -27,7 +27,48 @@ const settingsSchema = new mongoose.Schema({
   customCss: { type: String, default: '' },
   customJs: { type: String, default: '' },
   customHtml: { type: String, default: '' },
-  robotsTxt: { type: String, default: 'User-agent: *\nDisallow:' },
+  robotsTxt: {
+    type: String,
+    default: `# SEARCH ENGINES — WELCOME
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: Applebot
+Allow: /
+
+# AI SEARCH BOTS — WELCOME (they recommend you to shoppers)
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+
+# AI TRAINING BOTS — BLOCKED
+User-agent: GPTBot
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+
+# BLOCK PRIVATE AREAS
+User-agent: *
+Disallow: /cart
+Disallow: /checkout
+Disallow: /customer/
+Disallow: /login
+Disallow: /register
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+
+Sitemap: https://jaipurio.in/sitemap.xml`,
+  },
 }, {
   timestamps: true
 });
