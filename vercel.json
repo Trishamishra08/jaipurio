@@ -3,15 +3,15 @@
   "outputDirectory": "frontend/dist",
   "framework": null,
   "rewrites": [
-    { "source": "/robots.txt", "destination": "https://jaipurio-ysbo.onrender.com/robots.txt" },
-    { "source": "/sitemap.xml", "destination": "https://jaipurio-ysbo.onrender.com/sitemap.xml" },
-    { "source": "/sitemap-:name.xml", "destination": "https://jaipurio-ysbo.onrender.com/sitemap-:name.xml" },
+    { "source": "/robots.txt", "destination": "https://jaipurio.in/robots.txt" },
+    { "source": "/sitemap.xml", "destination": "https://jaipurio.in/sitemap.xml" },
+    { "source": "/sitemap-:name.xml", "destination": "https://jaipurio.in/sitemap-:name.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "build": {
     "env": {
-      "VITE_API_URL": "https://jaipurio-ysbo.onrender.com/api",
-      "VITE_API_BASE_URL": "https://jaipurio-ysbo.onrender.com",
+      "VITE_API_URL": "https://jaipurio.in/api",
+      "VITE_API_BASE_URL": "https://jaipurio.in",
       "VITE_SITE_URL": "https://jaipurio-one.vercel.app"
     }
   }
