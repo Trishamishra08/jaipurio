@@ -35,7 +35,15 @@ const Shop = () => {
   // Row 1 shows the top-level categories; once one is picked, row 2 drills
   // into its sub-categories (or its siblings when it is already a leaf).
   const { categories } = useCategoryTree();
-  const selectedNode = categories.find((c) => c.name === selectedCategory);
+  // Exact name first; an old/partial name (e.g. "Idols" from a banner link)
+  // resolves to the broadest category containing it, like the API does.
+  const selectedNode =
+    categories.find((c) => c.name === selectedCategory) ||
+    (selectedCategory
+      ? [...categories]
+          .filter((c) => c.name.toLowerCase().includes(selectedCategory.toLowerCase()))
+          .sort((a, b) => a.level - b.level)[0]
+      : undefined);
   const topLevel = categories.filter((c) => !c.parent);
   const activeTopId = (() => {
     let node = selectedNode;
@@ -121,7 +129,7 @@ const Shop = () => {
           </div>
           <h1 className="font-playfair font-semibold text-[18px] sm:text-2xl text-[#3F261B] leading-tight">
             {selectedCategory
-              ? `${selectedCategory} Collection`
+              ? `${selectedNode?.name || selectedCategory} Collection`
               : 'Authentic Rajasthani Pottery & Crafts'}
           </h1>
           <p className="font-dm text-[11px] text-[#806653] mt-0.5">
@@ -160,7 +168,7 @@ const Shop = () => {
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {subRow.map((cat) => {
-              const active = selectedCategory === cat.name;
+              const active = selectedNode?.id === cat.id;
               return (
                 <button
                   key={cat.id}

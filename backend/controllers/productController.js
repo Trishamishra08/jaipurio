@@ -144,6 +144,15 @@ const buildCategoryClause = async (value) => {
     .sort({ legacyId: -1 }) // imported taxonomy wins over same-named topic categories
     .select('_id title')
     .lean();
+  // Old links (banners, bookmarks) may use a retired name like "Idols" — fall
+  // back to the broadest live category containing it, e.g. "Religious Statuary Idols".
+  const fuzzy = cat
+    ? null
+    : await Category.findOne({ isActive: { $ne: false }, title: new RegExp(escapeRegex(raw), 'i') })
+        .sort({ level: 1, sortOrder: 1 })
+        .select('_id title')
+        .lean();
+  if (fuzzy) return { $or: [{ categoryIds: fuzzy._id }, { category: fuzzy.title }] };
   if (!cat) return { category: raw };
   return { $or: [{ categoryIds: cat._id }, { category: cat.title }] };
 };

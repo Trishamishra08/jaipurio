@@ -73,12 +73,12 @@ const DIRECTORY = [
   {
     title: 'Shop by Category',
     links: [
-      ['Matkas', '/shop?category=Matkas'],
-      ['Kulhads', '/shop?category=Kulhads'],
-      ['Planters', '/shop?category=Planters'],
-      ['Home Decor', '/shop?category=Home Decor'],
-      ['Puja Essentials', '/shop?category=Puja Essentials'],
-      ['Gift Sets', '/shop'],
+      ['Jewellery', '/shop?category=Jewellery'],
+      ['Home & Living', '/shop?category=Home%20%26%20Living'],
+      ['Marble & Brass Idols', '/shop?category=Religious%20Statuary%20Idols'],
+      ['Clothing', '/shop?category=Clothing'],
+      ['Accessories', '/shop?category=Accessories'],
+      ['Bags & Purses', '/shop?category=Bags%20%26%20Purses'],
     ],
   },
   {
