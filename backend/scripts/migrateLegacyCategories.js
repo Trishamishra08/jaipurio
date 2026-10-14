@@ -134,10 +134,34 @@ async function main() {
   });
 
   // ── Product → categories ───────────────────────────────────────
+  // Bulk-tagging mistakes in the legacy shop: when a product carries the
+  // `when` category, the `drop` categories on it are wrong (verified against
+  // product names — e.g. 53 marble statues were also tagged "Handbags").
+  const CORRECTIONS = [
+    { when: 'Religious Statuary Idols', drop: ['Handbags'] },
+    { when: 'Semi Hunting Jackets', drop: ['Woolen Beret Caps'] },
+    { when: 'Painting', drop: ['Religious Statuary Idols'] },
+    { when: 'Shoulder Bags', drop: ['Home & Living', 'Spirituality & Religion'] },
+  ];
+  const idByTitle = new Map([...node.values()].map((n) => [n.title, n.id]));
+  let corrected = 0;
+  const correct = (catIds) => {
+    let out = [...catIds];
+    for (const rule of CORRECTIONS) {
+      if (!out.includes(idByTitle.get(rule.when))) continue;
+      const dropIds = rule.drop.map((t) => idByTitle.get(t));
+      const next = out.filter((cid) => !dropIds.includes(cid));
+      if (next.length !== out.length) corrected++;
+      out = next;
+    }
+    return out;
+  };
+
   const assignment = new Map(); // sku → { primary, ids:Set(legacy ids) }
   let noCategory = 0;
   legacy.products.forEach((p) => {
     if (!p.sku) return;
+    p.categoryIds = correct(p.categoryIds);
     const ids = new Set();
     p.categoryIds.forEach((cid) => chain(cid).forEach((n) => ids.add(n.id)));
     if (!ids.size) { noCategory++; return; }
@@ -146,7 +170,7 @@ async function main() {
       .sort((a, b) => b.level - a.level || a.order - b.order || a.id - b.id)[0];
     assignment.set(p.sku, { primary, ids });
   });
-  console.log(`  legacy products with a category: ${assignment.size}   without: ${noCategory}`);
+  console.log(`  legacy products with a category: ${assignment.size}   without: ${noCategory}   tag corrections applied: ${corrected}`);
 
   // ── Categories ─────────────────────────────────────────────────
   console.log('\nConnecting to MongoDB...');
