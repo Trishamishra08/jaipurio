@@ -31,6 +31,14 @@ const blogSchema = new mongoose.Schema(
     },
     readTime: { type: String, default: '5 min' },
     faqs: [blogFaqSchema],
+    // Per-post summary boxes shown above the article (admin: Edit post →
+    // Quick answer & key takeaways). Empty = the box is not shown.
+    quickAnswer: {
+      heading: { type: String, default: '', trim: true },
+      summary: { type: String, default: '', trim: true },
+      points: [{ type: String, trim: true }],
+    },
+    keyTakeaways: [{ type: String, trim: true }],
     seo: seoFields,
     seoTitle: { type: String, default: '' },
     seoDescription: { type: String, default: '' },

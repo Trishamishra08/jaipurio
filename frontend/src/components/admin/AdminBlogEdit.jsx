@@ -57,6 +57,11 @@ export const AdminBlogEdit = () => {
   const [tags, setTags] = useState([]);
   const [allTags, setAllTags] = useState([]);
   const [faqs, setFaqs] = useState([]);
+  // Quick answer + key takeaways boxes shown above the article
+  const [qaHeading, setQaHeading] = useState('');
+  const [qaSummary, setQaSummary] = useState('');
+  const [qaPoints, setQaPoints] = useState('');
+  const [takeaways, setTakeaways] = useState('');
   const [seo, setSeo] = useState(() => normalizeSeoState({}));
   const [seoOpen, setSeoOpen] = useState(false);
   const [createdAt, setCreatedAt] = useState('');
@@ -97,6 +102,10 @@ export const AdminBlogEdit = () => {
     setTags(Array.isArray(row.tags) ? row.tags : []);
     setTagInput(Array.isArray(row.tags) ? row.tags.join(', ') : '');
     setFaqs(Array.isArray(row.faqs) ? row.faqs : []);
+    setQaHeading(row.quickAnswer?.heading || '');
+    setQaSummary(row.quickAnswer?.summary || '');
+    setQaPoints(Array.isArray(row.quickAnswer?.points) ? row.quickAnswer.points.join('\n') : '');
+    setTakeaways(Array.isArray(row.keyTakeaways) ? row.keyTakeaways.join('\n') : '');
     setCreatedAt(row.createdAt || '');
     setSeo(
       normalizeSeoState(row.seo, {
@@ -227,6 +236,12 @@ export const AdminBlogEdit = () => {
       category: selectedCategories[0] || '',
       tags: nextTags,
       faqs: faqs.filter((f) => f.question?.trim() || f.answer?.trim()),
+      quickAnswer: {
+        heading: qaHeading.trim(),
+        summary: qaSummary.trim(),
+        points: qaPoints.split('\n').map((p) => p.trim()).filter(Boolean),
+      },
+      keyTakeaways: takeaways.split('\n').map((p) => p.trim()).filter(Boolean),
       seo: nextSeo,
       seoTitle: nextSeo.general?.metaTitle || '',
       seoDescription: nextSeo.general?.metaDescription || '',
@@ -375,6 +390,53 @@ export const AdminBlogEdit = () => {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Content</label>
                   <AdminCkEditor value={content} onChange={setContent} minHeight={220} />
+                </div>
+              </div>
+
+              <div className="bg-white p-4 sm:p-5 rounded-md border border-slate-200 shadow-2xs space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800">Quick answer &amp; key takeaways</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Summary boxes shown above the article on this post. Leave a box empty to hide it.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Quick answer — question / heading</label>
+                  <input
+                    type="text"
+                    value={qaHeading}
+                    onChange={(e) => setQaHeading(e.target.value)}
+                    placeholder="e.g. What should you look for before you buy?"
+                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Quick answer — short answer</label>
+                  <textarea
+                    value={qaSummary}
+                    onChange={(e) => setQaSummary(e.target.value)}
+                    rows={2}
+                    placeholder="One or two sentences that answer the question directly."
+                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs resize-y"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Quick answer — points (one per line)</label>
+                  <textarea
+                    value={qaPoints}
+                    onChange={(e) => setQaPoints(e.target.value)}
+                    rows={4}
+                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs resize-y"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Key takeaways (one per line)</label>
+                  <textarea
+                    value={takeaways}
+                    onChange={(e) => setTakeaways(e.target.value)}
+                    rows={5}
+                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs resize-y"
+                  />
                 </div>
               </div>
 

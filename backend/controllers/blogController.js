@@ -131,6 +131,17 @@ const normalizeBlogPayload = (body = {}, user) => {
 
   if (!Array.isArray(payload.faqs)) payload.faqs = [];
 
+  const cleanList = (list) =>
+    (Array.isArray(list) ? list : String(list || '').split('\n')).map((s) => String(s).trim()).filter(Boolean);
+  if (payload.quickAnswer && typeof payload.quickAnswer === 'object') {
+    payload.quickAnswer = {
+      heading: String(payload.quickAnswer.heading || '').trim(),
+      summary: String(payload.quickAnswer.summary || '').trim(),
+      points: cleanList(payload.quickAnswer.points),
+    };
+  }
+  if (payload.keyTakeaways !== undefined) payload.keyTakeaways = cleanList(payload.keyTakeaways);
+
   payload.seo = normalizeSeo(payload, payload.name || '', payload.description || '');
   payload.seoTitle = payload.seo.general.metaTitle;
   payload.seoDescription = payload.seo.general.metaDescription;

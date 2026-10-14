@@ -1,10 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api from '../../utils/api';
 import { useShop } from '../../context/ShopContext';
 import { getWhatsAppHref } from '../../utils/whatsapp';
 import JharokhaBand from './JharokhaBand';
 import ContentWithAds from '../shared/ContentWithAds';
+
+// Generic FAQs used only when a post has none of its own.
+const DEFAULT_FAQS = [
+  { question: 'How do I know it is handmade?', answer: 'Ask for the workshop name, look at weight and irregular detail, and avoid perfectly identical “stone” that feels light.' },
+  { question: 'Do you ship outside Jaipur?', answer: 'Yes. Dispatch is typically 3–5 days; delivery depends on destination.' },
+  { question: 'What if it arrives damaged?', answer: 'Use the 7-day window for manufacturing or transit issues and share photos with support.' },
+  { question: 'Can I get a custom size?', answer: 'Message us on WhatsApp with your space and we will suggest a commission or a stock size that fits.' },
+];
+
+const slugifyHeading = (text) =>
+  String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 60) || 'section';
+
+/** Give every h2/h3 in the post an id and return the contents list built from them. */
+const withHeadingAnchors = (html) => {
+  if (typeof window === 'undefined' || !html) return { html, toc: [] };
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+  const root = doc.body.firstElementChild;
+  const used = new Set();
+  const toc = [];
+  root.querySelectorAll('h2, h3').forEach((h) => {
+    const text = h.textContent.trim();
+    if (!text) return;
+    let id = h.id || slugifyHeading(text);
+    for (let n = 2; used.has(id); n += 1) id = `${slugifyHeading(text)}-${n}`;
+    used.add(id);
+    h.id = id;
+    toc.push({ id, text, level: h.tagName === 'H3' ? 3 : 2 });
+  });
+  return { html: root.innerHTML, toc };
+};
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -112,6 +147,18 @@ const BlogDetail = () => {
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = encodeURIComponent(`${title} ${shareUrl}`);
   const hasCmsBody = blog?.content && String(blog.content).length > 80;
+  // Post body with heading anchors + the "In this guide" list built from them
+  const body = useMemo(
+    () => (hasCmsBody ? withHeadingAnchors(String(blog.content).replace(/\n/g, '<br/>')) : { html: '', toc: [] }),
+    [hasCmsBody, blog?.content]
+  );
+  const quickAnswer = blog?.quickAnswer || {};
+  const qaPoints = (quickAnswer.points || []).filter(Boolean);
+  const showQuickAnswer = Boolean(quickAnswer.heading || quickAnswer.summary || qaPoints.length);
+  const keyTakeaways = (blog?.keyTakeaways || []).filter(Boolean);
+  const postFaqs = (blog?.faqs || []).filter((f) => f.question?.trim() && f.answer?.trim());
+  const faqs = postFaqs.length ? postFaqs : DEFAULT_FAQS;
+  const keywords = (blog?.tags || []).filter(Boolean);
 
   if (loadState === 'loading') {
     return (
@@ -176,41 +223,58 @@ const BlogDetail = () => {
 
         <div className="article-layout">
           <div>
-            <div className="quick-answer">
-              <span className="eyebrow">Quick Answer</span>
-              <h2>What should you look for before you buy?</h2>
-              <p>Choose a named artisan house, check weight and finish, and size the piece to the room — not only the budget.</p>
-              <ul>
-                <li>Named workshop is better than a generic “handmade” label</li>
-                <li>Genuine marble or terracotta feels heavier than resin</li>
-                <li>Natural variation is expected, not a defect</li>
-                <li>Match size to the shelf or floor first</li>
-              </ul>
-            </div>
-            <div className="takeaways">
-              <h3>Key Takeaways</h3>
-              <ul>
-                <li>Ask for origin and artisan house</li>
-                <li>Match size to the shelf or mandir</li>
-                <li>Avoid acidic cleaners on stone</li>
-                <li>Weight is a reliable genuineness check</li>
-                <li>Natural veining variation is normal</li>
-                <li>Keep a 7-day window for transit damage</li>
-              </ul>
-            </div>
-            <div className="toc-box">
-              <h3>In this guide</h3>
-              <ol>
-                <li><a href="#quality">Material quality</a></li>
-                <li><a href="#size">Choosing size</a></li>
-                <li><a href="#placement">Where to place it</a></li>
-                <li><a href="#genuine">Handmade vs mass-produced</a></li>
-                <li><a href="#care">Care</a></li>
-              </ol>
-            </div>
+            {showQuickAnswer && (
+              <div className="quick-answer">
+                <span className="eyebrow">Quick Answer</span>
+                {quickAnswer.heading && <h2>{quickAnswer.heading}</h2>}
+                {quickAnswer.summary && <p>{quickAnswer.summary}</p>}
+                {qaPoints.length > 0 && (
+                  <ul>
+                    {qaPoints.map((point, i) => (
+                      <li key={`qa-${i}`}>{point}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            {keyTakeaways.length > 0 && (
+              <div className="takeaways">
+                <h3>Key Takeaways</h3>
+                <ul>
+                  {keyTakeaways.map((point, i) => (
+                    <li key={`kt-${i}`}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {hasCmsBody ? (
+              body.toc.length > 0 && (
+                <div className="toc-box">
+                  <h3>In this guide</h3>
+                  <ol>
+                    {body.toc.map((item) => (
+                      <li key={item.id} style={item.level === 3 ? { marginLeft: 14 } : undefined}>
+                        <a href={`#${item.id}`}>{item.text}</a>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )
+            ) : (
+              <div className="toc-box">
+                <h3>In this guide</h3>
+                <ol>
+                  <li><a href="#quality">Material quality</a></li>
+                  <li><a href="#size">Choosing size</a></li>
+                  <li><a href="#placement">Where to place it</a></li>
+                  <li><a href="#genuine">Handmade vs mass-produced</a></li>
+                  <li><a href="#care">Care</a></li>
+                </ol>
+              </div>
+            )}
             <div className="art-body">
               {hasCmsBody ? (
-                <ContentWithAds html={String(blog.content).replace(/\n/g, '<br/>')} />
+                <ContentWithAds html={body.html} />
               ) : (
                 <>
                   <h2 id="quality">Material quality</h2>
@@ -250,12 +314,7 @@ const BlogDetail = () => {
             </div>
             <div>
               <h2 style={{ fontSize: 24, marginBottom: 18 }}>Frequently asked questions</h2>
-              {[
-                ['How do I know it is handmade?', 'Ask for the workshop name, look at weight and irregular detail, and avoid perfectly identical “stone” that feels light.'],
-                ['Do you ship outside Jaipur?', 'Yes. Dispatch is typically 3–5 days; delivery depends on destination.'],
-                ['What if it arrives damaged?', 'Use the 7-day window for manufacturing or transit issues and share photos with support.'],
-                ['Can I get a custom size?', 'Message us on WhatsApp with your space and we will suggest a commission or a stock size that fits.'],
-              ].map(([q, a], i) => (
+              {faqs.map(({ question: q, answer: a }, i) => (
                 <div key={q} className={`art-faq-item ${openFaq === i ? 'open' : ''}`}>
                   <button type="button" className="art-faq-head" onClick={() => setOpenFaq(openFaq === i ? -1 : i)}>
                     {q} <span>+</span>
@@ -264,14 +323,16 @@ const BlogDetail = () => {
                 </div>
               ))}
             </div>
+            {keywords.length > 0 && (
             <div style={{ marginTop: 36 }}>
               <h3 style={{ fontSize: 13, fontFamily: 'Space Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--brass)', marginBottom: 12 }}>Related keywords</h3>
               <div className="kw-cloud">
-                {['jaipur crafts', 'makrana marble', 'terracotta matka', 'vastu placement', 'handmade vs resin'].map((kw) => (
+                {keywords.map((kw) => (
                   <span key={kw} className="kw-chip">{kw}</span>
                 ))}
               </div>
             </div>
+            )}
           </div>
           <aside className="art-sidebar">
             <div className="sb-card">
