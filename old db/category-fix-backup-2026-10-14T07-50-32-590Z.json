@@ -1,0 +1,58 @@
+{
+ "products": [
+  {
+   "_id": "6aba5451ac63cf455f4a3075",
+   "category": "Idols",
+   "categoryRef": "6aae292721abac9ca01ba3d3"
+  },
+  {
+   "_id": "6aba54afac63cf455f4a34a2",
+   "category": "Idols",
+   "categoryRef": "6aae292721abac9ca01ba3d3"
+  }
+ ],
+ "categories": [
+  {
+   "_id": "6aae292721abac9ca01ba3ce",
+   "isActive": true
+  },
+  {
+   "_id": "6aae292721abac9ca01ba3d0",
+   "isActive": true
+  },
+  {
+   "_id": "6aae292721abac9ca01ba3d1",
+   "isActive": true
+  },
+  {
+   "_id": "6aae292721abac9ca01ba3d2",
+   "isActive": true
+  },
+  {
+   "_id": "6aae292721abac9ca01ba3d3",
+   "isActive": true
+  },
+  {
+   "_id": "6aba5d2321abac9ca01d0736",
+   "isActive": true
+  },
+  {
+   "_id": "6aba5d2321abac9ca01d0737",
+   "isActive": true
+  },
+  {
+   "_id": "6aba5d2321abac9ca01d0738",
+   "isActive": true
+  }
+ ],
+ "banners": [
+  {
+   "_id": "6ac498757381b032d5ed5408",
+   "link": "/shop?category=Idols"
+  },
+  {
+   "_id": "6ac49fd282c1e9b5e29498f6",
+   "link": "/shop?category=Idols"
+  }
+ ]
+}

@@ -17,7 +17,7 @@ const IMAGE_MAP = {
   'spirituality-religion': mediaUrl('/diya.png'),
 };
 
-export const CategoryItem = ({ cat, mobile }) => {
+export const CategoryItem = ({ cat, mobile, large }) => {
   const href = cat.to || `/shop?category=${encodeURIComponent(cat.name || cat.title)}`;
   const displayName = cat.name || cat.title;
   const imageSrc =
@@ -25,6 +25,28 @@ export const CategoryItem = ({ cat, mobile }) => {
     IMAGE_MAP[cat.slug] ||
     IMAGE_MAP[(displayName || '').toLowerCase().replace(/\s+/g, '-')] ||
     mediaUrl('/camel.png');
+
+  // Bigger circle for standalone rows (e.g. product page "Explore Related Categories")
+  if (large) {
+    return (
+      <Link to={href} className="flex flex-col items-center group shrink-0 w-[96px] sm:w-[108px]">
+        <div className="relative w-[86px] h-[86px] sm:w-[98px] sm:h-[98px] rounded-full overflow-hidden bg-white shadow-[0_2px_10px_rgba(111,36,29,0.12)] ring-1 ring-[#D5C19E]/80 group-hover:ring-[#6F241D] group-hover:scale-105 transition-all duration-300">
+          <ThumbImg
+            width={200}
+            src={imageSrc}
+            alt={displayName}
+            className="absolute inset-0 w-full h-full object-contain object-center p-1"
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+          />
+        </div>
+        <h3 className="font-body mt-1.5 text-[12px] sm:text-[13px] font-medium text-[#4A3A2F] group-hover:text-[#6F241D] transition-colors text-center leading-tight w-full px-0.5 line-clamp-2">
+          {displayName}
+        </h3>
+      </Link>
+    );
+  }
 
   if (mobile) {
     return (

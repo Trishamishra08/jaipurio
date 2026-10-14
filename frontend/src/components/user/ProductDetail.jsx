@@ -1214,9 +1214,9 @@ const ProductDetail = () => {
             <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D] mb-4">
               Explore Related Categories
             </h3>
-            <div className="flex flex-nowrap justify-start gap-5 lg:gap-6 overflow-x-auto pb-1">
+            <div className="flex flex-nowrap justify-start gap-3 sm:gap-5 lg:gap-6 overflow-x-auto pb-1">
               {relevantCategories.map((cat) => (
-                <CategoryItem key={cat.id || cat.name} cat={{ name: cat.name, title: cat.name, slug: cat.slug, image: cat.image }} />
+                <CategoryItem large key={cat.id || cat.name} cat={{ name: cat.name, title: cat.name, slug: cat.slug, image: cat.image }} />
               ))}
             </div>
           </div>
