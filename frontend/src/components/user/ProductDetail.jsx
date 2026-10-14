@@ -29,14 +29,31 @@ import {
   Store,
   Truck,
   Zap,
+  ZoomIn,
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import ProductCard from './ProductCard';
 import { CategoryItem } from './Categories';
-import { getWhatsAppHref, WHATSAPP_PHONE } from '../../utils/whatsapp';
+import { WHATSAPP_PHONE } from '../../utils/whatsapp';
 import { mapApiProductToStorefront, formatInr } from '../../utils/storefrontProduct';
 import api from '../../utils/api';
 import { useCategoryTree } from '../../utils/useCategoryTree';
+import { useProductPageSettings } from '../../utils/useProductPageSettings';
+import ImageLightbox from '../shared/ImageLightbox';
+
+const TRUST_ICON = {
+  truck: { Icon: Truck, tone: 'bg-amber-50 text-amber-600' },
+  returns: { Icon: RotateCcw, tone: 'bg-rose-50 text-[#C45C6A]' },
+  shield: { Icon: ShieldCheck, tone: 'bg-emerald-50 text-emerald-600' },
+  store: { Icon: Store, tone: 'bg-blue-50 text-blue-600' },
+  package: { Icon: Package, tone: 'bg-orange-50 text-orange-600' },
+  card: { Icon: CreditCard, tone: 'bg-violet-50 text-violet-600' },
+  star: { Icon: Star, tone: 'bg-yellow-50 text-yellow-600' },
+  globe: { Icon: Globe, tone: 'bg-sky-50 text-sky-600' },
+};
+
+const fillTemplate = (text, vars) =>
+  String(text || '').replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -324,6 +341,9 @@ const ProductDetail = () => {
   }, [product]);
 
   const [imgIndex, setImgIndex] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  // Admin-editable copy and toggles (Appearance → Product Page).
+  const pageCfg = useProductPageSettings();
   const [sizeIndex, setSizeIndex] = useState(0);
   const [finish, setFinish] = useState('');
   const [pack, setPack] = useState(1);
@@ -598,7 +618,7 @@ const ProductDetail = () => {
                     <img
                       src={src}
                       alt={`${product.name} — view ${i + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-white"
                       loading="lazy"
                       decoding="async"
                     />
@@ -651,9 +671,30 @@ const ProductDetail = () => {
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
+                onClick={() => pageCfg.zoomEnabled && setZoomOpen(true)}
+                className={`w-full h-full object-contain p-2 ${pageCfg.zoomEnabled ? 'cursor-zoom-in' : ''}`}
               />
+              {pageCfg.zoomEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setZoomOpen(true)}
+                  className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 shadow-md text-[11px] font-semibold text-gray-800 hover:bg-white"
+                  aria-label="Zoom image"
+                >
+                  <ZoomIn size={14} />
+                  Zoom
+                </button>
+              )}
             </div>
+            {zoomOpen && (
+              <ImageLightbox
+                images={images}
+                index={imgIndex}
+                onIndexChange={setImgIndex}
+                onClose={() => setZoomOpen(false)}
+                alt={product.name}
+              />
+            )}
           </div>
 
           {/* Column 2: Product Info & Actions (4 cols on Desktop / Main Center) */}
@@ -668,6 +709,7 @@ const ProductDetail = () => {
             </div>
 
             {/* Rating */}
+            {pageCfg.showRating && (
             <div className="flex items-center gap-2 text-xs text-gray-600">
               <div className="flex items-center text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -691,6 +733,7 @@ const ProductDetail = () => {
                 ({product.reviews || productReviews.length || 18} Verified Reviews)
               </button>
             </div>
+            )}
 
             {/* Price Section */}
             <div className="flex items-baseline gap-3 pt-1 border-t border-gray-100">
@@ -710,22 +753,26 @@ const ProductDetail = () => {
             </div>
 
             {/* Short Highlights / Key bullet points if available */}
-            <div className="text-xs text-gray-600 leading-relaxed bg-[#FAF6EE] p-3 rounded-xl border border-[#E8D4B5]/60 space-y-1">
-              <p className="font-semibold text-gray-800">
-                🌿 Pure handcrafted craftsmanship from Jaipur, Rajasthan.
-              </p>
-              <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-gray-600">
-                <li>100% Genuine Makrana Marble / Terracotta Clay</li>
-                <li>Carefully packaged in heavy-duty break-proof carton</li>
-                <li>Ships within 24–48 hours direct from master artisans</li>
-              </ul>
-            </div>
+            {pageCfg.highlights.enabled && (
+              <div className="text-xs text-gray-600 leading-relaxed bg-[#FAF6EE] p-3 rounded-xl border border-[#E8D4B5]/60 space-y-1">
+                {pageCfg.highlights.title && <p className="font-semibold text-gray-800">{pageCfg.highlights.title}</p>}
+                {pageCfg.highlights.points.filter(Boolean).length > 0 && (
+                  <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-gray-600">
+                    {pageCfg.highlights.points.filter(Boolean).map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {/* Stock Availability Pill (matching Image 5) */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300 w-fit">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Availability: <strong>{stockCount} products available</strong></span>
-            </div>
+            {pageCfg.stock.enabled && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300 w-fit">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{fillTemplate(pageCfg.stock.label, { count: stockCount })}</span>
+              </div>
+            )}
 
             {/* Size & Finish Options if present */}
             {sizes.length > 1 && (
@@ -801,6 +848,7 @@ const ProductDetail = () => {
             {/* Wishlist & Compare & Share Links */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-600">
               <div className="flex items-center gap-4">
+                {pageCfg.actions.wishlist && (
                 <button
                   type="button"
                   onClick={() => toggleWishlist(product)}
@@ -812,6 +860,8 @@ const ProductDetail = () => {
                   />
                   <span>{liked ? 'Saved' : 'Wishlist'}</span>
                 </button>
+                )}
+                {pageCfg.actions.share && (
                 <button
                   type="button"
                   onClick={copyLink}
@@ -820,11 +870,13 @@ const ProductDetail = () => {
                   {copied ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
                   <span>{copied ? 'Link Copied' : 'Share'}</span>
                 </button>
+                )}
               </div>
 
               <div className="flex items-center gap-4">
+                {pageCfg.actions.whatsapp && (
                 <a
-                  href={getWhatsAppHref(`Hi, I'm interested in ${product.name}`)}
+                  href={`https://wa.me/${String(pageCfg.actions.whatsappNumber || WHATSAPP_PHONE).replace(/\D/g, '')}?text=${encodeURIComponent(fillTemplate(pageCfg.actions.whatsappMessage, { product: product.name }))}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
@@ -832,28 +884,32 @@ const ProductDetail = () => {
                   <MessageCircle size={15} />
                   Ask on WhatsApp
                 </a>
+                )}
+                {pageCfg.actions.call && (
                 <a
-                  href={`tel:+${WHATSAPP_PHONE}`}
+                  href={`tel:+${String(pageCfg.actions.callNumber || WHATSAPP_PHONE).replace(/\D/g, '')}`}
                   className="inline-flex items-center gap-1 text-[#8B2E3A] hover:text-[#6F241D] font-semibold"
                 >
                   <Phone size={15} />
                   Call Us
                 </a>
+                )}
               </div>
             </div>
 
             {/* Pincode checker */}
+            {pageCfg.delivery.enabled && (
             <div className="pt-2">
               <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
                 <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
-                  Check Delivery & Estimated Arrival
+                  {pageCfg.delivery.title}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="Enter 6-digit pincode"
+                    placeholder={pageCfg.delivery.placeholder}
                     className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs focus:outline-none focus:border-[#8B2E3A]"
                     inputMode="numeric"
                   />
@@ -862,7 +918,7 @@ const ProductDetail = () => {
                     onClick={() =>
                       setPinMsg(
                         pin.length === 6
-                          ? '✓ Available: Estimated delivery in 4–7 business days. Cash on Delivery supported.'
+                          ? pageCfg.delivery.successMessage
                           : 'Please enter a valid 6-digit pincode.'
                       )
                     }
@@ -878,63 +934,43 @@ const ProductDetail = () => {
                 )}
               </div>
             </div>
+            )}
           </div>
 
           {/* Column 3: Trust & Vendor Box (3 cols on Desktop / Right Sidebar matching Image 5) */}
           <div className="lg:col-span-3 space-y-4">
             {/* Vendor card */}
-            <div className="bg-[#FAF6EE] p-4 rounded-2xl border border-[#E8D4B5] text-center space-y-2">
-              <span className="text-xs text-gray-500">Become a Vendor?</span>
-              <Link
-                to="/vendor/register"
-                className="block text-sm font-bold text-[#A94E2C] hover:text-[#6F241D] hover:underline"
-              >
-                Register now →
-              </Link>
-            </div>
-
-            {/* Trust Features Box (Image 5 style) */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <Truck size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">Free Shipping</h4>
-                  <p className="text-[11px] text-gray-500">For all orders over ₹499</p>
-                </div>
+            {pageCfg.vendorCard.enabled && (
+              <div className="bg-[#FAF6EE] p-4 rounded-2xl border border-[#E8D4B5] text-center space-y-2">
+                <span className="text-xs text-gray-500">{pageCfg.vendorCard.text}</span>
+                <Link
+                  to={pageCfg.vendorCard.link || '/vendor/register'}
+                  className="block text-sm font-bold text-[#A94E2C] hover:text-[#6F241D] hover:underline"
+                >
+                  {pageCfg.vendorCard.linkText}
+                </Link>
               </div>
+            )}
 
-              <div className="border-t border-gray-100 pt-3 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-rose-50 text-[#C45C6A] flex items-center justify-center shrink-0">
-                  <RotateCcw size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">7-Day Returns</h4>
-                  <p className="text-[11px] text-gray-500">Transit damage guarantee</p>
-                </div>
+            {/* Trust features — admin-managed list */}
+            {pageCfg.trust.enabled && pageCfg.trust.items.length > 0 && (
+              <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+                {pageCfg.trust.items.map((item, i) => {
+                  const { Icon, tone } = TRUST_ICON[item.icon] || TRUST_ICON.store;
+                  return (
+                    <div key={`${item.title}-${i}`} className={`flex items-start gap-3 ${i > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
+                      <div className={`w-9 h-9 rounded-full ${tone} flex items-center justify-center shrink-0`}>
+                        <Icon size={18} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-900">{item.title}</h4>
+                        {item.text && <p className="text-[11px] text-gray-500">{item.text}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className="border-t border-gray-100 pt-3 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <ShieldCheck size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">Secure Payment</h4>
-                  <p className="text-[11px] text-gray-500">100% encrypted checkout</p>
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 pt-3 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Store size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-gray-900">Artisan Certified</h4>
-                  <p className="text-[11px] text-gray-500">Direct from Jaipur workshops</p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

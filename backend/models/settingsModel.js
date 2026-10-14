@@ -22,6 +22,9 @@ const settingsSchema = new mongoose.Schema({
 
   // Appearance
   theme: { type: mongoose.Schema.Types.Mixed, default: {} },
+  // Product detail page copy and section toggles (Appearance → Product Page).
+  // Shape: frontend/src/data/productPageDefaults.js
+  productPage: { type: mongoose.Schema.Types.Mixed, default: {} },
   menus: [{ name: String, location: String, items: String }],
   widgets: [{ name: String, sidebar: String }],
   customCss: { type: String, default: '' },

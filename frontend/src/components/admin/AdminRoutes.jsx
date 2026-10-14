@@ -21,6 +21,7 @@ import AdminSystemPage from './AdminSystemPage';
 import AdminMedia from './AdminMedia';
 import AdminAppearance from './AdminAppearance';
 import AdminThemeOptions from './AdminThemeOptions';
+import AdminProductPageSettings from './AdminProductPageSettings';
 import AdminCodeEditorPage from './AdminCodeEditorPage';
 import AdminTools from './AdminTools';
 import AdminCrudPage from './AdminCrudPage';
@@ -105,6 +106,7 @@ const AdminRoutes = () => (
       <Route path="media" element={<AdminMedia />} />
       <Route path="theme/options" element={<AdminThemeOptions />} />
       <Route path="theme/options/:tab" element={<AdminThemeOptions />} />
+      <Route path="theme/product-page" element={<AdminProductPageSettings />} />
       <Route path="appearance/theme-options" element={<AdminThemeOptions />} />
       <Route path="appearance/theme-options/:tab" element={<AdminThemeOptions />} />
       <Route path="theme/robots-txt" element={<AdminCodeEditorPage />} />
