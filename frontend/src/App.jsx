@@ -5,6 +5,7 @@ import AdsenseInjector from './components/shared/AdsenseInjector';
 
 import SplashPage from './components/shared/SplashPage';
 import Navbar from './components/user/Navbar';
+import NewsletterPopup from './components/user/NewsletterPopup';
 import Home from './components/user/Home';
 import Shop from './components/user/Shop';
 import ProductDetail from './components/user/ProductDetail';
@@ -117,6 +118,7 @@ const PublicLayout = () => {
     <div className="flex flex-col min-h-screen font-body bg-white">
       {!isLocationPage && <Navbar />}
       <CartDrawer />
+      {!isLocationPage && <NewsletterPopup />}
       <main className="flex-1">
         <Outlet />
       </main>

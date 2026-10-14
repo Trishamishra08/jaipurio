@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
 import { CATEGORY_CHIPS as DEFAULT_CATEGORIES } from '../../data/categoryMedia';
-import api from '../../utils/api';
+import { useCategoryTree } from '../../utils/useCategoryTree';
 import { mediaUrl } from '../../data/cloudinaryMedia';
+import ThumbImg from '../shared/ThumbImg';
 
 const IMAGE_MAP = {
   matkas: mediaUrl('/matka.png'),
@@ -16,7 +17,7 @@ const IMAGE_MAP = {
   'spirituality-religion': mediaUrl('/diya.png'),
 };
 
-const CategoryItem = ({ cat, mobile }) => {
+export const CategoryItem = ({ cat, mobile }) => {
   const href = cat.to || `/shop?category=${encodeURIComponent(cat.name || cat.title)}`;
   const displayName = cat.name || cat.title;
   const imageSrc =
@@ -31,11 +32,11 @@ const CategoryItem = ({ cat, mobile }) => {
         to={href}
         className="flex flex-col items-center group snap-start shrink-0 w-[72px] sm:w-[80px]"
       >
-        <div className="relative w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full overflow-hidden bg-[#F7EFE0] shadow-[0_2px_8px_rgba(111,36,29,0.12)] ring-1 ring-[#D5C19E]/80 group-active:scale-95 transition-transform duration-200">
-          <img
+        <div className="relative w-[68px] h-[68px] sm:w-[76px] sm:h-[76px] rounded-full overflow-hidden bg-white shadow-[0_2px_8px_rgba(111,36,29,0.12)] ring-1 ring-[#D5C19E]/80 group-active:scale-95 transition-transform duration-200">
+          <ThumbImg width={200}
             src={imageSrc}
             alt={displayName}
-            className="absolute inset-0 w-full h-full object-cover object-center scale-[1.08]"
+            className="absolute inset-0 w-full h-full object-contain object-center p-[3px]"
             loading="lazy"
             decoding="async"
             draggable={false}
@@ -53,11 +54,11 @@ const CategoryItem = ({ cat, mobile }) => {
       to={href}
       className="flex flex-col items-center group shrink-0 w-[68px] lg:w-[72px]"
     >
-      <div className="relative w-[58px] h-[58px] lg:w-[62px] lg:h-[62px] rounded-full overflow-hidden bg-[#F7EFE0] shadow-[0_1px_6px_rgba(111,36,29,0.1)] ring-1 ring-[#D5C19E]/80 group-hover:ring-[#6F241D] group-hover:scale-105 transition-all duration-300">
-        <img
+      <div className="relative w-[58px] h-[58px] lg:w-[62px] lg:h-[62px] rounded-full overflow-hidden bg-white shadow-[0_1px_6px_rgba(111,36,29,0.1)] ring-1 ring-[#D5C19E]/80 group-hover:ring-[#6F241D] group-hover:scale-105 transition-all duration-300">
+        <ThumbImg width={200}
           src={imageSrc}
           alt={displayName}
-          className="absolute inset-0 w-full h-full object-cover object-center scale-[1.08]"
+          className="absolute inset-0 w-full h-full object-contain object-center p-[3px]"
           loading="lazy"
           decoding="async"
           draggable={false}
@@ -71,35 +72,15 @@ const CategoryItem = ({ cat, mobile }) => {
 };
 
 const Categories = () => {
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    // Categories that actually have a live product, not the full taxonomy —
-    // the taxonomy collection also holds topic categories (e.g. "Ecommerce",
-    // "Fashion") with zero products assigned, which would otherwise render
-    // as a clickable chip that leads to an empty shop page.
-    api
-      .get('/products/categories')
-      .then((res) => {
-        if (!mounted) return;
-        const list = res.data?.data || [];
-        if (list.length > 0) {
-          setCategories(list.map((c) => ({ id: c.name, name: c.name, title: c.name, image: null })));
-        }
-      })
-      .catch((err) => {
-        console.warn('Failed to load categories from API, using fallback chips:', err.message);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  // Every category that has a live product, parents followed by their
+  // sub-categories. Falls back to the static chips until the API answers (or
+  // if it fails). The taxonomy collection also holds topic categories (e.g.
+  // "Ecommerce", "Fashion") with no products — the endpoint leaves those out
+  // so a chip never leads to an empty shop page.
+  const { categories: live } = useCategoryTree();
+  const categories = live.length
+    ? live.map((c) => ({ id: c.id, name: c.name, title: c.name, slug: c.slug, image: c.image }))
+    : DEFAULT_CATEGORIES;
 
   return (
     <section className="w-full bg-white pt-2.5 pb-2 md:pt-1.5 md:pb-1.5">
@@ -124,7 +105,7 @@ const Categories = () => {
         </div>
 
         {/* Desktop — centered row */}
-        <div className="hidden md:flex flex-nowrap justify-center gap-5 lg:gap-6 overflow-x-auto pb-1">
+        <div className="hidden md:flex flex-nowrap gap-5 lg:gap-6 overflow-x-auto pb-1 scrollbar-none [&>*:first-child]:ml-auto [&>*:last-child]:mr-auto">
           {categories.map((cat, idx) => (
             <CategoryItem key={cat.id || cat.slug || cat.name || idx} cat={cat} mobile={false} />
           ))}

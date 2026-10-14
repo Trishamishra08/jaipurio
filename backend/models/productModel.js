@@ -26,6 +26,15 @@ const productSchema = new mongoose.Schema({
     default: null,
     index: true,
   },
+  // Every category this product belongs to PLUS all their ancestors, so a
+  // product in "Home & Living > … > Brass Idols > Ganesha" is also found when
+  // browsing any parent level. `category`/`categoryRef` stay the single
+  // most-specific category (used for labels, breadcrumbs and related items).
+  categoryIds: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
+    default: [],
+    index: true,
+  },
   packSize: { type: String },
   careInstructions: { type: String, default: '' },
   shippingNotes: { type: String, default: '' },

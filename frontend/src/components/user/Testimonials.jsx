@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import { Star } from 'lucide-react';
+import api from '../../utils/api';
 import SectionHeading from './SectionHeading';
 
 const ReviewCard = ({ rev }) => (
@@ -36,11 +38,49 @@ const ReviewCard = ({ rev }) => (
   </article>
 );
 
+// Live journal post — cover image, category, title and excerpt come from the blog API.
+const BlogCard = ({ blog }) => (
+  <Link
+    to={`/blog/${blog._id || blog.id}`}
+    className="shrink-0 w-[248px] sm:w-[280px] bg-[#FCF8F2] border border-[#E8D4B5] rounded-2xl overflow-hidden flex flex-col"
+  >
+    <div className="h-28 sm:h-32 bg-[#F7EFE0]">
+      {blog.image && (
+        <img src={blog.image} alt={blog.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      )}
+    </div>
+    <div className="p-4 flex flex-col flex-1">
+      <span className="font-body text-[10px] uppercase tracking-wide text-[#C69A45] mb-1">
+        {blog.category || 'Journal'} • {blog.readTime || '5 min'}
+      </span>
+      <h4 className="font-body text-xs sm:text-[13px] font-semibold text-[#6F241D] leading-snug line-clamp-2">{blog.title}</h4>
+      <p className="font-body text-[11px] text-[#2B1E1A] leading-relaxed mt-1 line-clamp-3">{blog.excerpt}</p>
+    </div>
+  </Link>
+);
+
 const Testimonials = () => {
   const { reviews } = useShop();
-  const loop = useMemo(() => [...reviews, ...reviews], [reviews]);
+  const [blogs, setBlogs] = useState([]);
 
-  if (!reviews.length) return null;
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/blogs', { params: { limit: 8 } })
+      .then((res) => {
+        if (!cancelled) setBlogs(res.data?.data?.blogs || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Blogs when there are any published; the static reviews are the fallback.
+  const items = blogs.length ? blogs : reviews;
+  const loop = useMemo(() => [...items, ...items], [items]);
+
+  if (!items.length) return null;
 
   return (
     <section className="w-full bg-white py-6 border-t border-[#E8E2D9] overflow-hidden">
@@ -50,9 +90,13 @@ const Testimonials = () => {
 
       <div className="testimonial-track site-container">
         <div className="testimonial-marquee">
-          {loop.map((rev, i) => (
-            <ReviewCard key={`${rev.id}-${i}`} rev={rev} />
-          ))}
+          {loop.map((item, i) =>
+            blogs.length ? (
+              <BlogCard key={`${item._id || item.id}-${i}`} blog={item} />
+            ) : (
+              <ReviewCard key={`${item.id}-${i}`} rev={item} />
+            )
+          )}
         </div>
       </div>
     </section>

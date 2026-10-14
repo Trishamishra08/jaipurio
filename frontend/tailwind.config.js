@@ -51,6 +51,8 @@ export default {
         sans: ['Poppins', 'system-ui', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
         dm: ['DM Sans', 'system-ui', 'sans-serif'],
+        /* Product cards — matches the live jaipurio.in storefront */
+        mulish: ['Mulish', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'folk': '0 4px 20px -2px rgba(111, 36, 29, 0.08)',

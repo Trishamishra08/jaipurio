@@ -1,11 +1,13 @@
 import React from 'react';
 import { useShop } from '../../context/ShopContext';
+import { useMixedProducts } from '../../utils/useMixedProducts';
 import ProductCard from './ProductCard';
 import SectionHeading from './SectionHeading';
 
 const BestSellers = () => {
-  const { products } = useShop();
-  const bestSellers = products.slice(0, 4);
+  const { products: popular } = useShop();
+  const mixed = useMixedProducts();
+  const bestSellers = (mixed.length ? mixed : popular).slice(0, 4);
 
   return (
     <section className="w-full bg-white pt-1.5 pb-3">

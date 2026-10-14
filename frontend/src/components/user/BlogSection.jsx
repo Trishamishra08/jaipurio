@@ -8,6 +8,7 @@ const PAGE_SIZE = 12;
 const BlogSection = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
+  const category = searchParams.get('category') || '';
 
   const [blogs, setBlogs] = useState([]);
   const [total, setTotal] = useState(0);
@@ -21,7 +22,7 @@ const BlogSection = () => {
     setLoading(true);
     setLoadError('');
     api
-      .get('/blogs', { params: { page, limit: PAGE_SIZE } })
+      .get('/blogs', { params: { page, limit: PAGE_SIZE, category: category || undefined } })
       .then((res) => {
         if (cancelled) return;
         const data = res.data?.data || {};
@@ -40,7 +41,7 @@ const BlogSection = () => {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [page, category]);
 
   const goToPage = (next) => {
     const params = new URLSearchParams(searchParams);
@@ -56,8 +57,13 @@ const BlogSection = () => {
       <div className="blog-wrap">
         <div className="journal-hero">
           <span className="eyebrow">The Journal</span>
-          <h1>Craft stories & buying guides</h1>
+          <h1>{category || 'Craft stories & buying guides'}</h1>
           <p>How Jaipur’s marble, terracotta, jewellery, and textiles are made — and how to choose a piece you’ll keep.</p>
+          {category ? (
+            <Link to="/blog" className="text-xs font-semibold text-[#8B2E3A] hover:underline mt-2 inline-block">
+              ← All journal posts
+            </Link>
+          ) : null}
         </div>
 
         {loading ? (

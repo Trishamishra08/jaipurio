@@ -331,6 +331,58 @@ const getBlogBySlug = async (req, res) => {
   }
 };
 
+// Powers "Recommended reads" on a blog post and the "Relevant articles" rail
+// on a product page — both just pass a category + a comma-separated tag list
+// (the blog's own, or the viewed product's) rather than needing a blog id, so
+// this one endpoint serves both callers.
+const getRelatedBlogs = async (req, res) => {
+  try {
+    const category = String(req.query.category || '').trim();
+    const tags = String(req.query.tags || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const excludeId = String(req.query.excludeId || '').trim();
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 3, 1), 10);
+
+    const filter = { status: 'Published' };
+    if (excludeId) filter._id = { $ne: excludeId };
+
+    const orClauses = [];
+    if (category) orClauses.push({ category }, { categories: category });
+    if (tags.length) orClauses.push({ tags: { $in: tags } });
+    if (orClauses.length) filter.$or = orClauses;
+
+    let candidates = await Blog.find(filter).sort('-createdAt').limit(40).lean();
+
+    // No category/tag overlap at all (or neither was supplied) — fall back to
+    // latest posts so the section still has something rather than rendering empty.
+    if (!candidates.length && orClauses.length) {
+      candidates = await Blog.find({ status: 'Published', ...(excludeId ? { _id: { $ne: excludeId } } : {}) })
+        .sort('-createdAt')
+        .limit(limit)
+        .lean();
+    }
+
+    const tagSet = new Set(tags);
+    const scored = candidates.map((b) => {
+      const blogTags = Array.isArray(b.tags) ? b.tags : [];
+      const tagOverlap = blogTags.reduce((n, t) => n + (tagSet.has(t) ? 1 : 0), 0);
+      const categoryMatch = category && (b.category === category || (b.categories || []).includes(category));
+      const score = (categoryMatch ? 10 : 0) + tagOverlap * 5;
+      return { b, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+
+    res.status(200).json({
+      success: true,
+      data: scored.slice(0, limit).map((s) => serializeBlog(s.b)),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const createBlog = async (req, res) => {
   try {
     const payload = normalizeBlogPayload(req.body, req.user);
@@ -601,6 +653,7 @@ module.exports = {
   getAdminBlogs,
   getBlogById,
   getBlogBySlug,
+  getRelatedBlogs,
   createBlog,
   updateBlog,
   deleteBlog,

@@ -23,6 +23,7 @@ const adRoutes = require('./routes/adRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const newsletterRoutes = require('./routes/newsletterRoutes');
+const thumbRoutes = require('./routes/thumbRoutes');
 const countryRoutes = require('./routes/countryRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const { errorHandler } = require('./middlewares/errorHandler');
@@ -121,6 +122,8 @@ app.use('/api/ecommerce', ecommerceRoutes);
 const pageRoutes = require('./routes/pageRoutes');
 app.use('/api/pages', pageRoutes);
 const mediaRoutes = require('./routes/mediaRoutes');
+// Public thumbnail endpoint — mounted before the (admin) media routes.
+app.use('/api/media/thumb', thumbRoutes);
 app.use('/api/media', mediaRoutes);
 const marketplaceAdminRoutes = require('./routes/marketplaceAdminRoutes');
 app.use('/api/marketplace', marketplaceAdminRoutes);

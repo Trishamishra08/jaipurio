@@ -12,9 +12,9 @@ const BlogDetail = () => {
   const [blog, setBlog] = useState(null);
   const [loadState, setLoadState] = useState('loading'); // loading | ready | error
   const [morePosts, setMorePosts] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [openFaq, setOpenFaq] = useState(0);
   const [readPct, setReadPct] = useState(0);
-  const related = products.slice(0, 4);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -39,13 +39,24 @@ const BlogDetail = () => {
     };
   }, [id]);
 
+  // Recommended reads — same category/tags as this post, ranked server-side
+  // (see getRelatedBlogs in backend/controllers/blogController.js), not just
+  // "whatever's newest".
   useEffect(() => {
+    if (!blog) return undefined;
     let cancelled = false;
-    api.get('/blogs', { params: { limit: 4 } })
+    api
+      .get('/blogs/related', {
+        params: {
+          category: blog.category || '',
+          tags: (blog.tags || []).join(','),
+          excludeId: blog._id,
+          limit: 3,
+        },
+      })
       .then((res) => {
         if (cancelled) return;
-        const rows = (res.data?.data?.blogs || []).filter((p) => String(p._id) !== String(id)).slice(0, 3);
-        setMorePosts(rows);
+        setMorePosts(res.data?.data || []);
       })
       .catch(() => {
         if (!cancelled) setMorePosts([]);
@@ -53,7 +64,36 @@ const BlogDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [blog]);
+
+  // Products mentioned — same category/tags as this post, so "Shop pieces
+  // from this guide" actually matches what the guide is about.
+  useEffect(() => {
+    if (!blog) return undefined;
+    let cancelled = false;
+    api
+      .get('/products', {
+        params: {
+          // Blog categories and product categories are different taxonomies
+          // (e.g. "Buying Guides" vs "Matkas"), so tags — not category — are
+          // the shared vocabulary worth filtering on here.
+          tags: (blog.tags || []).join(',') || undefined,
+          sort: 'popular',
+          limit: 4,
+        },
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const rows = res.data?.data?.products || [];
+        setRelatedProducts(rows.length ? rows : products.slice(0, 4));
+      })
+      .catch(() => {
+        if (!cancelled) setRelatedProducts(products.slice(0, 4));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [blog, products]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -241,7 +281,7 @@ const BlogDetail = () => {
             </div>
             <div className="sb-card">
               <h4>Shop this guide</h4>
-              {related.slice(0, 2).map((p) => (
+              {relatedProducts.slice(0, 2).map((p) => (
                 <Link key={p._id} to={`/product/${p._id}`} className="sb-product">
                   <img src={p.image} alt="" loading="lazy" decoding="async" />
                   <div>
@@ -265,8 +305,10 @@ const BlogDetail = () => {
         <div className="blog-wrap">
           <div className="blog-section-head"><span className="eyebrow">Keep exploring</span><h2>Browse related categories</h2></div>
           <div className="cat-suggest-grid">
-            {[['Marble & idols', '/shop'], ['Home & living', '/shop'], ['Jewellery', '/shop'], ['Terracotta', '/shop']].map(([label, to]) => (
-              <Link key={label} to={to} className="cat-suggest-card"><strong>{label}</strong><span>Shop the collection</span></Link>
+            {(blog.categories?.length ? blog.categories : [category].filter(Boolean)).map((label) => (
+              <Link key={label} to={`/blog?category=${encodeURIComponent(label)}`} className="cat-suggest-card">
+                <strong>{label}</strong><span>Read more guides</span>
+              </Link>
             ))}
           </div>
         </div>
@@ -276,7 +318,7 @@ const BlogDetail = () => {
         <div className="blog-wrap">
           <div className="blog-section-head"><span className="eyebrow">From this guide</span><h2 style={{ fontSize: 22 }}>Products mentioned</h2></div>
           <div className="rel-prod-grid">
-            {related.map((p) => (
+            {relatedProducts.map((p) => (
               <Link key={p._id} to={`/product/${p._id}`} className="rel-prod-card">
                 <div className="rel-prod-media"><img src={p.image} alt={p.name} loading="lazy" decoding="async" /></div>
                 <div className="rel-prod-body"><h5>{p.name}</h5><span className="price">₹{Number(p.price).toLocaleString('en-IN')}</span></div>

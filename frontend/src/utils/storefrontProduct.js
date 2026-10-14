@@ -188,6 +188,7 @@ export function mapApiProductToStorefront(raw) {
     iconImage: mediaUrl(raw.iconImage) || gallery[0] || '',
     images: gallery.slice(1),
     category: raw.category || '',
+    categoryTrail: Array.isArray(raw.categoryTrail) ? raw.categoryTrail : [],
     brand: raw.brand || '',
     sku: raw.sku || '',
     tags: raw.tags || '',

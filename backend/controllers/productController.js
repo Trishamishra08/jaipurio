@@ -1,5 +1,6 @@
 const Product = require('../models/productModel');
 const Inventory = require('../models/inventoryModel');
+const Category = require('../models/categoryModel');
 const mongoose = require('mongoose');
 const { invalidateCatalog } = require('../utils/cache');
 const { optimizeMediaUrls } = require('../utils/imageOptimize');
@@ -7,7 +8,7 @@ const { lifecycleToLegacyStatus, stockStatusFromQty } = require('../constants/fl
 const { serializeProduct } = require('../utils/marketplace');
 const { normalizeSeo, slugify } = require('../utils/seoFields');
 const { ensureRichCopy } = require('../utils/productCopy');
-const { resolveProductImages } = require('../utils/minioStorage');
+const { resolveProductImages, resolveImageUrl } = require('../utils/minioStorage');
 
 const isUsableImageUrl = (url) =>
   typeof url === 'string' && url.trim() !== '' && !url.startsWith('blob:');
@@ -127,6 +128,40 @@ const PRODUCT_SORTS = {
   rating: { rating: -1, reviews: -1, _id: 1 },
 };
 
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// `?category=` accepts a category title or slug. Products carry every category
+// they belong to plus its ancestors in `categoryIds`, so picking a parent
+// ("Brass Idols") also lists everything filed under its children ("Ganesha").
+// The plain `category` string is kept as a fallback for products that predate
+// the taxonomy import or sit in a category with no Category document.
+const buildCategoryClause = async (value) => {
+  const raw = String(value).trim();
+  const cat = await Category.findOne({
+    isActive: { $ne: false },
+    $or: [{ slug: raw }, { title: new RegExp(`^${escapeRegex(raw)}$`, 'i') }],
+  })
+    .sort({ legacyId: -1 }) // imported taxonomy wins over same-named topic categories
+    .select('_id title')
+    .lean();
+  if (!cat) return { category: raw };
+  return { $or: [{ categoryIds: cat._id }, { category: cat.title }] };
+};
+
+// Breadcrumb for a product: root → … → its most specific category.
+const buildCategoryTrail = async (product) => {
+  const trail = [];
+  let cursor = product.categoryRef;
+  for (let hops = 0; cursor && hops < 8; hops += 1) {
+    const cat = await Category.findById(cursor).select('title slug parent').lean();
+    if (!cat) break;
+    trail.unshift({ title: cat.title, slug: cat.slug });
+    cursor = cat.parent;
+  }
+  if (!trail.length && product.category) trail.push({ title: product.category, slug: slugify(product.category) });
+  return trail;
+};
+
 const getProducts = async (req, res) => {
   try {
     const filter = {
@@ -139,16 +174,28 @@ const getProducts = async (req, res) => {
       .filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (ids.length) filter._id = { $in: ids };
 
+    const andClauses = [];
     if (req.query.category) {
-      filter.category = req.query.category;
+      andClauses.push(await buildCategoryClause(req.query.category));
     }
     if (req.query.vendor && mongoose.Types.ObjectId.isValid(req.query.vendor)) {
       filter.vendor = req.query.vendor;
     }
+    if (req.query.bestseller === 'true') {
+      filter.bestseller = true;
+    }
+    if (req.query.tags) {
+      const tagList = String(req.query.tags)
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (tagList.length) filter.tagList = { $in: tagList };
+    }
     if (req.query.search) {
       const re = new RegExp(String(req.query.search).trim(), 'i');
-      filter.$and = [{ $or: [{ name: re }, { title: re }, { tags: re }] }];
+      andClauses.push({ $or: [{ name: re }, { title: re }, { tags: re }] });
     }
+    if (andClauses.length) filter.$and = andClauses;
 
     const sort = PRODUCT_SORTS[req.query.sort] || PRODUCT_SORTS.popular;
 
@@ -185,24 +232,83 @@ const getProducts = async (req, res) => {
   }
 };
 
-// Categories that actually have at least one live product — used to build
-// the Shop page's filter chips so a chip never leads to an empty result.
-// This is deliberately computed from real Product.category usage rather than
-// the full Category taxonomy collection, since that collection also holds
-// unrelated topic categories (e.g. blog-style "Ecommerce"/"Fashion" entries)
-// that no product is actually assigned to.
+// The category tree, limited to categories that actually contain a live
+// product (directly or through a descendant) so a chip never leads to an empty
+// shop page. Returned depth-first (siblings by sortOrder) so parents sit right
+// before their children. Each row also carries an image — the category's own
+// icon, else a photo of one of its products — for the storefront tiles.
 const getProductCategories = async (req, res) => {
   try {
-    const rows = await Product.aggregate([
-      { $match: { $or: [{ lifecycle: 'Published' }, { status: 'approved' }], category: { $ne: '' } } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $match: { count: { $gt: 0 } } },
-      { $sort: { count: -1 } },
+    const live = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+    const [cats, byRef, byName] = await Promise.all([
+      Category.find({ isActive: { $ne: false } }).lean(),
+      Product.aggregate([
+        { $match: { ...live, 'categoryIds.0': { $exists: true } } },
+        { $project: { categoryIds: 1, category: 1, image: 1, isFeatured: 1, reviews: 1 } },
+        { $sort: { isFeatured: -1, reviews: -1 } },
+        { $unwind: '$categoryIds' },
+        { $group: { _id: '$categoryIds', count: { $sum: 1 }, image: { $first: '$image' } } },
+      ]),
+      // Products with no taxonomy ids yet — counted by their plain category name.
+      Product.aggregate([
+        {
+          $match: {
+            $and: [
+              live,
+              { category: { $nin: ['', null] } },
+              { $or: [{ categoryIds: { $exists: false } }, { categoryIds: { $size: 0 } }] },
+            ],
+          },
+        },
+        { $project: { categoryIds: 1, category: 1, image: 1, isFeatured: 1, reviews: 1 } },
+        { $sort: { isFeatured: -1, reviews: -1 } },
+        { $group: { _id: '$category', count: { $sum: 1 }, image: { $first: '$image' } } },
+      ]),
     ]);
-    res.status(200).json({
-      success: true,
-      data: rows.map((r) => ({ name: r._id, count: r.count })),
+
+    const stats = new Map(byRef.map((r) => [String(r._id), { count: r.count, image: r.image }]));
+    const byTitle = new Map(cats.map((c) => [c.title.toLowerCase(), c]));
+    const orphans = [];
+    byName.forEach((r) => {
+      const doc = byTitle.get(String(r._id).toLowerCase());
+      if (!doc) return orphans.push({ name: r._id, count: r.count, image: r.image });
+      const cur = stats.get(String(doc._id)) || { count: 0, image: r.image };
+      stats.set(String(doc._id), { count: cur.count + r.count, image: cur.image || r.image });
     });
+
+    const children = new Map();
+    cats.forEach((c) => {
+      const key = c.parent ? String(c.parent) : 'root';
+      if (!children.has(key)) children.set(key, []);
+      children.get(key).push(c);
+    });
+    const rows = [];
+    const walk = (parentKey, level) => {
+      (children.get(parentKey) || [])
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.title.localeCompare(b.title))
+        .forEach((c) => {
+          const st = stats.get(String(c._id));
+          if (st && st.count > 0) {
+            rows.push({
+              id: String(c._id),
+              name: c.title,
+              slug: c.slug,
+              parent: c.parent ? String(c.parent) : null,
+              level,
+              count: st.count,
+              isFeatured: !!c.isFeatured,
+              image: resolveImageUrl(c.image || st.image || '') || null,
+            });
+          }
+          walk(String(c._id), level + 1);
+        });
+    };
+    walk('root', 1);
+    orphans.forEach((o) =>
+      rows.push({ id: o.name, name: o.name, slug: slugify(o.name), parent: null, level: 1, count: o.count, isFeatured: false, image: resolveImageUrl(o.image || '') || null })
+    );
+
+    res.status(200).json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -250,7 +356,78 @@ const getProductById = async (req, res) => {
     }
 
     const data = await resolveProductImages(await injectStock(product));
+    data.categoryTrail = await buildCategoryTrail(product);
     res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Powers the "similar products" rail on the product detail page — same
+// category first (closest substitutes/complements), ranked by shared tags
+// and price proximity to the viewed product so the cheaper, closely-related
+// items that nudge cart value up surface before loosely-related ones.
+const getRelatedProducts = async (req, res) => {
+  try {
+    const key = String(req.params.id || '').trim();
+    const looksLikeObjectId = /^[a-fA-F0-9]{24}$/.test(key);
+    const source = looksLikeObjectId
+      ? await Product.findById(key).select('category categoryRef tagList price vendor').lean()
+      : await Product.findOne({ $or: [{ slug: key }, { 'seo.general.slug': key }] })
+          .select('category categoryRef tagList price vendor')
+          .lean();
+
+    if (!source) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 8, 1), 20);
+    const baseFilter = {
+      _id: { $ne: source._id },
+      $or: [{ lifecycle: 'Published' }, { status: 'approved' }],
+    };
+
+    // Same most-specific category first; categoryIds also pulls in products
+    // filed under a child of it (e.g. a "Brass Idols" page showing Ganesha).
+    const sameCategory = source.categoryRef
+      ? { $or: [{ category: source.category }, { categoryIds: source.categoryRef }] }
+      : { category: source.category };
+    let candidates = await Product.find({ ...baseFilter, $and: [sameCategory] })
+      .select('name title price oldPrice salePrice image images rating reviews category tagList vendor isFeatured slug')
+      .populate('vendor', 'storeName fullName')
+      .limit(60)
+      .lean();
+
+    // Same category rarely runs dry, but top up with same-vendor picks when it does
+    // so the section never renders empty on thin categories.
+    if (candidates.length < limit && source.vendor) {
+      const fill = await Product.find({ ...baseFilter, vendor: source.vendor, category: { $ne: source.category } })
+        .select('name title price oldPrice salePrice image images rating reviews category tagList vendor isFeatured slug')
+        .populate('vendor', 'storeName fullName')
+        .limit(limit - candidates.length)
+        .lean();
+      candidates = candidates.concat(fill);
+    }
+
+    const sourceTags = new Set(Array.isArray(source.tagList) ? source.tagList : []);
+    const sourcePrice = Number(source.price) || 0;
+    const scored = candidates.map((p) => {
+      const tags = Array.isArray(p.tagList) ? p.tagList : [];
+      const tagOverlap = tags.reduce((n, t) => n + (sourceTags.has(t) ? 1 : 0), 0);
+      const priceDelta = sourcePrice ? Math.abs((Number(p.price) || 0) - sourcePrice) / sourcePrice : 1;
+      const score =
+        (p.category === source.category ? 10 : 0) +
+        tagOverlap * 5 +
+        (p.isFeatured ? 2 : 0) -
+        priceDelta;
+      return { p, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+
+    const products = await resolveProductImages(
+      await injectStock(scored.slice(0, limit).map((s) => s.p))
+    );
+    res.status(200).json({ success: true, data: products });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -556,6 +733,7 @@ module.exports = {
   getProducts,
   getProductCategories,
   getProductById,
+  getRelatedProducts,
   createProduct,
   getVendorProducts,
   getAdminProducts,

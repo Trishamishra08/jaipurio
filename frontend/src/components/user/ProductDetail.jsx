@@ -31,10 +31,12 @@ import {
   Zap,
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { journalPosts } from '../../data/journalPosts';
+import ProductCard from './ProductCard';
+import { CategoryItem } from './Categories';
 import { getWhatsAppHref, WHATSAPP_PHONE } from '../../utils/whatsapp';
 import { mapApiProductToStorefront, formatInr } from '../../utils/storefrontProduct';
 import api from '../../utils/api';
+import { useCategoryTree } from '../../utils/useCategoryTree';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -53,6 +55,9 @@ const ProductDetail = () => {
   const [loadState, setLoadState] = useState('idle'); // idle | loading | error | ready
   const [loadError, setLoadError] = useState('');
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [bestSellers, setBestSellers] = useState([]);
+  const [relevantCategories, setRelevantCategories] = useState([]);
+  const [relevantBlogs, setRelevantBlogs] = useState([]);
   const [activeTab, setActiveTab] = useState('description'); // 'description' | 'specifications' | 'care' | 'reviews'
 
   const contextProduct =
@@ -115,21 +120,22 @@ const ProductDetail = () => {
     };
   }, [id]);
 
+  // Similar/complementary products — ranked server-side by category match,
+  // shared tags and price proximity to the viewed item (see getRelatedProducts
+  // in backend/controllers/productController.js) so this reads as genuine
+  // cross-sell rather than "more from this seller".
   useEffect(() => {
-    const vendorId = product?.vendorId;
-    if (!vendorId) {
+    const productId = product?._id;
+    if (!productId) {
       setRelatedProducts([]);
       return undefined;
     }
     let cancelled = false;
     api
-      .get('/products', { params: { vendor: vendorId, limit: 7 } })
+      .get(`/products/${encodeURIComponent(productId)}/related`, { params: { limit: 8 } })
       .then((res) => {
         if (cancelled) return;
-        const rows = (res.data?.data?.products || [])
-          .map(mapApiProductToStorefront)
-          .filter((p) => p && String(p._id) !== String(product?._id))
-          .slice(0, 6);
+        const rows = (res.data?.data || []).map(mapApiProductToStorefront).filter(Boolean);
         setRelatedProducts(rows);
       })
       .catch(() => {
@@ -138,7 +144,72 @@ const ProductDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [product?.vendorId, product?._id]);
+  }, [product?._id]);
+
+  // Best sellers — popularity-ranked (reviews + rating), independent of this
+  // product's own category, to surface proven movers that lift cart value.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/products', { params: { sort: 'popular', limit: 9 } })
+      .then((res) => {
+        if (cancelled) return;
+        const rows = (res.data?.data?.products || [])
+          .map(mapApiProductToStorefront)
+          .filter((p) => p && String(p._id) !== String(product?._id))
+          .slice(0, 8);
+        setBestSellers(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setBestSellers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?._id]);
+
+  // Relevant categories — the product's own category first, then its
+  // sub-categories, siblings and parent (the neighbours a shopper would
+  // browse next), topped up with the busiest other categories.
+  const { categories: categoryTree } = useCategoryTree();
+  useEffect(() => {
+    const own = categoryTree.find((c) => c.name === product?.category);
+    if (!own) {
+      setRelevantCategories(categoryTree.slice(0, 8));
+      return;
+    }
+    const related = [
+      own,
+      ...categoryTree.filter((c) => c.parent === own.id),
+      ...categoryTree.filter((c) => own.parent && c.parent === own.parent && c.id !== own.id),
+      ...categoryTree.filter((c) => c.id === own.parent),
+    ];
+    const seen = new Set(related.map((c) => c.id));
+    const fill = categoryTree.filter((c) => !seen.has(c.id)).sort((x, y) => y.count - x.count);
+    setRelevantCategories([...related, ...fill].slice(0, 8));
+  }, [categoryTree, product?.category]);
+
+  // Relevant blog posts — same category as the viewed product, via the
+  // shared getRelatedBlogs endpoint (backend/controllers/blogController.js).
+  useEffect(() => {
+    if (!product?.category) {
+      setRelevantBlogs([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api
+      .get('/blogs/related', { params: { category: product.category, limit: 3 } })
+      .then((res) => {
+        if (cancelled) return;
+        setRelevantBlogs(res.data?.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setRelevantBlogs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.category]);
 
   // SEO metadata synchronization
   useEffect(() => {
@@ -492,14 +563,19 @@ const ProductDetail = () => {
           <span>/</span>
           <Link to="/shop" className="hover:text-[#8B2E3A]">Shop</Link>
           <span>/</span>
-          {product.category && (
-            <>
-              <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-[#8B2E3A]">
-                {product.category}
+          {(product.categoryTrail?.length
+            ? product.categoryTrail.map((c) => c.title)
+            : product.category
+              ? [product.category]
+              : []
+          ).map((title) => (
+            <React.Fragment key={title}>
+              <Link to={`/shop?category=${encodeURIComponent(title)}`} className="hover:text-[#8B2E3A]">
+                {title}
               </Link>
               <span>/</span>
-            </>
-          )}
+            </React.Fragment>
+          ))}
           <span className="text-gray-800 font-medium truncate max-w-[280px]">{product.name}</span>
         </nav>
 
@@ -1048,40 +1124,100 @@ const ProductDetail = () => {
           )}
         </div>
 
-        {/* Related Products Section */}
+        {/* Similar & Complementary Products — cross-sell rail to lift cart value */}
         {related.length > 0 && (
           <div className="mt-14 pt-8 border-t border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D]">
-                You May Also Like
-              </h3>
-              <Link to="/shop" className="text-xs font-semibold text-[#8B2E3A] hover:underline">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D]">
+                  Complete the Look
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Similar picks that pair well with this piece
+                </p>
+              </div>
+              <Link to="/shop" className="text-xs font-semibold text-[#8B2E3A] hover:underline shrink-0">
                 View All →
               </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
               {related.map((item) => (
+                <ProductCard key={item._id} product={item} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Best Sellers — proven movers, shown regardless of this product's own category */}
+        {bestSellers.length > 0 && (
+          <div className="mt-14 pt-8 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D]">
+                  Our Best Sellers
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Customer favourites worth adding to your cart
+                </p>
+              </div>
+              <Link to="/shop" className="text-xs font-semibold text-[#8B2E3A] hover:underline shrink-0">
+                View All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+              {bestSellers.map((item) => (
+                <ProductCard key={item._id} product={item} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Relevant Categories — live taxonomy, current category pinned first */}
+        {relevantCategories.length > 0 && (
+          <div className="mt-14 pt-8 border-t border-gray-200">
+            <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D] mb-4">
+              Explore Related Categories
+            </h3>
+            <div className="flex flex-nowrap justify-start gap-5 lg:gap-6 overflow-x-auto pb-1">
+              {relevantCategories.map((cat) => (
+                <CategoryItem key={cat.id || cat.name} cat={{ name: cat.name, title: cat.name, slug: cat.slug, image: cat.image }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Relevant Blogs — same category guides/stories, drives discovery + SEO */}
+        {relevantBlogs.length > 0 && (
+          <div className="mt-14 pt-8 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-bold font-serif text-[#6F241D]">
+                From the Journal
+              </h3>
+              <Link to="/blog" className="text-xs font-semibold text-[#8B2E3A] hover:underline shrink-0">
+                View All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {relevantBlogs.map((post) => (
                 <Link
-                  key={item._id}
-                  to={`/product/${item._id}`}
-                  className="group bg-white rounded-xl overflow-hidden border border-gray-200 p-2.5 hover:shadow-md transition-all flex flex-col justify-between"
+                  key={post._id}
+                  to={`/blog/${post._id}`}
+                  className="group bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-md transition-all"
                 >
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 mb-2">
+                  <div className="aspect-[16/10] overflow-hidden bg-gray-50">
                     <img
-                      src={item.image}
-                      alt={item.name}
+                      src={post.image}
+                      alt={post.title}
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-[#8B2E3A]">
-                      {item.name}
+                  <div className="p-3">
+                    <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-[#8B2E3A]">
+                      {post.title}
                     </h4>
-                    <p className="text-xs font-bold text-[#8B2E3A] mt-1">
-                      {formatInr(item.price)}
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{post.excerpt}</p>
                   </div>
                 </Link>
               ))}

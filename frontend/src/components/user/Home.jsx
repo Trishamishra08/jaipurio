@@ -5,6 +5,7 @@ import Categories from './Categories';
 import HomeAfterCategory from './HomeAfterCategory';
 import NewArrivalBanner from './NewArrivalBanner';
 import BestSellers from './BestSellers';
+import CategoryProducts from './CategoryProducts';
 import CouponOffers from './CouponOffers';
 import TrustFooterStrip from './TrustFooterStrip';
 import WhyChooseJaipurio from './WhyChooseJaipurio';
@@ -21,6 +22,7 @@ const Home = () => {
         <HomeAfterCategory />
         <NewArrivalBanner />
         <BestSellers />
+        <CategoryProducts />
         <CouponOffers />
         <TrustFooterStrip />
         <WhyChooseJaipurio />

@@ -5,6 +5,7 @@ const {
   getAdminBlogs,
   getBlogById,
   getBlogBySlug,
+  getRelatedBlogs,
   createBlog,
   updateBlog,
   deleteBlog,
@@ -29,6 +30,8 @@ router.route('/').get(cachePublic('blogs', 180), getBlogs).post(protect, authori
 router.route('/admin').get(protect, authorize('admin'), getAdminBlogs);
 
 router.get('/slug/:slug', cachePublic('blogs', 180), getBlogBySlug);
+
+router.get('/related', cachePublic('blog-related', 60), getRelatedBlogs);
 
 router
   .route('/categories')

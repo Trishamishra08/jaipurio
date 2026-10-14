@@ -153,8 +153,13 @@ const copyObjectKey = async (sourceKey) => {
 //    URL is rebuilt from the path.
 const LEGACY_HOST_PREFIX = 'https://jaipurio.in/storage/';
 
+// Set MEDIA_REWRITE_LEGACY=false to leave jaipurio.in/storage URLs untouched
+// (they are still served by the old site) — use it whenever the MinIO host is
+// down or has no valid certificate, so catalog images keep loading.
+const REWRITE_LEGACY = process.env.MEDIA_REWRITE_LEGACY !== 'false';
+
 const extractKey = (url) => {
-  if (url.startsWith(LEGACY_HOST_PREFIX)) return decodeURIComponent(url.slice(LEGACY_HOST_PREFIX.length));
+  if (REWRITE_LEGACY && url.startsWith(LEGACY_HOST_PREFIX)) return decodeURIComponent(url.slice(LEGACY_HOST_PREFIX.length));
   if (url.startsWith(PUBLIC_BASE_URL)) {
     const withoutQuery = url.split('?')[0];
     return decodeURIComponent(withoutQuery.slice(PUBLIC_BASE_URL.length));
@@ -167,6 +172,57 @@ const resolveImageUrl = (url) => {
   if (typeof url !== 'string') return url;
   const key = extractKey(url);
   return key ? getPublicUrl(key) : url;
+};
+
+// ── Thumbnails ────────────────────────────────────────────────────
+// Catalog originals are 150–350 KB PNGs; a page of product cards asked for
+// ~100 of them at once and the media host could not deliver them in time on
+// phones. Small WebP copies live at a fixed key next to the originals —
+// thumbs/<width>/<original key minus extension>.webp — so the storefront can
+// request them straight from MinIO and only falls back to the API (which
+// creates the copy) the first time.
+const THUMB_WIDTHS = [200, 400, 800];
+const THUMBABLE = /.(jpe?g|png|webp|gif|avif)$/i;
+
+const snapThumbWidth = (w) => {
+  const n = parseInt(w, 10) || 400;
+  return THUMB_WIDTHS.find((x) => x >= n) || THUMB_WIDTHS[THUMB_WIDTHS.length - 1];
+};
+
+/** Keys we will never thumbnail: private customer files, thumbs themselves, path tricks, non-images. */
+const canThumbnail = (key) =>
+  typeof key === 'string' &&
+  THUMBABLE.test(key) &&
+  !key.includes('..') &&
+  !key.startsWith('customers/') &&
+  !key.startsWith('thumbs/');
+
+const thumbKeyFor = (key, width) => `thumbs/${width}/${key.replace(/.[^./]+$/, '')}.webp`;
+
+const inflightThumbs = new Map();
+
+/** Make sure the WebP thumbnail for `key` exists in the bucket; resolves to its key. */
+const ensureThumbnail = (key, width) => {
+  const tKey = thumbKeyFor(key, width);
+  if (inflightThumbs.has(tKey)) return inflightThumbs.get(tKey);
+  const job = (async () => {
+    if (await objectExists(tKey)) return tKey;
+    const stream = await minioClient.getObject(bucketName, key);
+    const chunks = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    const out = await sharp(Buffer.concat(chunks))
+      .rotate()
+      .resize({ width, height: width, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 78 })
+      .toBuffer();
+    await minioClient.putObject(bucketName, tKey, out, out.length, {
+      'Content-Type': 'image/webp',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    });
+    return tKey;
+  })().finally(() => inflightThumbs.delete(tKey));
+  inflightThumbs.set(tKey, job);
+  return job;
 };
 
 /** Walk every image-bearing field on a list of serialized products and resolve MinIO URLs in place. */
@@ -195,4 +251,9 @@ module.exports = {
   copyObjectKey,
   resolveImageUrl,
   resolveProductImages,
+  extractKey,
+  snapThumbWidth,
+  canThumbnail,
+  thumbKeyFor,
+  ensureThumbnail,
 };

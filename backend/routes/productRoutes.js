@@ -4,6 +4,7 @@ const {
   getProducts,
   getProductCategories,
   getProductById,
+  getRelatedProducts,
   createProduct,
   getVendorProducts,
   getAdminProducts,
@@ -24,6 +25,7 @@ router.post('/', protect, createProduct);
 router.put('/:id/status', protect, authorize('admin'), updateProductStatus);
 router.put('/:id/submit', protect, submitProduct);
 router.post('/:id/duplicate', protect, duplicateProduct);
+router.get('/:id/related', cachePublic('product-related', 60), getRelatedProducts);
 router.get('/:id', optionalProtect, getProductById);
 router.put('/:id', protect, updateProduct);
 router.delete('/:id', protect, deleteProduct);

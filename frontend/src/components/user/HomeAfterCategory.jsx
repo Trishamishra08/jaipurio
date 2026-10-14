@@ -3,31 +3,12 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import SectionHeading from './SectionHeading';
-import { PHOTOS } from '../../data/photos';
+import { useCategoryTree } from '../../utils/useCategoryTree';
+import { useMixedProducts } from '../../utils/useMixedProducts';
+import api from '../../utils/api';
+import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
+import ThumbImg from '../shared/ThumbImg';
 
-const IMG = {
-  jewellery: PHOTOS.jewelry,
-  pottery: PHOTOS.bluePottery,
-  ganesh: PHOTOS.ganesh,
-  pichwai: PHOTOS.pichwai,
-  matka: PHOTOS.matka,
-  kulhad: PHOTOS.kulhad,
-  planter: PHOTOS.planter,
-  elephant: PHOTOS.elephantCraft,
-  diya: PHOTOS.diya,
-  camel: PHOTOS.camel,
-  logo: PHOTOS.jaipur,
-  kundan: PHOTOS.kundan,
-  leather: PHOTOS.leather,
-  textile: PHOTOS.textile,
-  sherwani: PHOTOS.sherwani,
-  buddha: PHOTOS.buddha,
-  mandir: PHOTOS.mandir,
-  hanging: PHOTOS.hanging,
-  vases: PHOTOS.vases,
-  terracotta: PHOTOS.terracotta,
-  succulent: PHOTOS.succulent,
-};
 
 /** Groups real products by category into up-to-4 offer tiles — replaces the
  * old hardcoded OFFER_TILES (fake names/prices paired with stock photos). */
@@ -61,23 +42,15 @@ const buildOfferTiles = (products) => {
     .slice(0, 4);
 };
 
-/** One tile per real category, pictured with an actual product photo from
- * that category — replaces the old hardcoded 5-tile stock-photo grid. */
-const buildCategoryTiles = (products) => {
-  const byCategory = new Map();
-  products.forEach((p) => {
-    if (!p.category || !p.image) return;
-    if (!byCategory.has(p.category)) byCategory.set(p.category, p);
-  });
+const EXPLORE_LIMIT = 8;
 
-  return Array.from(byCategory.entries())
-    .slice(0, 5)
-    .map(([category, product], i) => ({
-      title: category,
-      kicker: product.brand || 'Shop the collection',
-      img: product.image,
-      className: i === 0 ? 'col-span-2 row-span-2 min-h-[180px]' : '',
-    }));
+/** Explore cards from the live category tree: every top-level category first,
+ * then the admin-featured sub-categories, skipping near-empty ones. */
+const buildExploreCards = (categories) => {
+  const usable = categories.filter((c) => c.image && c.count >= 3);
+  const picked = [...usable.filter((c) => !c.parent), ...usable.filter((c) => c.parent && c.isFeatured)];
+  const seen = new Set();
+  return picked.filter((c) => !seen.has(c.id) && seen.add(c.id)).slice(0, EXPLORE_LIMIT);
 };
 
 /** "Shop by occasion" tiles — each pictured with a real catalog product whose
@@ -131,7 +104,7 @@ const Tag = ({ label }) => {
 };
 
 const CatalogCard = ({ item, compact }) => {
-  const { toggleWishlist, isInWishlist } = useShop();
+  const { toggleWishlist, isInWishlist, addToCart } = useShop();
   const id = item._id || item.name;
   const liked = isInWishlist(id);
   const off =
@@ -142,9 +115,9 @@ const CatalogCard = ({ item, compact }) => {
   return (
     <Link
       to={item.to || '/shop'}
-      className="bg-white rounded-xl border border-[#F3D5D0] overflow-hidden shadow-[0_2px_10px_rgba(139,46,58,0.06)] hover:shadow-[0_6px_16px_rgba(139,46,58,0.1)] transition-shadow flex flex-col min-w-[150px]"
+      className="group bg-white rounded-xl border border-[#F3D5D0] overflow-hidden shadow-[0_2px_10px_rgba(139,46,58,0.06)] hover:shadow-[0_12px_28px_rgba(139,46,58,0.14)] hover:-translate-y-1 transition-all duration-300 flex flex-col min-w-[150px] font-mulish"
     >
-      <div className={`relative overflow-hidden bg-[#F7EFE0] ${compact ? 'aspect-square' : 'aspect-[4/3.3]'}`}>
+      <div className={`relative overflow-hidden bg-[#F7EFE0] ${compact ? 'aspect-square' : 'aspect-square'} bg-white`}>
         {item.tag && <Tag label={item.tag} />}
         <button
           type="button"
@@ -157,7 +130,19 @@ const CatalogCard = ({ item, compact }) => {
         >
           <Heart size={12} className={liked ? 'fill-[#C45C6A] text-[#C45C6A]' : 'text-[#8B2E3A]'} />
         </button>
-        <img src={item.image} alt={item.name} className="absolute inset-0 w-full h-full object-cover object-center contrast-[1.06] saturate-[1.08]" loading="lazy" />
+        <ThumbImg src={item.image} alt={item.name} className="absolute inset-0 w-full h-full object-contain object-center p-2 transition-transform duration-500 group-hover:scale-[1.06]" loading="lazy" />
+        {item._id && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              addToCart(item, 1);
+            }}
+            className="hidden md:flex absolute inset-x-2 bottom-2 z-10 items-center justify-center rounded-lg bg-[#F5B82E] hover:bg-[#E9A915] text-[#2B1E1A] text-[11px] font-bold py-1.5 shadow-md translate-y-[130%] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300"
+          >
+            Add to cart
+          </button>
+        )}
       </div>
       <div className="p-2.5 flex-1">
         {item.brand && (
@@ -165,10 +150,10 @@ const CatalogCard = ({ item, compact }) => {
             {item.brand}
           </p>
         )}
-        <h4 className="font-playfair text-[12px] sm:text-[13px] font-semibold text-[#3F261B] leading-snug line-clamp-2 mt-0.5">
+        <h4 className="text-[12px] sm:text-[13px] font-semibold text-[#3F261B] group-hover:text-[#8B2E3A] transition-colors leading-snug line-clamp-2 mt-0.5">
           {item.name}
         </h4>
-        <div className="flex items-baseline gap-1.5 mt-1 font-dm">
+        <div className="flex items-baseline gap-1.5 mt-1">
           <span className="text-[13px] font-bold text-[#3F261B]">₹{(item.price || 0).toLocaleString('en-IN')}</span>
           {item.oldPrice && (
             <span className="text-[10px] text-[#9A8B7A] line-through">₹{item.oldPrice.toLocaleString('en-IN')}</span>
@@ -191,8 +176,49 @@ const Wrap = ({ children, alt, className = '', compact = false }) => (
   </section>
 );
 
+/** Styled edits — each is a set of real categories; the card pictures one
+ * product from each and links to the first. Categories missing from the live
+ * tree are skipped, and an edit with none left is hidden. */
+const STYLED_EDITS = [
+  { title: 'The Wedding Trousseau Edit', categories: ['Rajputi Poshak', 'Jodhpuri Bandhgala Suits', 'Necklaces', 'Bangles'] },
+  { title: 'The Pooja Room Edit', categories: ['Marble Idols', 'Brass Idols', 'Thali & Thali Sets', 'Torans'] },
+  { title: "The Groom's Edit", categories: ['Jodhpuri Achkans', 'Safa / Head Turban', 'Cufflinks', 'Pocket Squares'] },
+];
+
+const listNames = (names) =>
+  names.length > 1 ? `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}` : names[0] || '';
+
+const FESTIVE_RE = /diya|lamp|lakshmi|ganesh|puja|pooja|thali|toran|kalash/i;
+
+/** Curated collections from live products — each tile pictures the first
+ * products that belong on it, never repeating a product across tiles. */
+const buildCollections = (products, newest) => {
+  const withImage = products.filter((p) => p.image);
+  const used = new Set();
+  const take = (list) => {
+    const picked = [];
+    for (const p of list) {
+      if (picked.length === 2) break;
+      if (used.has(p._id)) continue;
+      used.add(p._id);
+      picked.push(p);
+    }
+    return picked;
+  };
+  return [
+    { title: 'Festive Collection', items: take(withImage.filter((p) => FESTIVE_RE.test(`${p.name} ${p.category}`))) },
+    { title: 'Best Seller Collection', items: take(withImage) },
+    { title: 'New Arrivals Collection', items: take(newest.filter((p) => p.image)) },
+    { title: 'Under ₹5,000 Collection', items: take(withImage.filter((p) => p.price && p.price <= 5000)) },
+  ].filter((c) => c.items.length > 0);
+};
+
 const HomeAfterCategory = () => {
-  const { products } = useShop();
+  // Category-mixed pool so the rails below aren't all murtis; falls back to
+  // the popular list from ShopContext until it loads.
+  const { products: popular } = useShop();
+  const mixed = useMixedProducts();
+  const products = mixed.length ? mixed : popular;
   const [left, setLeft] = useState({ h: 12, m: 44, s: 46 });
   const mitti = useMemo(() => products.slice(0, 6), [products]);
   // Live catalog slices for every "product card" rail on this page — these
@@ -206,7 +232,56 @@ const HomeAfterCategory = () => {
     [products]
   );
   const offerTiles = useMemo(() => buildOfferTiles(products), [products]);
-  const categoryTiles = useMemo(() => buildCategoryTiles(products), [products]);
+  const { categories } = useCategoryTree();
+  const exploreCards = useMemo(() => buildExploreCards(categories), [categories]);
+  const [newest, setNewest] = useState([]);
+  const [styledEdits, setStyledEdits] = useState([]);
+  const collections = useMemo(() => buildCollections(products, newest), [products, newest]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/products', { params: { sort: 'new', limit: 8 } })
+      .then((res) => {
+        if (!cancelled) setNewest((res.data?.data?.products || []).map(mapApiProductToStorefront).filter(Boolean));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categoryKey = categories.map((c) => c.id).join('|');
+  useEffect(() => {
+    if (!categories.length) return undefined;
+    let cancelled = false;
+    Promise.all(
+      STYLED_EDITS.map(async (edit) => {
+        const cats = edit.categories.map((n) => categories.find((c) => c.name === n)).filter(Boolean);
+        const picks = await Promise.all(
+          cats.map((c) =>
+            api
+              .get('/products', { params: { category: c.name, limit: 1, sort: 'popular' } })
+              .then((res) => mapApiProductToStorefront((res.data?.data?.products || [])[0]))
+              .catch(() => null)
+          )
+        );
+        return {
+          title: edit.title,
+          to: cats[0] ? `/shop?category=${encodeURIComponent(cats[0].name)}` : '/shop',
+          copy: `${listNames(cats.map((c) => c.name))} — styled together.`,
+          count: cats.reduce((n, c) => n + c.count, 0),
+          images: picks.filter((p) => p && p.image),
+        };
+      })
+    ).then((edits) => {
+      if (!cancelled) setStyledEdits(edits.filter((e) => e.images.length > 0));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryKey]);
   const occasionTiles = useMemo(() => buildOccasionTiles(products), [products]);
   const maxDiscount = useMemo(
     () =>
@@ -270,10 +345,10 @@ const HomeAfterCategory = () => {
                 {d.items.map((p) => (
                   <div key={p._id || p.name} className="min-w-0 flex flex-col items-center text-center">
                     <div className="w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 shrink-0 rounded-full overflow-hidden bg-[#F7EFE0]">
-                      <img
+                      <ThumbImg
                         src={p.image}
                         alt={p.name}
-                        className="w-full h-full object-cover object-center scale-[1.12] transition-transform duration-500 group-hover:scale-[1.18]"
+                        className="w-full h-full object-contain object-center p-0.5 bg-white transition-transform duration-500 group-hover:scale-[1.08]"
                       />
                     </div>
                     <p className="font-body text-[8px] sm:text-[9px] text-[#3F261B] mt-0.5 line-clamp-2 leading-tight">
@@ -299,28 +374,45 @@ const HomeAfterCategory = () => {
         </div>
       </Wrap>
 
-      {/* 2. Explore Jaipurio — real catalog categories, each tile using an
-          actual product photo from that category instead of stock art. */}
-      <Wrap alt>
-        <SectionHead eyebrow="Shop the Look" title="Explore Jaipurio" />
-        <div className="grid grid-cols-2 md:grid-cols-4 md:grid-rows-2 gap-2.5 min-h-[280px] md:min-h-[360px]">
-          {categoryTiles.map((b) => (
-            <Link
-              key={b.title}
-              to={`/shop?category=${encodeURIComponent(b.title)}`}
-              className={`relative overflow-hidden rounded-xl min-h-[110px] ${b.className || ''}`}
-            >
-              <img src={b.img} alt="" className="absolute inset-0 w-full h-full object-cover" loading="lazy" decoding="async" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#8B2E3A]/80 via-[#C45C6A]/20 to-transparent" />
-              <div className="absolute bottom-2.5 left-2.5 right-2 text-white">
-                <p className="font-dm text-[8px] sm:text-[9px] uppercase tracking-[0.14em] text-[#F8D0C8]">{b.kicker}</p>
-                <h4 className="font-playfair font-semibold text-[14px] sm:text-[18px] leading-tight">{b.title}</h4>
-                <p className="font-dm text-[10px] mt-0.5 text-white/90">Shop now →</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </Wrap>
+      {/* 2. Explore Jaipurio — one card per live category (from the category
+          tree), shown whole on a soft backdrop so no photo is cropped. */}
+      {exploreCards.length > 0 && (
+        <Wrap alt>
+          <SectionHead eyebrow="Shop the Look" title="Explore Jaipurio" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            {exploreCards.map((cat) => (
+              <Link
+                key={cat.id}
+                to={`/shop?category=${encodeURIComponent(cat.name)}`}
+                className="group bg-white rounded-2xl border border-[#EADFCF] overflow-hidden shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_10px_24px_rgba(111,36,29,0.12)] hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="relative aspect-square bg-gradient-to-b from-[#FBF6EE] to-[#F3E7D3] overflow-hidden">
+                  <ThumbImg
+                    src={cat.image}
+                    alt={cat.name}
+                    className="absolute inset-0 w-full h-full object-contain p-4 sm:p-5 transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-0.5 rounded-full font-dm text-[9px] sm:text-[10px] font-semibold text-[#6F241D] shadow-sm">
+                    {cat.count} items
+                  </span>
+                </div>
+                <div className="px-3 py-2.5 sm:px-4 sm:py-3 border-t border-[#F1E6D6]">
+                  <p className="font-dm text-[8px] sm:text-[9px] uppercase tracking-[0.14em] text-[#B08A5A]">Jaipurio Heritage</p>
+                  <h4 className="font-playfair font-semibold text-[14px] sm:text-[17px] text-[#3F261B] leading-tight line-clamp-1 mt-0.5">
+                    {cat.name}
+                  </h4>
+                  <span className="inline-flex items-center gap-1 mt-1 font-dm text-[10px] sm:text-[11px] font-semibold text-[#C45C6A]">
+                    Shop now
+                    <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Wrap>
+      )}
 
       {/* 3. Original items */}
       <Wrap>
@@ -447,65 +539,91 @@ const HomeAfterCategory = () => {
         </div>
       </Wrap>
 
-      {/* 12. Styled edits */}
-      <Wrap>
-        <SectionHead
-          eyebrow="Curated, Not Just Categorised"
-          title="Styled edits"
-          copy="Complete looks and room sets, put together by our stylists — shop the whole edit in one tap."
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {[
-            { title: 'The Wedding Trousseau Edit', copy: 'Bridal kundan, bangles & a bandhgala for the groom — styled together.', count: '7 pieces', from: '#E8A0A8', to: '#8B2E3A' },
-            { title: 'The Pooja Room Edit', copy: 'Marble mandir, brass diyas, thali set & bells — a complete corner.', count: '5 pieces', from: '#F4C2C2', to: '#C45C6A' },
-            { title: 'The Housewarming Edit', copy: 'Blue pottery, block-print cushions & a brass lamp for the new home.', count: '6 pieces', from: '#D4A5A5', to: '#6F241D' },
-          ].map((e) => (
-            <Link key={e.title} to="/shop" className="bg-white rounded-xl overflow-hidden border border-[#F3D5D0]">
-              <div
-                className="h-28 sm:h-36 relative"
-                style={{ background: `linear-gradient(160deg, ${e.from}, ${e.to})` }}
+      {/* 12. Styled edits — real category sets, pictured with live products */}
+      {styledEdits.length > 0 && (
+        <Wrap>
+          <SectionHead
+            eyebrow="Curated, Not Just Categorised"
+            title="Styled edits"
+            copy="Complete looks and room sets, put together from our live catalogue — shop the whole edit in one tap."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {styledEdits.map((e) => (
+              <Link
+                key={e.title}
+                to={e.to}
+                className="group bg-white rounded-2xl overflow-hidden border border-[#EADFCF] shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_12px_28px_rgba(111,36,29,0.14)] hover:-translate-y-1 transition-all duration-300"
               >
-                <span className="absolute bottom-2 left-2 bg-black/70 text-white font-dm text-[9px] px-2 py-0.5 rounded-full">
-                  {e.count}
-                </span>
-              </div>
-              <div className="p-3">
-                <h4 className="font-playfair font-semibold text-[15px] text-[#3F261B]">{e.title}</h4>
-                <p className="font-dm text-[11px] text-[#8A6A68] mt-1 leading-snug">{e.copy}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </Wrap>
-
-      {/* 14. Curated collections */}
-      <Wrap>
-        <SectionHead eyebrow="Product Collections" title="Shop our curated collections" link="All collections →" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {[
-            { title: 'Festive Collection 2026', imgs: [IMG.diya, IMG.ganesh] },
-            { title: 'Best Seller Collection', imgs: [IMG.jewellery, IMG.kundan] },
-            { title: 'New Arrivals Collection', imgs: [IMG.planter, IMG.kulhad] },
-            { title: 'Under ₹5,000 Collection', imgs: [IMG.matka, IMG.succulent] },
-          ].map((d) => (
-            <div key={d.title} className="bg-white rounded-xl border border-[#F3D5D0] p-2.5 shadow-sm">
-              <h4 className="font-playfair font-semibold text-[13px] sm:text-[15px] text-[#3F261B] leading-snug mb-2">
-                {d.title}
-              </h4>
-              <div className="grid grid-cols-2 gap-1.5 mb-2">
-                {d.imgs.map((src, i) => (
-                  <div key={i} className="aspect-square rounded-lg overflow-hidden bg-[#F7F3EE]">
-                    <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                  </div>
-                ))}
-              </div>
-              <Link to="/shop" className="font-dm text-[11px] font-semibold text-[#C45C6A]">
-                View collection →
+                <div className="relative grid grid-cols-2 gap-px bg-[#F1E6D6]">
+                  {e.images.slice(0, 4).map((p) => (
+                    <div key={p._id} className="aspect-square bg-white overflow-hidden">
+                      <ThumbImg
+                        src={p.image}
+                        alt={p.name}
+                        className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.06]"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  ))}
+                  <span className="absolute bottom-2 left-2 bg-black/70 text-white font-mulish text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    {e.count} products
+                  </span>
+                </div>
+                <div className="p-3 sm:p-4">
+                  <h4 className="font-playfair font-semibold text-[15px] sm:text-[17px] text-[#3F261B] group-hover:text-[#8B2E3A] transition-colors">
+                    {e.title}
+                  </h4>
+                  <p className="font-mulish text-[11px] sm:text-[12px] text-[#8A6A68] mt-1 leading-snug line-clamp-2">{e.copy}</p>
+                  <span className="inline-flex items-center gap-1 mt-2 font-mulish text-[11px] font-bold text-[#C45C6A]">
+                    Shop the edit
+                    <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
+                  </span>
+                </div>
               </Link>
-            </div>
-          ))}
-        </div>
-      </Wrap>
+            ))}
+          </div>
+        </Wrap>
+      )}
+
+      {/* 14. Curated collections — pictured with live catalog products */}
+      {collections.length > 0 && (
+        <Wrap>
+          <SectionHead eyebrow="Product Collections" title="Shop our curated collections" link="All collections →" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            {collections.map((d) => (
+              <div
+                key={d.title}
+                className="group bg-white rounded-2xl border border-[#EADFCF] p-2.5 sm:p-3 shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_12px_28px_rgba(111,36,29,0.14)] hover:-translate-y-1 transition-all duration-300"
+              >
+                <h4 className="font-playfair font-semibold text-[13px] sm:text-[15px] text-[#3F261B] leading-snug mb-2">
+                  {d.title}
+                </h4>
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  {d.items.map((p) => (
+                    <Link
+                      key={p._id}
+                      to={`/product/${p._id}`}
+                      className="aspect-square rounded-lg overflow-hidden bg-white border border-[#F1ECE4]"
+                    >
+                      <ThumbImg
+                        src={p.image}
+                        alt={p.name}
+                        className="w-full h-full object-contain p-1.5 transition-transform duration-500 hover:scale-[1.08]"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </Link>
+                  ))}
+                </div>
+                <Link to="/shop" className="font-mulish text-[11px] font-bold text-[#C45C6A]">
+                  View collection →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Wrap>
+      )}
 
       {/* 15. Shop by occasion — pictured with real catalog product photos,
           chosen to fit each occasion, instead of a bare gradient. */}
@@ -519,7 +637,7 @@ const HomeAfterCategory = () => {
               className="relative overflow-hidden rounded-xl aspect-[3/4] sm:aspect-[4/5] flex items-end p-3 text-white font-playfair font-semibold text-[14px] group bg-[#F7EFE0]"
             >
               {o.img && (
-                <img
+                <ThumbImg
                   src={o.img}
                   alt={o.label}
                   className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"

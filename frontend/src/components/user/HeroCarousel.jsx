@@ -59,7 +59,7 @@ const HeroCarousel = () => {
   return (
     <section className="site-full-bleed relative w-full m-0 p-0 leading-none bg-[#EFE0C9]">
       <div className="relative w-full overflow-hidden">
-        <div className="relative w-full max-md:aspect-[5/4] max-md:min-h-[240px] max-md:max-h-[340px] md:min-h-[520px] md:h-[62vh] md:max-h-[760px] lg:min-h-[580px] lg:h-[68vh] lg:max-h-[820px] xl:min-h-[620px] xl:h-[72vh] xl:max-h-[880px]">
+        <div className="relative w-full max-md:aspect-[16/9] md:min-h-[520px] md:h-[62vh] md:max-h-[760px] lg:min-h-[580px] lg:h-[68vh] lg:max-h-[820px] xl:min-h-[620px] xl:h-[72vh] xl:max-h-[880px]">
           {slides.map((slide, i) => {
             const isActive = i === active;
             if (slide.type === 'image') {
@@ -102,11 +102,11 @@ const HeroCarousel = () => {
         {!isVideo && (slides[active]?.title || slides[active]?.subtitle) && (
           <>
             <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[80%] sm:w-[62%] md:w-[54%] lg:w-[46%] bg-gradient-to-r from-white/90 via-white/40 to-transparent"
+              className="hidden md:block pointer-events-none absolute inset-y-0 left-0 z-[2] w-[80%] sm:w-[62%] md:w-[54%] lg:w-[46%] bg-gradient-to-r from-white/90 via-white/40 to-transparent"
               aria-hidden="true"
             />
 
-            <div className="absolute left-4 sm:left-6 md:left-10 lg:left-16 xl:left-24 top-[14%] sm:top-[18%] md:top-[22%] lg:top-[24%] z-[3] max-w-[260px] sm:max-w-[340px] md:max-w-[400px] lg:max-w-[480px]">
+            <div className="hidden md:block absolute left-4 sm:left-6 md:left-10 lg:left-16 xl:left-24 top-[14%] sm:top-[18%] md:top-[22%] lg:top-[24%] z-[3] max-w-[260px] sm:max-w-[340px] md:max-w-[400px] lg:max-w-[480px]">
               {slides[active].badge && (
                 <p className="font-body text-[9px] sm:text-[10px] md:text-xs font-bold uppercase tracking-[0.15em] text-[#8B2E3A]/80">
                   {slides[active].badge}
@@ -146,8 +146,34 @@ const HeroCarousel = () => {
           </>
         )}
 
+        {/* Phones: just the headline and a small button, low on the slide so
+            they clear the logo row and the art; the slide itself links too. */}
+        {!isVideo && slides[active] && (
+          <>
+            <Link
+              to={slides[active].link}
+              className="md:hidden absolute inset-0 z-[2]"
+              aria-label={slides[active].btnText || slides[active].title || 'Shop now'}
+            />
+            {slides[active].title && (
+              <div className="md:hidden pointer-events-none absolute inset-x-0 bottom-0 z-[3] px-3 pb-5 pt-8 bg-gradient-to-t from-white/85 via-white/50 to-transparent">
+                <h2 className="font-heading font-bold text-[15px] leading-tight text-[#8B2E3A] max-w-[70%] line-clamp-2">
+                  {slides[active].title}
+                </h2>
+                <Link
+                  to={slides[active].link}
+                  className="pointer-events-auto mt-1.5 inline-flex items-center gap-1 bg-[#C45C6A] text-white font-body text-[10px] font-semibold px-3 py-1 rounded-full shadow"
+                >
+                  {slides[active].btnText}
+                  <ArrowRight size={11} strokeWidth={2.4} />
+                </Link>
+              </div>
+            )}
+          </>
+        )}
+
         {slides.length > 1 && (
-          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-[3] flex items-center gap-1.5">
+          <div className="absolute bottom-1.5 md:bottom-2.5 left-1/2 -translate-x-1/2 z-[4] flex items-center gap-1.5">
             {slides.map((_, i) => (
               <button
                 key={i}

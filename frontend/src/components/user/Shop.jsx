@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import ProductCard from './ProductCard';
 import { SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../utils/api';
+import { useCategoryTree } from '../../utils/useCategoryTree';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 
 const SORT_MAP = {
@@ -29,27 +30,24 @@ const Shop = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  // Real category chips — only categories that actually have a live product,
-  // fetched from the database rather than a hardcoded guess, so a chip never
-  // filters to an empty result.
-  const [categoryChips, setCategoryChips] = useState([{ name: 'All', value: '' }]);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get('/products/categories')
-      .then((res) => {
-        if (cancelled) return;
-        const rows = res.data?.data || [];
-        setCategoryChips([{ name: 'All', value: '' }, ...rows.map((r) => ({ name: r.name, value: r.name }))]);
-      })
-      .catch(() => {
-        /* keep just the "All" chip if this fails */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Real category tree — only categories that actually have a live product,
+  // fetched from the database so a chip never filters to an empty result.
+  // Row 1 shows the top-level categories; once one is picked, row 2 drills
+  // into its sub-categories (or its siblings when it is already a leaf).
+  const { categories } = useCategoryTree();
+  const selectedNode = categories.find((c) => c.name === selectedCategory);
+  const topLevel = categories.filter((c) => !c.parent);
+  const activeTopId = (() => {
+    let node = selectedNode;
+    while (node?.parent) node = categories.find((c) => c.id === node.parent);
+    return node?.id;
+  })();
+  const subRow = (() => {
+    if (!selectedNode) return [];
+    const kids = categories.filter((c) => c.parent === selectedNode.id);
+    if (kids.length) return kids;
+    return selectedNode.parent ? categories.filter((c) => c.parent === selectedNode.parent) : [];
+  })();
 
   useEffect(() => {
     let cancelled = false;
@@ -131,16 +129,16 @@ const Shop = () => {
           </p>
         </div>
 
-        {/* Mobile-first top categories */}
+        {/* Top-level categories */}
         <div
-          className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 -mx-0.5 px-0.5 mb-2"
+          className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 -mx-0.5 px-0.5 mb-1"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {categoryChips.map((cat) => {
-            const active = selectedCategory === cat.value;
+          {[{ id: 'all', name: 'All', value: '' }, ...topLevel.map((c) => ({ id: c.id, name: c.name, value: c.name }))].map((cat) => {
+            const active = cat.id === 'all' ? !selectedCategory : cat.id === activeTopId;
             return (
               <button
-                key={cat.name}
+                key={cat.id}
                 type="button"
                 onClick={() => selectCategory(cat.value)}
                 className={`shrink-0 px-3 py-1.5 rounded-full font-dm text-[11px] font-semibold transition-colors ${
@@ -154,6 +152,33 @@ const Shop = () => {
             );
           })}
         </div>
+
+        {/* Sub-categories of the selected category */}
+        {subRow.length > 0 && (
+          <div
+            className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 -mx-0.5 px-0.5 mb-2"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {subRow.map((cat) => {
+              const active = selectedCategory === cat.name;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => selectCategory(cat.name)}
+                  className={`shrink-0 px-2.5 py-1 rounded-full font-dm text-[10px] font-medium transition-colors ${
+                    active
+                      ? 'bg-[#C45C6A] text-white'
+                      : 'bg-[#F7EFE0] text-[#5B4638] hover:bg-[#EFE3CC]'
+                  }`}
+                >
+                  {cat.name}
+                  <span className="ml-1 opacity-60">{cat.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 mb-3 py-2 border-y border-[#EFEAE3]">
           <div className="flex items-center gap-1.5 font-dm text-[11px] text-[#5B4638]">

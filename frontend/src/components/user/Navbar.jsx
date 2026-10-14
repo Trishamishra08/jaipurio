@@ -34,44 +34,6 @@ const MOBILE_NAV = [
   { to: '/contact', label: 'Help & Support' },
 ];
 
-const JaipurioLogo = ({ size = 'md' }) => {
-  const titleSize =
-    size === 'lg'
-      ? 'text-[36px] xl:text-[40px]'
-      : size === 'compact'
-        ? 'text-[28px] xl:text-[30px]'
-        : 'text-[26px] sm:text-[32px]';
-  const tagSize =
-    size === 'lg' ? 'text-[12px]' : size === 'compact' ? 'text-[9px] xl:text-[10px]' : 'text-[10px] sm:text-[11px]';
-  const starSize = size === 'compact' ? 'text-xs' : 'text-sm sm:text-base';
-  const showTagline = size !== 'compact';
-
-  return (
-    <Link to="/home" className="flex flex-col items-center max-w-full group">
-      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-        <span className={`text-[#A94E2C] ${starSize} font-brand leading-none`} aria-hidden="true">
-          âœ¦
-        </span>
-        <span
-          className={`font-brand ${titleSize} font-bold tracking-[0.06em] text-[#C45C6A] leading-none group-hover:text-[#8B2E3A] transition-colors`}
-        >
-          jaipurio
-        </span>
-        <span className={`text-[#A94E2C] ${starSize} font-brand leading-none`} aria-hidden="true">
-          âœ¦
-        </span>
-      </div>
-      {showTagline && (
-        <span
-          className={`font-brand ${tagSize} font-medium text-[#4A3A2F] tracking-wide italic leading-tight mt-0.5`}
-        >
-          Mitti ki khushboo, Rajasthan ki pehchaan
-        </span>
-      )}
-    </Link>
-  );
-};
-
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -117,6 +79,8 @@ const Navbar = () => {
 
   const openLocationPage = () => navigate('/location');
 
+  // On the home page (until you scroll) the phone header's menu/logo/icon row
+  // sits on top of the hero banner; the delivery-location strip stays solid.
   const homeOverlay = isHome && !scrolled;
 
   const isActive = (to) =>
@@ -174,18 +138,8 @@ const Navbar = () => {
       <div
         className={`lg:hidden ${homeOverlay ? 'bg-transparent' : 'bg-white'} ${scrolled ? 'shadow-sm' : ''}`}
       >
-        <div
-          className={
-            homeOverlay
-              ? 'absolute left-0 right-0 top-full z-50'
-              : 'relative border-b border-[#E8E2D9]'
-          }
-        >
-          <div
-            className={`w-full border-b border-[#E8E2D9]/80 ${
-              homeOverlay ? 'bg-white/95 backdrop-blur-[2px]' : 'bg-white'
-            }`}
-          >
+        <div className={`relative ${homeOverlay ? '' : 'border-b border-[#E8E2D9]'}`}>
+          <div className="w-full border-b border-[#E8E2D9]/80 bg-white">
             <div className="site-container">
               <button
                 type="button"
@@ -205,7 +159,13 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className={homeOverlay ? 'bg-transparent' : 'bg-white'}>
+          <div
+            className={
+              homeOverlay
+                ? 'absolute left-0 right-0 top-full z-50 bg-gradient-to-b from-white/90 via-white/55 to-transparent'
+                : 'bg-white'
+            }
+          >
             <div className="site-container">
               <div className="flex items-center justify-between py-1.5 sm:py-2">
                 <button
@@ -217,9 +177,13 @@ const Navbar = () => {
                   <Menu size={22} strokeWidth={2.2} />
                 </button>
 
-                <div className="flex flex-col items-center justify-center text-center px-2 flex-1 min-w-0">
-                  <JaipurioLogo />
-                </div>
+                <Link to="/home" className="flex items-center justify-center px-2 flex-1 min-w-0" aria-label="Jaipurio home">
+                  <img
+                    src={mediaUrl('/jaipurio_logo_trim.png')}
+                    alt="Jaipurio"
+                    className="h-7 sm:h-8 w-auto object-contain"
+                  />
+                </Link>
 
                 <div className="flex items-center gap-0.5 text-[#2B1E1A]">
                   <button
@@ -394,14 +358,11 @@ const Navbar = () => {
           <div className="fixed inset-0 bg-black/55" onClick={() => setMobileMenuOpen(false)} />
 
           <div className="relative w-[82%] max-w-xs bg-white h-full shadow-2xl flex flex-col z-10">
-            <div className="p-4 bg-[#6F241D] text-white flex items-center justify-between">
-              <div>
-                <h3 className="font-playfair font-semibold text-xl text-white tracking-wide">jaipurio</h3>
-                <p className="font-playfair text-[10px] text-white/80 italic">
-                  Mitti ki khushboo, Rajasthan ki pehchaan
-                </p>
-              </div>
-              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-white">
+            <div className="px-4 py-2 bg-white border-b-2 border-[#C45C6A] flex items-center justify-between">
+              <Link to="/home" onClick={() => setMobileMenuOpen(false)} aria-label="Jaipurio home">
+                <img src={mediaUrl('/jaipurio_logo_trim.png')} alt="Jaipurio" className="h-9 w-auto object-contain my-2" />
+              </Link>
+              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#6F241D]">
                 <X size={20} />
               </button>
             </div>
