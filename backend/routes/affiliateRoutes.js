@@ -10,6 +10,7 @@ const {
   requestAffiliatePayout,
   listAffiliatePayouts,
   advanceAffiliatePayout,
+  updateAffiliateReferral,
 } = require('../controllers/affiliateController');
 
 const router = express.Router();
@@ -24,6 +25,9 @@ router.post('/payouts/request', protect, requestAffiliatePayout);
 // Admin payout management — gated by the Phase 1 permission layer.
 router.get('/payouts', protect, authorize('admin'), requirePermission('manage_affiliates'), listAffiliatePayouts);
 router.put('/payouts/:id/advance', protect, authorize('admin'), requirePermission('manage_affiliates'), advanceAffiliatePayout);
+
+// Admin: change an affiliate's referral code / commission (validated; old code keeps working).
+router.patch('/:id/referral', protect, authorize('admin'), requirePermission('manage_affiliates'), updateAffiliateReferral);
 
 // Existing admin CRUD (list/approve/reject applications) — unchanged.
 router.use('/', createAdminCrudRouter(Affiliate, { searchFields: ['name', 'email'] }));

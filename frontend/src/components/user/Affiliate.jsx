@@ -5,8 +5,10 @@ import { ensureCustomerAuth } from '../../utils/customerAuth';
 import { FiShare2, FiCopy, FiCheck } from 'react-icons/fi';
 
 import { formatInr } from '../../utils/storefrontProduct';
+import { buildReferralLink, useAffiliateSettings } from '../../utils/useAffiliateSettings';
 
 const Affiliate = () => {
+  const linkFormat = useAffiliateSettings(); // site / landing page / parameter set by the admin
   const [affiliate, setAffiliate] = useState(null);
   const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,9 +87,7 @@ const Affiliate = () => {
       ? window.location.origin
       : (import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://jaipurio-one.vercel.app'));
 
-  const referralLink = affiliate?.referralCode
-    ? `${siteBase}/home?ref=${affiliate.referralCode}`
-    : '';
+  const referralLink = buildReferralLink(affiliate?.referralCode, linkFormat, siteBase);
 
   const copyLink = () => {
     if (!referralLink) return;

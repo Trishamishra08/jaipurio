@@ -23,7 +23,10 @@ module.exports = {
   async createOrder(config, { amount, receipt }) {
     const { secretKey, publishableKey } = this.resolveCredentials(config);
     if (!secretKey) {
-      return { mock: true, order: { id: 'mock_pi_' + Date.now(), amount: Math.round(amount * 100), currency: 'inr' }, keyId: '' };
+      if (process.env.NODE_ENV === 'production') {
+      throw new Error('Stripe is enabled but its Secret Key are not configured. Add them in Admin → Payments.');
+    }
+    return { mock: true, order: { id: 'mock_pi_' + Date.now(), amount: Math.round(amount * 100), currency: 'inr' }, keyId: '' };
     }
     const stripe = new Stripe(secretKey);
     const intent = await stripe.paymentIntents.create({
@@ -42,7 +45,7 @@ module.exports = {
   /** Confirms a PaymentIntent actually succeeded server-side before we mark the order paid. */
   async verifyPayment(config, { paymentIntentId }) {
     const { secretKey } = this.resolveCredentials(config);
-    if (!secretKey) return true; // demo mode
+    if (!secretKey) return process.env.NODE_ENV !== 'production'; // demo mode never in production
     const stripe = new Stripe(secretKey);
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
     return intent.status === 'succeeded';

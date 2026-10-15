@@ -9,6 +9,8 @@ const affiliateSchema = new mongoose.Schema(
     status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
     commissionRate: { type: Number, default: 10 },
     referralCode: { type: String, unique: true, sparse: true, index: true },
+    // Codes this affiliate used before an admin changed it — links already shared keep earning credit.
+    previousCodes: { type: [String], default: [], index: true },
     // Bank details, same shape as vendorModel.js — only required once a payout is requested.
     accountHolderName: { type: String, default: '' },
     bankName: { type: String, default: '' },

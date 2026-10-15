@@ -168,6 +168,55 @@ const requestAffiliatePayout = async (req, res) => {
 
 // @desc    Admin: list affiliate payouts
 // @route   GET /api/affiliates/payouts
+const CODE_RE = /^[A-Za-z0-9_-]{3,30}$/;
+const escapeRegex = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// @desc    Admin: change an affiliate's referral code and/or commission rate
+// @route   PATCH /api/affiliates/:id/referral
+// The old code stays valid (previousCodes) so links that were already shared keep earning credit.
+// A new commission rate applies to orders placed from now on; past orders keep the rate they were placed with.
+const updateAffiliateReferral = async (req, res) => {
+  try {
+    const affiliate = await Affiliate.findById(req.params.id);
+    if (!affiliate) return res.status(404).json({ success: false, message: 'Affiliate not found' });
+
+    const { referralCode, commissionRate } = req.body || {};
+
+    if (referralCode !== undefined) {
+      const code = String(referralCode).trim();
+      if (!CODE_RE.test(code)) {
+        return res.status(400).json({ success: false, message: 'Referral code must be 3–30 characters: letters, numbers, - or _ (no spaces).' });
+      }
+      const same = new RegExp('^' + escapeRegex(code) + '$', 'i');
+      const taken = await Affiliate.findOne({
+        _id: { $ne: affiliate._id },
+        $or: [{ referralCode: { $regex: same } }, { previousCodes: { $regex: same } }],
+      });
+      if (taken) return res.status(409).json({ success: false, message: 'That code is already used by another affiliate.' });
+
+      if (affiliate.referralCode && affiliate.referralCode.toLowerCase() !== code.toLowerCase()) {
+        const old = affiliate.referralCode;
+        affiliate.previousCodes = [...new Set([...(affiliate.previousCodes || []), old])]
+          .filter((c) => c.toLowerCase() !== code.toLowerCase());
+      }
+      affiliate.referralCode = code;
+    }
+
+    if (commissionRate !== undefined) {
+      const rate = Number(commissionRate);
+      if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+        return res.status(400).json({ success: false, message: 'Commission must be a number between 0 and 100.' });
+      }
+      affiliate.commissionRate = rate;
+    }
+
+    await affiliate.save();
+    res.status(200).json({ success: true, data: affiliate });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 const listAffiliatePayouts = async (req, res) => {
   try {
     const payouts = await AffiliatePayout.find({}).populate('affiliate', 'name email').sort({ createdAt: -1 });
@@ -218,6 +267,7 @@ module.exports = {
   updateMyAffiliate,
   getAffiliateEarnings,
   requestAffiliatePayout,
+  updateAffiliateReferral,
   listAffiliatePayouts,
   advanceAffiliatePayout,
 };

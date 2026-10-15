@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const MENU_LOCATIONS = ['Main Navigation', 'Header Navigation', 'Footer Menu'];
+const MENU_LOCATIONS = ['Main Navigation', 'Header Navigation', 'Footer Menu', 'Mobile Menu'];
 
 const menuItemSchema = new mongoose.Schema(
   {

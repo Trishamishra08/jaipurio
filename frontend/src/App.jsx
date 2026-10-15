@@ -100,12 +100,14 @@ import AdminBlogCategories from './components/admin/AdminBlogCategories';
 import AdminRoutes from './components/admin/AdminRoutes';
 
 import { captureReferralFromUrl } from './utils/referralTracking';
+import { useAffiliateSettings } from './utils/useAffiliateSettings';
 
 const ReferralTracker = () => {
   const location = useLocation();
+  const { paramName } = useAffiliateSettings(); // referral link parameter chosen in the admin
   React.useEffect(() => {
-    captureReferralFromUrl();
-  }, [location]);
+    captureReferralFromUrl(paramName);
+  }, [location, paramName]);
   return null;
 };
 

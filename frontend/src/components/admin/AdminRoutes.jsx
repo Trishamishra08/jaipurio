@@ -23,6 +23,7 @@ import AdminAppearance from './AdminAppearance';
 import AdminThemeOptions from './AdminThemeOptions';
 import AdminProductPageSettings from './AdminProductPageSettings';
 import AdminHomeSections from './AdminHomeSections';
+import AdminFooterSettings from './AdminFooterSettings';
 import AdminCodeEditorPage from './AdminCodeEditorPage';
 import AdminTools from './AdminTools';
 import AdminCrudPage from './AdminCrudPage';
@@ -109,6 +110,7 @@ const AdminRoutes = () => (
       <Route path="theme/options/:tab" element={<AdminThemeOptions />} />
       <Route path="theme/product-page" element={<AdminProductPageSettings />} />
       <Route path="theme/home-page" element={<AdminHomeSections />} />
+      <Route path="theme/footer" element={<AdminFooterSettings />} />
       <Route path="appearance/theme-options" element={<AdminThemeOptions />} />
       <Route path="appearance/theme-options/:tab" element={<AdminThemeOptions />} />
       <Route path="theme/robots-txt" element={<AdminCodeEditorPage />} />

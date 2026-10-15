@@ -10,13 +10,9 @@ import {
 } from 'lucide-react';
 import { PHOTOS } from '../../data/photos';
 import { useCategoryTree } from '../../utils/useCategoryTree';
+import { useFooterSettings } from '../../utils/useFooterSettings';
 
 const HAWA = PHOTOS.buddha;
-const OFFICE =
-  '133-134, Flat No. F1, Jandu 4 Apartment, Ashok Nagar, Niwaru Road, Jaipur, Rajasthan 302012';
-const MAPS_QUERY = encodeURIComponent(`${OFFICE}`);
-const MAPS_EMBED = `https://maps.google.com/maps?q=${MAPS_QUERY}&z=15&output=embed`;
-const MAPS_OPEN = `https://www.google.com/maps/search/?api=1&query=${MAPS_QUERY}`;
 
 const IconInstagram = () => (
   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden>
@@ -38,160 +34,184 @@ const IconPinterest = () => (
   </svg>
 );
 
-const STATS = [
-  ['6', 'Artisan houses'],
-  ['40+', 'Product categories'],
-  ['6', 'Languages supported'],
-  ['Global', 'Wholesale & retail shipping'],
-  ['24/7', 'Customer support'],
-];
+const ACTION_ICONS = { search: Search, cart: ShoppingCart, bag: ShoppingBag };
 
-const ACTIONS = [
-  {
-    icon: Search,
-    title: 'Discover',
-    copy: 'Browse jewellery, clothing, accessories, idols & home décor.',
-    to: '/shop',
-    link: 'Shop all products →',
-  },
-  {
-    icon: ShoppingCart,
-    title: 'Shop & Track',
-    copy: 'Secure checkout, order tracking, easy returns — pan India.',
-    to: '/orders',
-    link: 'Track your order →',
-  },
-  {
-    icon: ShoppingBag,
-    title: 'Sell & Earn',
-    copy: 'Open a storefront as an artisan house, or join as a partner.',
-    to: '/vendor/register',
-    link: 'Start selling →',
-  },
-];
+const shopLink = (name) => `/shop?category=${encodeURIComponent(name)}`;
 
-// Static columns. The category columns (Shop by Category, Featured, Popular)
-// are built from the live category tree inside the component.
-const DIRECTORY = [
-  {
-    title: 'Customer Care',
-    links: [
-      ['Order Tracking', '/orders'],
-      ['Returns & Refunds', '/return-policy'],
-      ['FAQs', '/contact'],
-      ['Contact Us', '/contact'],
-    ],
-  },
-  {
-    title: 'Company',
-    links: [
-      ['About Us', '/about'],
-      ['Journal', '/blog'],
-      ['Our Story', '/about'],
-      ['Privacy Policy', '/privacy-policy'],
-      ['Terms & Conditions', '/terms-conditions'],
-    ],
-  },
-  {
-    title: 'Sell & Partner',
-    links: [
-      ['Sell on Jaipurio', '/vendor/register'],
-      ['Vendor Login', '/vendor/login'],
-      ['Terms of Use', '/terms-conditions'],
-      ['Cookie Policy', '/privacy-policy'],
-    ],
-  },
-];
-
-const INDIA_CITIES = [
-  'Jaipur',
-  'Delhi NCR',
-  'Mumbai',
-  'Bengaluru',
-  'Hyderabad',
-  'Chennai',
-  'Kolkata',
-  'Pune',
-  'Ahmedabad',
-];
-
-const INTL = ['USA & Canada', 'United Kingdom', 'Europe (EU)', 'UAE & GCC', 'Australia', 'Singapore'];
-
-const Social = () => (
-  <div className="flex items-center gap-1.5">
-    {[
-      ['https://instagram.com', 'Instagram', <IconInstagram key="ig" />],
-      ['https://facebook.com', 'Facebook', <IconFacebook key="fb" />],
-      ['https://pinterest.com', 'Pinterest', <IconPinterest key="pin" />],
-    ].map(([href, label, icon]) => (
-      <a
-        key={label}
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={label}
-        className="w-7 h-7 rounded-full border border-white/25 flex items-center justify-center text-white/85 hover:bg-white/10"
-      >
-        {icon}
-      </a>
-    ))}
-  </div>
-);
+const Social = ({ links }) => {
+  const items = [
+    [links.instagram, 'Instagram', <IconInstagram key="ig" />],
+    [links.facebook, 'Facebook', <IconFacebook key="fb" />],
+    [links.pinterest, 'Pinterest', <IconPinterest key="pin" />],
+  ].filter(([href]) => href);
+  if (!items.length) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      {items.map(([href, label, icon]) => (
+        <a
+          key={label}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={label}
+          className="w-7 h-7 rounded-full border border-white/25 flex items-center justify-center text-white/85 hover:bg-white/10"
+        >
+          {icon}
+        </a>
+      ))}
+    </div>
+  );
+};
 
 const StoreBadge = ({ store, sub }) => (
   <div className="relative">
     <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 z-[1] px-1.5 py-[1px] rounded-full bg-[#C45C6A] text-white font-body text-[7px] font-bold tracking-wide whitespace-nowrap">
       COMING SOON
     </span>
-    <span className="inline-flex flex-col justify-center bg-black text-white rounded-md px-2 py-1.5 min-w-[96px] sm:min-w-[108px] border border-white/10">
+    <span className="inline-flex flex-col justify-center bg-black text-white rounded-md px-2 py-1.5 min-w-[96px] sm:min-w-[108px] border border-white/20">
       <span className="font-body text-[8px] text-white/70 leading-none">{sub}</span>
       <span className="font-body text-[11px] font-semibold leading-tight mt-0.5">{store}</span>
     </span>
   </div>
 );
 
-const FALLBACK_TOP = ['Jewellery', 'Home & Living', 'Clothing', 'Accessories', 'Art & Collectibles', 'Bags & Purses'];
-const shopLink = (name) => `/shop?category=${encodeURIComponent(name)}`;
+/** One heading link per top-level category, followed by its sub-categories — plain crawlable links. */
+const CategoryGroups = ({ groups }) => (
+  <div className="space-y-2.5 lg:columns-2 lg:gap-x-8 lg:space-y-0">
+    {groups.map(({ top, subs }) => (
+      <p key={top.id} className="font-body text-[11px] sm:text-[12px] leading-relaxed text-white/75 lg:break-inside-avoid lg:mb-3">
+        <Link to={shopLink(top.name)} className="font-bold text-white hover:text-[#E8C4A0] mr-1.5">
+          {top.name}:
+        </Link>
+        {subs.map((c, i) => (
+          <React.Fragment key={c.id}>
+            <Link to={shopLink(c.name)} className="hover:text-white hover:underline">
+              {c.name}
+            </Link>
+            {i < subs.length - 1 && (
+              <span className="mx-1.5 text-white/30" aria-hidden="true">
+                |
+              </span>
+            )}
+          </React.Fragment>
+        ))}
+      </p>
+    ))}
+  </div>
+);
 
+const Pills = ({ items }) => (
+  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+    {items.map((c) => (
+      <span
+        key={c}
+        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-white/20 font-body text-[10px] sm:text-[11px] text-white/85"
+      >
+        <MapPin size={10} />
+        {c}
+      </span>
+    ))}
+  </div>
+);
+
+/** Only Google Maps / OpenStreetMap embeds over https are used — never an arbitrary page in an iframe. */
+const safeEmbedUrl = (url) => {
+  try {
+    const u = new URL(String(url || '').trim());
+    const google = /^(www\.|maps\.)?google\.(com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/i.test(u.hostname) && u.pathname.startsWith('/maps');
+    const osm = u.hostname === 'www.openstreetmap.org';
+    return u.protocol === 'https:' && (google || osm) ? u.toString() : '';
+  } catch {
+    return '';
+  }
+};
+
+const OfficeCard = ({ office }) => {
+  const query = encodeURIComponent(office.address || office.title || '');
+  const open = office.mapLink || `https://www.google.com/maps/search/?api=1&query=${query}`;
+  const embed =
+    office.mapMode === 'embed' && safeEmbedUrl(office.mapEmbedUrl)
+      ? safeEmbedUrl(office.mapEmbedUrl)
+      : `https://maps.google.com/maps?q=${query}&z=15&output=embed`;
+  const showMap = office.showMap && (office.address || office.mapMode === 'embed');
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+      <div className="min-w-0">
+        <h4 className="font-playfair font-semibold text-[14px] sm:text-[16px]">{office.title}</h4>
+        {office.address && <p className="font-body text-[10px] sm:text-[12px] text-white/70 mt-1 leading-snug">{office.address}</p>}
+        {office.hours && <p className="font-body text-[10px] sm:text-[12px] text-white/70 mt-1 leading-snug">{office.hours}</p>}
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+          {office.phone && (
+            <a href={`tel:${office.phone.replace(/[^+\d]/g, '')}`} className="font-body text-[11px] text-white/85 hover:text-white">
+              {office.phone}
+            </a>
+          )}
+          {office.email && (
+            <a href={`mailto:${office.email}`} className="font-body text-[11px] text-white/85 hover:text-white break-all">
+              {office.email}
+            </a>
+          )}
+        </div>
+        <a href={open} target="_blank" rel="noreferrer" className="inline-block mt-1.5 font-body text-[11px] font-semibold text-[#E8C4A0]">
+          Open in Maps →
+        </a>
+      </div>
+      {showMap && (
+        <div className="relative rounded-lg overflow-hidden border border-white/15 h-[110px] sm:h-[140px] bg-black/30">
+          <iframe
+            title={`${office.title} map`}
+            src={embed}
+            className="w-full h-full pointer-events-none grayscale contrast-125 opacity-90"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+          <a href={open} target="_blank" rel="noreferrer" className="absolute inset-0" aria-label={`Open ${office.title} in Google Maps`} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Everything in here — texts, links, columns, address — is edited in
+// Admin → Appearance → Footer. The category directory is built live.
 const Footer = () => {
-  const [open, setOpen] = useState(null);
+  const cfg = useFooterSettings();
   const { categories } = useCategoryTree();
+  const [open, setOpen] = useState(null);
 
-  // Live tree is in depth-first order: each top-level category is followed by
-  // everything under it. Group them for the "Browse all categories" block.
+  // The live tree is depth-first: each top-level category is followed by its whole subtree.
   const groups = [];
   categories.forEach((c) => {
     if (!c.parent) groups.push({ top: c, subs: [] });
     else if (groups.length) groups[groups.length - 1].subs.push(c);
   });
-  const nonTop = categories.filter((c) => c.parent);
-  const featured = nonTop.filter((c) => c.isFeatured).slice(0, 8);
-  const popular = [...nonTop].sort((a, b) => b.count - a.count).slice(0, 8);
-  const categoryColumns = categories.length
-    ? [
-        { title: 'Shop by Category', links: groups.map((g) => [g.top.name, shopLink(g.top.name)]) },
-        ...(featured.length ? [{ title: 'Featured', links: featured.map((c) => [c.name, shopLink(c.name)]) }] : []),
-        { title: 'Popular Categories', links: popular.map((c) => [c.name, shopLink(c.name)]) },
-      ]
-    : [{ title: 'Shop by Category', links: FALLBACK_TOP.map((n) => [n, shopLink(n)]) }];
-  const columns = [...categoryColumns, ...DIRECTORY];
-  const linkedPages = columns.reduce((n, col) => n + col.links.length, 0) + categories.length;
-  const stats = STATS.map(([n, l]) => (l === 'Product categories' && categories.length ? [String(categories.length), l] : [n, l]));
+
+  const dir = cfg.directory;
+  const columns = [
+    ...(dir.categoriesEnabled && groups.length ? [{ key: 'categories', title: dir.categoriesTitle, groups }] : []),
+    ...dir.columns.filter((c) => c && c.title).map((c, i) => ({ key: `col-${i}`, title: c.title, links: (c.links || []).filter((l) => l && l.label) })),
+  ];
+  const linkedPages = columns.reduce((n, col) => n + (col.groups ? categories.length : col.links.length), 0);
+  const stats = cfg.stats.items.map((it) => ({ ...it, value: String(it.value).replace('{categories}', categories.length || '') }));
+  const shippingRegions = (cfg.shipping.regions || [])
+    .map((r) => ({ ...r, places: (r.places || []).filter(Boolean) }))
+    .filter((r) => r.places.length > 0);
+  const offices = (cfg.offices.items || []).filter((o) => o && (o.title || o.address));
   const siteOrigin = typeof window !== 'undefined' ? window.location.origin : '';
 
-  const toTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const toTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
     <footer className="w-full text-white pb-[68px] md:pb-0">
-      <button
-        type="button"
-        onClick={toTop}
-        className="w-full bg-[#4A1614] py-2 font-body text-[11px] sm:text-[12px] tracking-wide text-white/90 hover:bg-[#3F1311]"
-      >
-        ▲ Back to top
-      </button>
+      {cfg.backToTop.enabled && (
+        <button
+          type="button"
+          onClick={toTop}
+          className="w-full bg-[#4A1614] py-2 font-body text-[11px] sm:text-[12px] tracking-wide text-white/90 hover:bg-[#3F1311]"
+        >
+          {cfg.backToTop.text}
+        </button>
+      )}
 
       <div className="relative overflow-hidden bg-[#2A100E]">
         <img
@@ -204,246 +224,215 @@ const Footer = () => {
         <div className="relative z-[1]">
           <div className="footer-pichwai" aria-hidden />
 
-          {/* Layer 1 — Heritage + brand + app */}
-          <div className="site-container pt-4 pb-3 sm:pt-8 sm:pb-6 text-center">
-            <p className="font-body text-[8px] sm:text-[10px] font-semibold tracking-[0.22em] uppercase text-[#E8C4A0]">
-              — Rajasthani Heritage —
-            </p>
-            <h2 className="font-playfair font-semibold text-[16px] sm:text-[26px] md:text-[32px] leading-snug mt-1 px-2">
-              Painted like a Pichwai, packed like an heirloom
-            </h2>
-            <p className="font-body text-[10px] sm:text-[13px] text-white/75 mt-1.5 max-w-xl mx-auto leading-snug line-clamp-2 sm:line-clamp-none">
-              The same devotion Nathdwara artists bring to a temple hanging goes into every parcel that leaves our Jaipur workshops.
-            </p>
-          </div>
+          {/* Heritage line */}
+          {cfg.heritage.enabled && (
+            <div className="site-container pt-4 pb-3 sm:pt-8 sm:pb-6 text-center">
+              <p className="font-body text-[8px] sm:text-[10px] font-semibold tracking-[0.22em] uppercase text-[#E8C4A0]">
+                {cfg.heritage.eyebrow}
+              </p>
+              <h2 className="font-playfair font-semibold text-[16px] sm:text-[26px] md:text-[32px] leading-snug mt-1 px-2">
+                {cfg.heritage.title}
+              </h2>
+              <p className="font-body text-[10px] sm:text-[13px] text-white/75 mt-1.5 max-w-xl mx-auto leading-snug">
+                {cfg.heritage.text}
+              </p>
+            </div>
+          )}
 
+          {/* Call to action + app */}
           <div className="site-container pb-3 sm:pb-5">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <img src={mediaUrl('/jaipurio_logo.png')} alt="Jaipurio" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
-                <p className="font-playfair text-[13px] sm:text-[18px] leading-snug">
-                  Commission a bespoke piece, or open your own boutique on Jaipurio.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <Link
-                  to="/vendor/register"
-                  className="bg-[#6F241D] hover:bg-[#5A1C17] text-white font-body text-[11px] sm:text-[13px] font-semibold px-3.5 sm:px-5 py-2 rounded-full"
-                >
-                  Sell on Jaipurio
-                </Link>
-                <Link to="/contact" className="font-body text-[11px] sm:text-[13px] text-white/80 hover:text-white">
-                  Contact Us
-                </Link>
-                <Social />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-white/10">
-              <div className="min-w-0">
-                <p className="font-body text-[11px] sm:text-[13px] font-semibold">Get the Jaipurio App</p>
-                <p className="font-body text-[9px] sm:text-[11px] text-white/65 leading-snug">
-                  Shop mitti crafts on the go.
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <StoreBadge store="App Store" sub="Download on the" />
-                <StoreBadge store="Google Play" sub="Get it on" />
-              </div>
-            </div>
-          </div>
-
-          {/* Layer 2 — Stats + actions + directory */}
-          <div className="bg-[#F6EFE4] text-[#2B1E1A]">
-            <div className="site-container py-2.5 sm:py-3">
-              <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto scrollbar-none snap-x">
-                {stats.map(([n, l]) => (
-                  <div key={l} className="snap-start shrink-0 min-w-[118px] md:min-w-0 text-center">
-                    <p className="font-playfair font-semibold text-[15px] sm:text-[18px] leading-none">{n}</p>
-                    <p className="font-body text-[9px] sm:text-[11px] text-[#6B5748] mt-0.5 leading-tight">{l}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="site-container py-3 sm:py-5">
-            <div className="flex lg:grid lg:grid-cols-3 gap-2 overflow-x-auto scrollbar-none snap-x">
-              {ACTIONS.map((a) => (
-                <Link
-                  key={a.title}
-                  to={a.to}
-                  className="snap-start shrink-0 w-[232px] lg:w-auto rounded-xl border border-white/15 bg-black/25 p-3 hover:bg-black/35"
-                >
-                  <a.icon size={16} className="text-[#E8C4A0]" strokeWidth={1.8} />
-                  <h3 className="font-playfair font-semibold text-[14px] sm:text-[16px] mt-1.5">{a.title}</h3>
-                  <p className="font-body text-[10px] sm:text-[11px] text-white/70 mt-1 leading-snug line-clamp-2">
-                    {a.copy}
-                  </p>
-                  <span className="font-body text-[10px] sm:text-[12px] font-semibold text-[#E8C4A0] mt-1.5 inline-block">
-                    {a.link}
-                  </span>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-4 sm:mt-6">
-              <div className="flex items-end justify-between gap-2 mb-2">
-                <div>
-                  <h3 className="font-playfair font-semibold text-[15px] sm:text-[20px]">Complete site directory</h3>
-                  <p className="font-body text-[9px] sm:text-[11px] text-white/60 hidden sm:block">
-                    Every category, artisan house, and customer page — tap a heading to open.
-                  </p>
+            {cfg.cta.enabled && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <img src={mediaUrl('/jaipurio_logo.png')} alt="Jaipurio" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+                  <p className="font-playfair text-[13px] sm:text-[18px] leading-snug">{cfg.cta.text}</p>
                 </div>
-                <span className="shrink-0 px-2 py-0.5 rounded-full border border-white/20 font-body text-[9px] text-white/70">
-                  {linkedPages} linked pages
-                </span>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {cfg.cta.buttonText && (
+                    <Link
+                      to={cfg.cta.buttonLink || '/'}
+                      className="bg-[#6F241D] hover:bg-[#5A1C17] text-white font-body text-[11px] sm:text-[13px] font-semibold px-3.5 sm:px-5 py-2 rounded-full"
+                    >
+                      {cfg.cta.buttonText}
+                    </Link>
+                  )}
+                  {cfg.cta.linkText && (
+                    <Link to={cfg.cta.link || '/'} className="font-body text-[11px] sm:text-[13px] text-white/80 hover:text-white">
+                      {cfg.cta.linkText}
+                    </Link>
+                  )}
+                  <Social links={cfg.social} />
+                </div>
               </div>
+            )}
 
-              <div className="md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-4 border-t border-white/10 md:border-0">
-                {columns.map((col, i) => {
-                  const isOpen = open === i;
-                  return (
-                    <div key={col.title} className="border-b border-white/10 md:border-0">
-                      <button
-                        type="button"
-                        className="w-full flex items-center justify-between py-2 md:py-0 md:mb-2 md:pointer-events-none"
-                        onClick={() => setOpen(isOpen ? null : i)}
-                        aria-expanded={isOpen}
-                      >
-                        <span className="font-body text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-[#E8C4A0]">
-                          {col.title}
-                        </span>
-                        <ChevronDown
-                          size={14}
-                          className={`md:hidden text-white/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                        />
-                      </button>
-                      <ul className={`${isOpen ? 'block pb-2' : 'hidden'} md:block space-y-1`}>
-                        {col.links.map(([label, to]) => (
-                          <li key={label}>
-                            <Link to={to} className="font-body text-[11px] text-white/80 hover:text-white">
-                              {label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })}
+            {cfg.app.enabled && (
+              <div className={`flex flex-wrap items-center justify-between gap-2 ${cfg.cta.enabled ? 'mt-3 pt-3 border-t border-white/10' : ''}`}>
+                <div className="min-w-0">
+                  <p className="font-body text-[11px] sm:text-[13px] font-semibold">{cfg.app.title}</p>
+                  <p className="font-body text-[9px] sm:text-[11px] text-white/65 leading-snug">{cfg.app.text}</p>
+                </div>
+                {cfg.app.showBadges && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <StoreBadge store="App Store" sub="Download on the" />
+                    <StoreBadge store="Google Play" sub="Get it on" />
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
 
-          {/* All categories with their sub-categories — plain crawlable links */}
-          {groups.length > 0 && (
-            <nav aria-label="All product categories" className="border-t border-white/10">
-              <div className="site-container py-3 sm:py-5">
-                <h3 className="font-playfair font-semibold text-[15px] sm:text-[20px] mb-2.5">Browse all categories</h3>
-                <div className="space-y-2 sm:space-y-2.5">
-                  {groups.map(({ top, subs }) => (
-                    <p key={top.id} className="font-body text-[11px] sm:text-[12.5px] leading-relaxed text-white/75">
-                      <Link to={shopLink(top.name)} className="font-bold text-white hover:text-[#E8C4A0] mr-1.5">
-                        {top.name}:
-                      </Link>
-                      {subs.map((c, i) => (
-                        <React.Fragment key={c.id}>
-                          <Link to={shopLink(c.name)} className="hover:text-white hover:underline">
-                            {c.name}
-                          </Link>
-                          {i < subs.length - 1 && <span className="mx-1.5 text-white/30" aria-hidden="true">|</span>}
-                        </React.Fragment>
-                      ))}
-                    </p>
+          {/* Stats */}
+          {cfg.stats.enabled && stats.length > 0 && (
+            <div className="bg-[#F6EFE4] text-[#2B1E1A]">
+              <div className="site-container py-2.5 sm:py-3">
+                <div
+                  className="flex md:grid gap-3 overflow-x-auto scrollbar-none snap-x md:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]"
+                  style={{ '--n': stats.length }}
+                >
+                  {stats.map((st, i) => (
+                    <div key={`${st.label}-${i}`} className="snap-start shrink-0 min-w-[118px] md:min-w-0 text-center">
+                      <p className="font-playfair font-semibold text-[15px] sm:text-[18px] leading-none">{st.value}</p>
+                      <p className="font-body text-[9px] sm:text-[11px] text-[#6B5748] mt-0.5 leading-tight">{st.label}</p>
+                    </div>
                   ))}
                 </div>
               </div>
-              <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                  __html: JSON.stringify({
-                    '@context': 'https://schema.org',
-                    '@type': 'ItemList',
-                    name: 'Jaipurio product categories',
-                    itemListElement: groups.map((g, i) => ({
-                      '@type': 'ListItem',
-                      position: i + 1,
-                      name: g.top.name,
-                      url: `${siteOrigin}${shopLink(g.top.name)}`,
-                    })),
-                  }),
-                }}
-              />
-            </nav>
+            </div>
           )}
 
-          {/* Layer 3 — Shipping + office */}
+          <div className="site-container py-3 sm:py-5">
+            {/* Action cards */}
+            {cfg.actions.enabled && cfg.actions.items.length > 0 && (
+              <div
+                className="flex lg:grid gap-2 overflow-x-auto scrollbar-none snap-x lg:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]"
+                style={{ '--n': cfg.actions.items.length }}
+              >
+                {cfg.actions.items.map((a, i) => {
+                  const Icon = ACTION_ICONS[a.icon] || Search;
+                  return (
+                    <Link
+                      key={`${a.title}-${i}`}
+                      to={a.to || '/'}
+                      className="snap-start shrink-0 w-[232px] lg:w-auto rounded-xl border border-white/15 bg-black/25 p-3 hover:bg-black/35"
+                    >
+                      <Icon size={16} className="text-[#E8C4A0]" strokeWidth={1.8} />
+                      <h3 className="font-playfair font-semibold text-[14px] sm:text-[16px] mt-1.5">{a.title}</h3>
+                      <p className="font-body text-[10px] sm:text-[11px] text-white/70 mt-1 leading-snug line-clamp-2">{a.text}</p>
+                      <span className="font-body text-[10px] sm:text-[12px] font-semibold text-[#E8C4A0] mt-1.5 inline-block">{a.linkText}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Site directory: ONE category directory + the admin's link columns */}
+            {dir.enabled && columns.length > 0 && (
+              <div className="mt-4 sm:mt-6">
+                <div className="flex items-end justify-between gap-2 mb-2">
+                  <div>
+                    <h3 className="font-playfair font-semibold text-[15px] sm:text-[20px]">{dir.title}</h3>
+                    {dir.subtitle && <p className="font-body text-[9px] sm:text-[11px] text-white/60 hidden sm:block">{dir.subtitle}</p>}
+                  </div>
+                  <span className="shrink-0 px-2 py-0.5 rounded-full border border-white/20 font-body text-[9px] text-white/70">
+                    {linkedPages} linked pages
+                  </span>
+                </div>
+
+                <div
+                  className="md:grid md:gap-x-6 md:gap-y-4 md:grid-cols-3 lg:[grid-template-columns:minmax(0,2.4fr)_repeat(var(--n),minmax(0,1fr))] border-t border-white/10 md:border-0"
+                  style={{ '--n': Math.max(1, columns.filter((c) => !c.groups).length) }}
+                >
+                  {columns.map((col, i) => {
+                    const isOpen = open === i;
+                    return (
+                      <div key={col.key} className={`border-b border-white/10 md:border-0 ${col.groups ? 'md:col-span-3 lg:col-span-1' : ''}`}>
+                        <button
+                          type="button"
+                          className="w-full flex items-center justify-between py-2.5 md:py-0 md:mb-2 md:pointer-events-none"
+                          onClick={() => setOpen(isOpen ? null : i)}
+                          aria-expanded={isOpen}
+                        >
+                          <span className="font-body text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.12em] text-[#E8C4A0]">
+                            {col.title}
+                          </span>
+                          <ChevronDown size={14} className={`md:hidden text-white/60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        <div className={`${isOpen ? 'block pb-3' : 'hidden'} md:block`}>
+                          {col.groups ? (
+                            <nav aria-label={col.title}>
+                              <CategoryGroups groups={col.groups} />
+                            </nav>
+                          ) : (
+                            <ul className="space-y-1">
+                              {col.links.map((l, li) => (
+                                <li key={`${l.label}-${li}`}>
+                                  <Link to={l.to || '/'} className="font-body text-[11px] sm:text-[12px] text-white/80 hover:text-white">
+                                    {l.label}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {columns.some((c) => c.groups) && (
+                  <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                      __html: JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@type': 'ItemList',
+                        name: 'Jaipurio product categories',
+                        itemListElement: groups.map((g, i) => ({
+                          '@type': 'ListItem',
+                          position: i + 1,
+                          name: g.top.name,
+                          url: `${siteOrigin}${shopLink(g.top.name)}`,
+                        })),
+                      }),
+                    }}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Shipping + office + copyright */}
           <div className="border-t border-white/10">
             <div className="site-container py-3 sm:py-5">
-              <p className="font-body text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E8C4A0] mb-1.5">
-                Ships across India
-              </p>
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
-                {INDIA_CITIES.map((c) => (
-                  <span
-                    key={c}
-                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-white/20 font-body text-[10px] text-white/85"
-                  >
-                    <MapPin size={10} />
-                    {c}
-                  </span>
-                ))}
-              </div>
-
-              <p className="font-body text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E8C4A0] mt-2.5 mb-1.5">
-                International
-              </p>
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
-                {INTL.map((c) => (
-                  <span
-                    key={c}
-                    className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-white/20 font-body text-[10px] text-white/85"
-                  >
-                    <MapPin size={10} />
-                    {c}
-                  </span>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 sm:mt-4 items-start">
-                <div>
-                  <h4 className="font-playfair font-semibold text-[14px] sm:text-[16px]">Jaipurio Head Office</h4>
-                  <p className="font-body text-[10px] sm:text-[12px] text-white/70 mt-1 leading-snug">{OFFICE}</p>
-                  <a
-                    href={MAPS_OPEN}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block mt-1.5 font-body text-[11px] font-semibold text-[#E8C4A0]"
-                  >
-                    Open in Maps →
-                  </a>
+              {cfg.shipping.enabled && shippingRegions.length > 0 && (
+                <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+                  {shippingRegions.map((region, i) => (
+                    <div key={`${region.title}-${i}`}>
+                      {region.title && (
+                        <p className="font-body text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E8C4A0] mb-1.5">
+                          {region.title}
+                        </p>
+                      )}
+                      <Pills items={region.places} />
+                    </div>
+                  ))}
                 </div>
-                <div className="relative rounded-lg overflow-hidden border border-white/15 h-[88px] sm:h-[140px] bg-black/30">
-                  <iframe
-                    title="Jaipurio Head Office map"
-                    src={MAPS_EMBED}
-                    className="w-full h-full pointer-events-none grayscale contrast-125 opacity-90"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                  <a
-                    href={MAPS_OPEN}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute inset-0"
-                    aria-label="Open Jaipurio head office in Google Maps"
-                  />
-                </div>
-              </div>
+              )}
 
-              <p className="mt-3 pt-2 border-t border-white/10 font-body text-[9px] sm:text-[10px] text-white/45 text-center sm:text-left">
-                © 2026 Jaipurio. All Rights Reserved.
-              </p>
+              {cfg.offices.enabled && offices.length > 0 && (
+                <div className="mt-3 sm:mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+                  {offices.map((office, i) => (
+                    <OfficeCard key={`${office.title}-${i}`} office={office} />
+                  ))}
+                </div>
+              )}
+
+              {cfg.copyright && (
+                <p className="mt-3 pt-2 border-t border-white/10 font-body text-[9px] sm:text-[10px] text-white/45 text-center sm:text-left">
+                  {cfg.copyright}
+                </p>
+              )}
             </div>
           </div>
         </div>
