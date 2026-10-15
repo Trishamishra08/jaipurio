@@ -1,4 +1,5 @@
 import React from 'react';
+import { useHomeSections } from '../../utils/useHomeSections';
 
 const IconMatka = () => (
   <svg viewBox="0 0 40 40" className="w-7 h-7 sm:w-8 sm:h-8" aria-hidden="true">
@@ -81,20 +82,24 @@ const IconPalace = () => (
   </svg>
 );
 
-const features = [
-  { id: 1, label: '100% Handmade', icon: <IconMatka /> },
-  { id: 2, label: 'Eco Friendly', icon: <IconLeaves /> },
-  { id: 3, label: 'Support Local Artisans', icon: <IconArtisanHeart /> },
-  { id: 4, label: 'Pan India Delivery', icon: <IconTruck /> },
-  { id: 5, label: 'Made in Rajasthan', icon: <IconPalace /> },
-];
+const ICONS = {
+  matka: <IconMatka />,
+  leaves: <IconLeaves />,
+  heart: <IconArtisanHeart />,
+  truck: <IconTruck />,
+  palace: <IconPalace />,
+};
 
+// Admin → Appearance → Home Page → Features bar
 const FeaturesBar = () => {
+  const cfg = useHomeSections().sections.featuresBar;
+  const features = (cfg.items || []).filter((it) => it && it.label).map((it, i) => ({ id: i, label: it.label, icon: ICONS[it.icon] || ICONS.matka }));
+  if (!cfg.enabled || !features.length) return null;
   return (
     <section className="site-full-bleed w-full bg-white py-2 md:py-3 border-y border-[#E8E2D9]">
       <div className="site-container">
         <div className="bg-white md:bg-transparent border border-[#E8E2D9] md:border-0 rounded-xl md:rounded-none px-0.5 py-1.5 sm:px-2 sm:py-2 md:px-0 md:py-0 shadow-sm md:shadow-none">
-          <div className="grid grid-cols-5 divide-x divide-dotted divide-[#C9B89A]">
+          <div className="grid divide-x divide-dotted divide-[#C9B89A]" style={{ gridTemplateColumns: `repeat(${features.length}, minmax(0, 1fr))` }}>
             {features.map((item) => (
               <div
                 key={item.id}

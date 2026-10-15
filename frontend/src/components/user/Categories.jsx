@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import SectionHeading from './SectionHeading';
 import { CATEGORY_CHIPS as DEFAULT_CATEGORIES } from '../../data/categoryMedia';
 import { useCategoryTree } from '../../utils/useCategoryTree';
+import { useHomeSections } from '../../utils/useHomeSections';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 import ThumbImg from '../shared/ThumbImg';
 
@@ -100,20 +101,28 @@ const Categories = () => {
   // "Ecommerce", "Fashion") with no products — the endpoint leaves those out
   // so a chip never leads to an empty shop page.
   const { categories: live } = useCategoryTree();
-  const categories = live.length
-    ? live.map((c) => ({ id: c.id, name: c.name, title: c.name, slug: c.slug, image: c.image }))
+  // Admin → Appearance → Home Page: on/off, heading, and which categories show
+  const cfg = useHomeSections().sections.shopByCategory;
+  const chosen =
+    cfg.source === 'categories' && cfg.categories.length
+      ? cfg.categories.map((name) => live.find((c) => c.name === name)).filter(Boolean)
+      : live;
+  const categories = chosen.length
+    ? chosen.slice(0, cfg.limit || 40).map((c) => ({ id: c.id, name: c.name, title: c.name, slug: c.slug, image: c.image }))
     : DEFAULT_CATEGORIES;
+
+  if (!cfg.enabled) return null;
 
   return (
     <section className="w-full bg-white pt-2.5 pb-2 md:pt-1.5 md:pb-1.5">
       <div className="site-container">
         {/* Mobile heading */}
         <div className="md:hidden">
-          <SectionHeading title="Shop by Category" to="/shop" />
+          <SectionHeading title={cfg.title} to="/shop" />
         </div>
         {/* Desktop heading */}
         <div className="hidden md:block">
-          <SectionHeading title="Shop by Category" to="/shop" compact />
+          <SectionHeading title={cfg.title} to="/shop" compact />
         </div>
 
         {/* Mobile — horizontal scroll */}

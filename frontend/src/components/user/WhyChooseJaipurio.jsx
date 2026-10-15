@@ -1,25 +1,23 @@
 import React from 'react';
 import { Leaf, Heart, Flower2, Shield, Package, Truck } from 'lucide-react';
 import SectionHeading from './SectionHeading';
+import { useHomeSections } from '../../utils/useHomeSections';
 
-const ITEMS = [
-  { label: '100% Natural & Eco Friendly', Icon: Leaf },
-  { label: 'Handmade with Love', Icon: Heart },
-  { label: 'Authentic Rajasthani Craft', Icon: Flower2 },
-  { label: 'Secure Payments', Icon: Shield },
-  { label: 'Easy Returns', Icon: Package },
-  { label: 'Pan India Delivery', Icon: Truck },
-];
+const ICONS = { leaf: Leaf, heart: Heart, flower: Flower2, shield: Shield, package: Package, truck: Truck };
 
 /**
  * Why Choose Jaipurio — replaces Meet the Makers on home.
  */
 const WhyChooseJaipurio = () => {
+  // Heading and reasons come from Admin → Appearance → Home Page
+  const cfg = useHomeSections().sections.whyChoose;
+  const ITEMS = (cfg.items || []).filter((it) => it && it.label).map((it) => ({ label: it.label, Icon: ICONS[it.icon] || Leaf }));
+  if (!cfg.enabled || !ITEMS.length) return null;
   return (
     <section className="w-full bg-white py-4">
       <div className="site-container">
         <div className="rounded-xl border border-[#E8E2D9] bg-white px-3 py-4 sm:px-6 sm:py-5 shadow-[0_2px_12px_rgba(63,38,27,0.04)]">
-          <SectionHeading title="Why Choose Jaipurio?" />
+          <SectionHeading title={cfg.title} />
 
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-y-4 gap-x-1 sm:gap-x-2">
             {ITEMS.map(({ label, Icon }, i) => (

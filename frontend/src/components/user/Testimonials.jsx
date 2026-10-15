@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import { Star } from 'lucide-react';
 import api from '../../utils/api';
+import { useHomeSections } from '../../utils/useHomeSections';
 import SectionHeading from './SectionHeading';
 
 const ReviewCard = ({ rev }) => (
@@ -61,12 +62,14 @@ const BlogCard = ({ blog }) => (
 
 const Testimonials = () => {
   const { reviews } = useShop();
+  const cfg = useHomeSections().sections.testimonials;
   const [blogs, setBlogs] = useState([]);
 
   useEffect(() => {
+    if (cfg.source === 'reviews') return undefined;
     let cancelled = false;
     api
-      .get('/blogs', { params: { limit: 8 } })
+      .get('/blogs', { params: { limit: cfg.limit || 8 } })
       .then((res) => {
         if (!cancelled) setBlogs(res.data?.data?.blogs || []);
       })
@@ -77,21 +80,21 @@ const Testimonials = () => {
   }, []);
 
   // Blogs when there are any published; the static reviews are the fallback.
-  const items = blogs.length ? blogs : reviews;
+  const items = cfg.source !== 'reviews' && blogs.length ? blogs : reviews;
   const loop = useMemo(() => [...items, ...items], [items]);
 
-  if (!items.length) return null;
+  if (!cfg.enabled || !items.length) return null;
 
   return (
     <section className="w-full bg-white py-6 border-t border-[#E8E2D9] overflow-hidden">
       <div className="site-container">
-        <SectionHeading title="Words from our Patrons" />
+        <SectionHeading title={cfg.title} />
       </div>
 
       <div className="testimonial-track site-container">
         <div className="testimonial-marquee">
           {loop.map((item, i) =>
-            blogs.length ? (
+            items === blogs ? (
               <BlogCard key={`${item._id || item.id}-${i}`} blog={item} />
             ) : (
               <ReviewCard key={`${item.id}-${i}`} rev={item} />

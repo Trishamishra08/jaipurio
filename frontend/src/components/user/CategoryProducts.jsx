@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../utils/api';
 import { useCategoryTree } from '../../utils/useCategoryTree';
+import { useHomeSections } from '../../utils/useHomeSections';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 import ProductCard from './ProductCard';
 import SectionHeading from './SectionHeading';
@@ -15,7 +16,13 @@ const CategoryProducts = () => {
   const { categories } = useCategoryTree();
   const [rails, setRails] = useState([]);
 
-  const topLevel = categories.filter((c) => !c.parent).slice(0, MAX_RAILS);
+  // Admin → Appearance → Home Page: on/off, and which categories get a row
+  const cfg = useHomeSections().sections.categoryRails;
+  const topLevel =
+    cfg.source === 'categories' && cfg.categories.length
+      ? cfg.categories.map((name) => categories.find((c) => c.name === name)).filter(Boolean)
+      : categories.filter((c) => !c.parent).slice(0, MAX_RAILS);
+  const perRail = cfg.limit || PER_RAIL;
   const key = topLevel.map((c) => c.name).join('|');
 
   useEffect(() => {
@@ -24,7 +31,7 @@ const CategoryProducts = () => {
     Promise.all(
       topLevel.map((cat) =>
         api
-          .get('/products', { params: { category: cat.name, limit: PER_RAIL, sort: 'popular' } })
+          .get('/products', { params: { category: cat.name, limit: perRail, sort: 'popular' } })
           .then((res) => ({
             cat,
             products: (res.data?.data?.products || []).map(mapApiProductToStorefront).filter(Boolean),
@@ -38,9 +45,9 @@ const CategoryProducts = () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, perRail]);
 
-  if (!rails.length) return null;
+  if (!cfg.enabled || !rails.length) return null;
 
   return (
     <>

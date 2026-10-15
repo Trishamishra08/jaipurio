@@ -45,6 +45,12 @@ const Shop = () => {
           .sort((a, b) => a.level - b.level)[0]
       : undefined);
   const topLevel = categories.filter((c) => !c.parent);
+  // Home / Shop / Home & Living / … / current — every level is a link
+  const trail = (() => {
+    const chain = [];
+    for (let node = selectedNode; node; node = categories.find((c) => c.id === node.parent)) chain.unshift(node);
+    return chain;
+  })();
   const activeTopId = (() => {
     let node = selectedNode;
     while (node?.parent) node = categories.find((c) => c.id === node.parent);
@@ -120,12 +126,32 @@ const Shop = () => {
     <div className="min-h-screen bg-white pb-14">
       <div className="site-container pt-3 pb-4">
         <div className="mb-3">
-          <div className="flex items-center gap-1.5 font-dm text-[10px] text-[#806653] mb-1">
+          <div className="flex items-center gap-1.5 font-dm text-[10px] text-[#806653] mb-1 overflow-x-auto whitespace-nowrap scrollbar-none">
             <Link to="/home" className="hover:text-[#6F241D]">
               Home
             </Link>
             <span>/</span>
-            <span className="text-[#8B2E1E] font-medium">Mitti Bazaar</span>
+            {trail.length === 0 ? (
+              <span className="text-[#8B2E1E] font-medium">Shop</span>
+            ) : (
+              <>
+                <Link to="/shop" className="hover:text-[#6F241D]">
+                  Shop
+                </Link>
+                {trail.map((node, i) => (
+                  <React.Fragment key={node.id}>
+                    <span>/</span>
+                    {i === trail.length - 1 ? (
+                      <span className="text-[#8B2E1E] font-medium">{node.name}</span>
+                    ) : (
+                      <Link to={`/shop?category=${encodeURIComponent(node.name)}`} className="hover:text-[#6F241D]">
+                        {node.name}
+                      </Link>
+                    )}
+                  </React.Fragment>
+                ))}
+              </>
+            )}
           </div>
           <h1 className="font-playfair font-semibold text-[18px] sm:text-2xl text-[#3F261B] leading-tight">
             {selectedCategory

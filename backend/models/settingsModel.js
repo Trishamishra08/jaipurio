@@ -25,6 +25,9 @@ const settingsSchema = new mongoose.Schema({
   // Product detail page copy and section toggles (Appearance → Product Page).
   // Shape: frontend/src/data/productPageDefaults.js
   productPage: { type: mongoose.Schema.Types.Mixed, default: {} },
+  // Home page section manager (Appearance → Home Page): { order: [keys], sections: { key: cfg } }
+  // Shape: frontend/src/data/homeSectionsDefaults.js
+  homePage: { type: mongoose.Schema.Types.Mixed, default: {} },
   menus: [{ name: String, location: String, items: String }],
   widgets: [{ name: String, sidebar: String }],
   customCss: { type: String, default: '' },
