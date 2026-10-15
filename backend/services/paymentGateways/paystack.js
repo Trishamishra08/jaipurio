@@ -23,7 +23,10 @@ module.exports = {
   async createOrder(config, { amount, receipt, email }) {
     const { secretKey, publicKey } = this.resolveCredentials(config);
     if (!secretKey) {
-      return { mock: true, order: { id: 'mock_paystack_' + Date.now(), amount: Math.round(amount * 100) }, keyId: '' };
+      if (process.env.NODE_ENV === 'production') {
+      throw new Error('Paystack is enabled but its Secret Key are not configured. Add them in Admin → Payments.');
+    }
+    return { mock: true, order: { id: 'mock_paystack_' + Date.now(), amount: Math.round(amount * 100) }, keyId: '' };
     }
     const res = await axios.post(
       `${BASE}/transaction/initialize`,
@@ -40,7 +43,7 @@ module.exports = {
   /** Verifies a transaction actually succeeded server-side before we mark the order paid. */
   async verifyTransaction(config, { reference }) {
     const { secretKey } = this.resolveCredentials(config);
-    if (!secretKey) return true; // demo mode
+    if (!secretKey) return process.env.NODE_ENV !== 'production'; // demo mode never in production
     const res = await axios.get(`${BASE}/transaction/verify/${reference}`, {
       headers: { Authorization: `Bearer ${secretKey}` },
     });

@@ -7,16 +7,17 @@
 const STORAGE_KEY = 'jaipurio_referral';
 const WINDOW_DAYS = 30;
 
-export const captureReferralFromUrl = () => {
+export const captureReferralFromUrl = (customParam = '') => {
   try {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    let code = params.get('ref') || params.get('referral') || params.get('affiliate') || params.get('refCode');
+    // The standard names always work; `customParam` is the one an admin may have set for the referral link.
+    let code = params.get('ref') || params.get('referral') || params.get('affiliate') || params.get('refCode') || (customParam && params.get(customParam));
     if (!code && window.location.hash) {
       const hashQuery = window.location.hash.split('?')[1];
       if (hashQuery) {
         const hashParams = new URLSearchParams(hashQuery);
-        code = hashParams.get('ref') || hashParams.get('referral') || hashParams.get('affiliate') || hashParams.get('refCode');
+        code = hashParams.get('ref') || hashParams.get('referral') || hashParams.get('affiliate') || hashParams.get('refCode') || (customParam && hashParams.get(customParam));
       }
     }
     if (!code) return;

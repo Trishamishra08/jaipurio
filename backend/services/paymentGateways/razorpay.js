@@ -24,7 +24,10 @@ module.exports = {
   async createOrder(config, { amount, receipt }) {
     const { keyId, keySecret } = this.resolveCredentials(config);
     if (!keyId || !keySecret) {
-      return { mock: true, order: { id: 'mock_order_' + Date.now(), amount: Math.round(amount * 100), currency: 'INR' }, keyId: '' };
+      if (process.env.NODE_ENV === 'production') {
+      throw new Error('Razorpay is enabled but its Key ID / Key Secret are not configured. Add them in Admin → Payments.');
+    }
+    return { mock: true, order: { id: 'mock_order_' + Date.now(), amount: Math.round(amount * 100), currency: 'INR' }, keyId: '' };
     }
     const instance = new Razorpay({ key_id: keyId, key_secret: keySecret });
     const order = await instance.orders.create({
@@ -37,7 +40,9 @@ module.exports = {
 
   verifySignature(config, { razorpay_order_id, razorpay_payment_id, razorpay_signature }) {
     const { keySecret } = this.resolveCredentials(config);
-    if (!keySecret) return true; // demo mode, no secret configured
+    // Demo mode (no secret) is only ever allowed outside production — never trust an unverified signature live.
+    if (!keySecret) return process.env.NODE_ENV !== 'production';
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) return false;
     const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto.createHmac('sha256', keySecret).update(sign).digest('hex');
     return razorpay_signature === expected;

@@ -130,4 +130,28 @@ const getMenuSources = async (req, res) => {
   }
 };
 
-module.exports = { listMenus, getMenu, createMenu, updateMenu, deleteMenu, getMenuSources };
+// @desc    Published items of the menu assigned to a location (storefront; no login)
+// @route   GET /api/menus/public/:location   e.g. /api/menus/public/Mobile%20Menu
+const getPublicMenu = async (req, res) => {
+  try {
+    const location = String(req.params.location || '').trim();
+    const menu = await Menu.findOne({ status: 'Published', locations: location }).sort({ updatedAt: -1 }).lean();
+    const items = ((menu && menu.items) || [])
+      .filter((i) => i.status !== 'Draft' && i.title)
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((i) => ({
+        id: String(i._id),
+        parentId: i.parentId || null,
+        title: i.title,
+        url: i.url || '',
+        itemType: i.itemType,
+        order: i.order || 0,
+      }));
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ success: true, data: { name: menu ? menu.name : null, items } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { listMenus, getMenu, createMenu, updateMenu, deleteMenu, getMenuSources, getPublicMenu };

@@ -14,6 +14,10 @@ import {
   deletePaymentMethod,
 } from '../../utils/paymentMethodsApi';
 
+// Payment methods the storefront checkout can actually take today. Others can be
+// configured here but customers will not see them until checkout support is added.
+const CHECKOUT_READY = ['cod', 'razorpay'];
+
 const GATEWAY_ICONS = {
   razorpay: { Icon: SiRazorpay, color: '#0C2451', bg: '#EEF1F9' },
   stripe: { Icon: SiStripe, color: '#635BFF', bg: '#F1F0FE' },
@@ -152,6 +156,14 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
               {method.isDefault && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   Default
+                </span>
+              )}
+              {!CHECKOUT_READY.includes(method.code) && (
+                <span
+                  title="Customers can't pay with this method at checkout yet — only Cash on Delivery and Razorpay are connected."
+                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200"
+                >
+                  Not in checkout yet
                 </span>
               )}
               <span

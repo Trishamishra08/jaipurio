@@ -38,7 +38,10 @@ module.exports = {
   async createOrder(config, { amount, receipt }) {
     const { clientId, clientSecret, mode } = this.resolveCredentials(config);
     if (!clientId || !clientSecret) {
-      return { mock: true, order: { id: 'mock_paypal_' + Date.now(), amount: amount.toFixed(2), currency: 'USD' }, keyId: '' };
+      if (process.env.NODE_ENV === 'production') {
+      throw new Error('PayPal is enabled but its Client ID / Client Secret are not configured. Add them in Admin → Payments.');
+    }
+    return { mock: true, order: { id: 'mock_paypal_' + Date.now(), amount: amount.toFixed(2), currency: 'USD' }, keyId: '' };
     }
     const base = BASE[mode] || BASE.sandbox;
     const token = await this.getAccessToken(clientId, clientSecret, mode);

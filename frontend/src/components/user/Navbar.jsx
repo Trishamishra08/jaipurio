@@ -14,6 +14,9 @@ import {
   Heart,
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
+import { useMobileMenu } from '../../utils/useMobileMenu';
+import { useCategoryTree } from '../../utils/useCategoryTree';
+import { CATEGORIES_TOKEN, isExternalUrl, resolveMenuUrl } from '../../utils/menuUrl';
 
 const DESKTOP_NAV = [
   { to: '/home', label: 'Home' },
@@ -23,16 +26,118 @@ const DESKTOP_NAV = [
   { to: '/contact', label: 'Contact' },
 ];
 
-const MOBILE_NAV = [
-  { to: '/home', label: 'Home' },
-  { to: '/shop', label: 'All Mitti Crafts' },
-  { to: '/blog', label: 'Journal' },
-  { to: '/orders', label: 'My Orders' },
-  { to: '/wishlist', label: 'Saved Wishlist' },
-  { to: '/profile', label: 'My Profile' },
-  { to: '/affiliate', label: 'Affiliate Program' },
-  { to: '/contact', label: 'Help & Support' },
-];
+const ROW =
+  'flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium text-[#3F261B] hover:bg-[#F7F3EE] transition-colors';
+
+const MenuLink = ({ url, className = ROW, onNavigate, categories, children }) => {
+  const href = resolveMenuUrl(url, categories);
+  return isExternalUrl(href) ? (
+    <a href={href} target="_blank" rel="noreferrer" onClick={onNavigate} className={className}>
+      {children}
+    </a>
+  ) : (
+    <Link to={href} onClick={onNavigate} className={className}>
+      {children}
+    </Link>
+  );
+};
+
+/** Categories (flat list with parent ids) → nested tree, keeping the API's order. */
+const buildCategoryTree = (categories) => {
+  const nodes = new Map(categories.map((c) => [c.id, { ...c, children: [] }]));
+  const roots = [];
+  nodes.forEach((n) => {
+    const parent = n.parent && nodes.get(n.parent);
+    (parent ? parent.children : roots).push(n);
+  });
+  return roots;
+};
+
+/** The slide-out menu: admin-managed items; "Shop by Category" opens the live category tree, level by level. */
+const DrawerMenu = ({ items, categories, wishlistCount, onNavigate }) => {
+  // Every section opens and closes on its own — opening a sub-category keeps its parents open.
+  const [open, setOpen] = useState(() => new Set());
+  const toggle = (key) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const tree = buildCategoryTree(categories);
+  const shopHref = (name) => `/shop?category=${encodeURIComponent(name)}`;
+
+  // A row that opens/closes a list of children (the label itself still links to its page).
+  const renderExpander = (id, label, to, children, depth = 0) => (
+    <div key={id}>
+      <div className="flex items-stretch">
+        <MenuLink url={to} categories={categories} onNavigate={onNavigate} className={`${ROW} flex-1 ${depth ? '!py-2 !text-[12.5px]' : ''}`}>
+          <span>{label}</span>
+        </MenuLink>
+        <button
+          type="button"
+          onClick={() => toggle(id)}
+          aria-expanded={open.has(id)}
+          aria-label={`${open.has(id) ? 'Hide' : 'Show'} ${label}`}
+          className="px-3 text-[#9A8B7A] hover:text-[#6F241D]"
+        >
+          <ChevronDown size={16} className={`transition-transform ${open.has(id) ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+      {open.has(id) && <div className="ml-3 pl-3 border-l border-[#EDE8E0] mb-1 space-y-0.5">{children}</div>}
+    </div>
+  );
+
+  // One category and everything below it, as deep as the tree goes.
+  const renderCategory = (node, depth = 0) =>
+    node.children.length ? (
+      renderExpander(`cat-${node.id}`, node.name, shopHref(node.name), node.children.map((c) => renderCategory(c, depth + 1)), depth)
+    ) : (
+      <MenuLink
+        key={node.id}
+        url={shopHref(node.name)}
+        categories={categories}
+        onNavigate={onNavigate}
+        className={`${ROW} ${depth ? '!py-2 !text-[12.5px]' : ''}`}
+      >
+        {node.name}
+      </MenuLink>
+    );
+
+  return (
+    <>
+      {items.map((item) => {
+        if (item.url === CATEGORIES_TOKEN) {
+          return renderExpander(item.id, item.title, '/shop', tree.map((n) => renderCategory(n, 1)));
+        }
+        if (item.children && item.children.length) {
+          return renderExpander(
+            item.id,
+            item.title,
+            item.url || '/shop',
+            item.children.map((child) => (
+              <MenuLink key={child.id} url={child.url} categories={categories} onNavigate={onNavigate} className={`${ROW} !py-2 !text-[12.5px]`}>
+                {child.title}
+              </MenuLink>
+            )),
+            0
+          );
+        }
+        const isWishlist = resolveMenuUrl(item.url, categories) === '/wishlist';
+        return (
+          <MenuLink key={item.id} url={item.url} categories={categories} onNavigate={onNavigate}>
+            <span>
+              {item.title}
+              {isWishlist && wishlistCount > 0 ? ` (${wishlistCount})` : ''}
+            </span>
+            <ChevronRight size={14} className="text-[#9A8B7A]" />
+          </MenuLink>
+        );
+      })}
+    </>
+  );
+};
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,6 +146,8 @@ const Navbar = () => {
   const [desktopSearch, setDesktopSearch] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const { cartCount, wishlistCount, setIsCartDrawerOpen, deliveryLocation } = useShop();
+  const menuItems = useMobileMenu();
+  const { categories: menuCategories } = useCategoryTree();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isHome = pathname === '/home';
@@ -384,20 +491,12 @@ const Navbar = () => {
             </button>
 
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 font-dm">
-              {MOBILE_NAV.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium text-[#3F261B] hover:bg-[#F7F3EE] transition-colors"
-                >
-                  <span>
-                    {item.label}
-                    {item.to === '/wishlist' && wishlistCount > 0 ? ` (${wishlistCount})` : ''}
-                  </span>
-                  <ChevronRight size={14} className="text-[#9A8B7A]" />
-                </Link>
-              ))}
+              <DrawerMenu
+                items={menuItems}
+                categories={menuCategories}
+                wishlistCount={wishlistCount}
+                onNavigate={() => setMobileMenuOpen(false)}
+              />
             </div>
           </div>
         </div>

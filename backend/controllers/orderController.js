@@ -7,6 +7,7 @@ const { nextOrderNumber, serializeOrder } = require('../utils/marketplace');
 const { canAccessOrder, ensureEarnings } = require('./orderFlowController');
 const { logTransaction } = require('./paymentTransactionController');
 const PaymentMethod = require('../models/paymentMethodModel');
+const PaymentTransaction = require('../models/paymentTransactionModel');
 const { decryptConfig } = require('./paymentMethodController');
 const { getGateway } = require('../services/paymentGateways');
 
@@ -23,19 +24,25 @@ const quoteItemsPayload = (items = []) => items.map((item) => ({
   image: item.image
 }));
 
-const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, paymentResult, isPaid, referralCode }) => {
+const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, paymentResult, isPaid, referralCode, skipTransactionLog = false }) => {
   // Affiliate attribution — resolved here rather than via computeOrderQuote
   // like couponCode, since a referral doesn't change pricing at all, only
   // who gets credited. Only an Approved affiliate's code counts.
   let affiliate = null;
   if (referralCode) {
     const cleanRef = String(referralCode).trim();
+    // Escaped: the code comes from a URL, and characters like ( or [ must not break the lookup.
+    const exactCode = new RegExp('^' + cleanRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
     affiliate = await Affiliate.findOne({
-      referralCode: { $regex: new RegExp(`^${cleanRef}$`, 'i') },
+      referralCode: { $regex: exactCode },
       status: 'Approved'
     });
     if (!affiliate) {
       affiliate = await Affiliate.findOne({ referralCode: cleanRef, status: 'Approved' });
+    }
+    if (!affiliate) {
+      // An admin changed this affiliate's code after the link was shared — the old link still counts.
+      affiliate = await Affiliate.findOne({ previousCodes: { $regex: exactCode }, status: 'Approved' });
     }
   }
 
@@ -90,7 +97,7 @@ const savePricedOrder = async ({ userId, quote, shippingAddress, paymentMethod, 
     console.error('Error creating initial earnings for order:', err);
   }
 
-  logTransaction({
+  if (!skipTransactionLog) logTransaction({
     order: order._id,
     orderNumber: order.orderNumber,
     gateway: paymentMethod === 'Online' ? 'razorpay' : paymentMethod === 'COD' ? 'cod' : 'other',
@@ -207,7 +214,15 @@ const createRazorpayOrder = async (req, res) => {
       receipt: 'receipt_order_' + Date.now(),
     });
 
-    if (mock) console.warn('Razorpay not configured. Returning mock order id.');
+    if (mock) console.warn('Razorpay not configured. Returning mock order id (development only).');
+    // Remember exactly what was asked of the gateway: verification later must match this user and amount.
+    await PaymentTransaction.create({
+      user: req.user._id,
+      gateway: 'razorpay',
+      gatewayOrderId: order.id,
+      amount: quote.total,
+      status: 'initiated',
+    });
     res.status(200).json({ success: true, data: { order, quote, keyId } });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -220,20 +235,43 @@ const createRazorpayOrder = async (req, res) => {
 const verifyRazorpayOrder = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderDetails } = req.body;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Incomplete payment details.' });
+    }
 
     const config = await getEnabledMethodConfig('razorpay');
     if (config === null) {
       return res.status(400).json({ success: false, message: 'Online payment is currently unavailable.' });
     }
+
+    // The payment must be one WE started, for THIS customer.
+    const txn = await PaymentTransaction.findOne({
+      gateway: 'razorpay',
+      gatewayOrderId: razorpay_order_id,
+      user: req.user._id,
+    });
+    if (!txn) {
+      return res.status(400).json({ success: false, message: 'Unknown payment. Please start the payment again.' });
+    }
+
+    // Already completed (double click, retry, refresh) → return the same order, never create another.
+    if (txn.status === 'success' && txn.order) {
+      const existing = await Order.findById(txn.order);
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          message: 'Payment already verified',
+          data: { order: { orderId: existing._id, ...existing._doc } },
+        });
+      }
+    }
+
     const gateway = getGateway('razorpay');
     if (!gateway.verifySignature(config, { razorpay_order_id, razorpay_payment_id, razorpay_signature })) {
-      logTransaction({
-        gateway: 'razorpay',
-        gatewayOrderId: razorpay_order_id || '',
-        gatewayPaymentId: razorpay_payment_id || '',
-        status: 'failed',
-        errorMessage: 'Signature verification failed',
-      }).catch(() => {});
+      await PaymentTransaction.updateOne(
+        { _id: txn._id, status: { $ne: 'success' } },
+        { $set: { status: 'failed', gatewayPaymentId: razorpay_payment_id, errorMessage: 'Signature verification failed' } }
+      );
       return res.status(400).json({ success: false, message: "Invalid signature sent!" });
     }
 
@@ -244,19 +282,54 @@ const verifyRazorpayOrder = async (req, res) => {
       paymentMethod: 'paynow'
     });
 
-    const createdOrder = await savePricedOrder({
-      userId: req.user._id,
-      quote,
-      shippingAddress,
-      paymentMethod: 'Online',
-      paymentResult: {
-        id: razorpay_payment_id,
-        status: 'completed',
-        update_time: new Date().toISOString()
-      },
-      isPaid: true,
-      referralCode
-    });
+    // The amount the customer actually paid must equal the order being created.
+    if (Math.abs(Number(txn.amount) - Number(quote.total)) > 0.01) {
+      await PaymentTransaction.updateOne(
+        { _id: txn._id, status: { $ne: 'success' } },
+        { $set: { status: 'failed', gatewayPaymentId: razorpay_payment_id, errorMessage: `Amount mismatch: paid ${txn.amount}, order ${quote.total}` } }
+      );
+      return res.status(400).json({
+        success: false,
+        message: 'The order total no longer matches the amount paid. Please contact support — your payment is safe.',
+      });
+    }
+
+    // Claim this payment atomically so two parallel requests cannot both create an order.
+    const claimed = await PaymentTransaction.findOneAndUpdate(
+      { _id: txn._id, status: 'initiated' },
+      { $set: { status: 'processing', gatewayPaymentId: razorpay_payment_id } }
+    );
+    if (!claimed) {
+      return res.status(409).json({ success: false, message: 'This payment is already being processed. Please check My Orders.' });
+    }
+
+    let createdOrder;
+    try {
+      createdOrder = await savePricedOrder({
+        userId: req.user._id,
+        quote,
+        shippingAddress,
+        paymentMethod: 'Online',
+        paymentResult: {
+          id: razorpay_payment_id,
+          status: 'completed',
+          update_time: new Date().toISOString()
+        },
+        isPaid: true,
+        referralCode,
+        skipTransactionLog: true
+      });
+    } catch (saveErr) {
+      await PaymentTransaction.updateOne(
+        { _id: txn._id },
+        { $set: { status: 'failed', errorMessage: `Order could not be saved: ${saveErr.message}` } }
+      );
+      throw saveErr;
+    }
+    await PaymentTransaction.updateOne(
+      { _id: txn._id },
+      { $set: { status: 'success', order: createdOrder._id, orderNumber: createdOrder.orderNumber, gatewayPaymentId: razorpay_payment_id } }
+    );
 
     // Trigger push notifications
     try {

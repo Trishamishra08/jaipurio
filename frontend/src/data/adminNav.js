@@ -154,6 +154,7 @@ export const adminNav = [
       { title: 'Widgets', path: '/admin/widgets' },
       { title: 'Theme Options', path: '/admin/theme/options/opt-text-subsection-general' },
       { title: 'Home Page', path: '/admin/theme/home-page' },
+      { title: 'Footer', path: '/admin/theme/footer' },
       { title: 'Product Page', path: '/admin/theme/product-page' },
       { title: 'Custom CSS', path: '/admin/theme/custom-css' },
       { title: 'Custom JS', path: '/admin/theme/custom-js' },

@@ -28,6 +28,10 @@ const settingsSchema = new mongoose.Schema({
   // Home page section manager (Appearance → Home Page): { order: [keys], sections: { key: cfg } }
   // Shape: frontend/src/data/homeSectionsDefaults.js
   homePage: { type: mongoose.Schema.Types.Mixed, default: {} },
+  // Affiliate referral link format (Affiliate Program → Referral link): { baseUrl, landingPath, paramName }
+  affiliate: { type: mongoose.Schema.Types.Mixed, default: {} },
+  // Storefront footer content (Appearance → Footer). Shape: frontend/src/data/footerDefaults.js
+  footer: { type: mongoose.Schema.Types.Mixed, default: {} },
   menus: [{ name: String, location: String, items: String }],
   widgets: [{ name: String, sidebar: String }],
   customCss: { type: String, default: '' },
