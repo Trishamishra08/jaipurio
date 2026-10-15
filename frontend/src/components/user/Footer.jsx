@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 import {
@@ -9,6 +9,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { PHOTOS } from '../../data/photos';
+import { useCategoryTree } from '../../utils/useCategoryTree';
 
 const HAWA = PHOTOS.buddha;
 const OFFICE =
@@ -49,59 +50,29 @@ const ACTIONS = [
   {
     icon: Search,
     title: 'Discover',
-    copy: 'Browse matkas, kulhads, dÃ©cor & puja sets across 40+ categories.',
+    copy: 'Browse jewellery, clothing, accessories, idols & home décor.',
     to: '/shop',
-    link: 'Shop all products â†’',
+    link: 'Shop all products →',
   },
   {
     icon: ShoppingCart,
     title: 'Shop & Track',
-    copy: 'Secure checkout, order tracking, easy returns â€” pan India.',
+    copy: 'Secure checkout, order tracking, easy returns — pan India.',
     to: '/orders',
-    link: 'Track your order â†’',
+    link: 'Track your order →',
   },
   {
     icon: ShoppingBag,
     title: 'Sell & Earn',
     copy: 'Open a storefront as an artisan house, or join as a partner.',
     to: '/vendor/register',
-    link: 'Start selling â†’',
+    link: 'Start selling →',
   },
 ];
 
+// Static columns. The category columns (Shop by Category, Featured, Popular)
+// are built from the live category tree inside the component.
 const DIRECTORY = [
-  {
-    title: 'Shop by Category',
-    links: [
-      ['Jewellery', '/shop?category=Jewellery'],
-      ['Home & Living', '/shop?category=Home%20%26%20Living'],
-      ['Marble & Brass Idols', '/shop?category=Religious%20Statuary%20Idols'],
-      ['Clothing', '/shop?category=Clothing'],
-      ['Accessories', '/shop?category=Accessories'],
-      ['Bags & Purses', '/shop?category=Bags%20%26%20Purses'],
-    ],
-  },
-  {
-    title: 'Our Houses',
-    links: [
-      ['Shyam Pottery', '/shop?category=Matkas'],
-      ['Kulhad House', '/shop?category=Kulhads'],
-      ['Meera Terracotta', '/shop?category=Planters'],
-      ['Rajputana Crafts', '/shop?category=Home Decor'],
-      ['Pushkar Clay Arts', '/shop?category=Puja Essentials'],
-      ['Jaipurio Flagship', '/shop'],
-    ],
-  },
-  {
-    title: 'Kitchen & Decor',
-    links: [
-      ['Mitti Tawa', '/shop'],
-      ['Clay Handi', '/shop'],
-      ['Diya Sets', '/shop?category=Puja Essentials'],
-      ['Figurines', '/shop?category=Home Decor'],
-      ['Planters', '/shop?category=Planters'],
-    ],
-  },
   {
     title: 'Customer Care',
     links: [
@@ -128,15 +99,6 @@ const DIRECTORY = [
       ['Vendor Login', '/vendor/login'],
       ['Terms of Use', '/terms-conditions'],
       ['Cookie Policy', '/privacy-policy'],
-    ],
-  },
-  {
-    title: 'Popular Searches',
-    links: [
-      ['Jaipur Matka', '/shop?search=matka'],
-      ['Clay Kulhad', '/shop?search=kulhad'],
-      ['Terracotta Planter', '/shop?search=planter'],
-      ['Festive Diya Set', '/shop?search=diya'],
     ],
   },
 ];
@@ -188,8 +150,34 @@ const StoreBadge = ({ store, sub }) => (
   </div>
 );
 
+const FALLBACK_TOP = ['Jewellery', 'Home & Living', 'Clothing', 'Accessories', 'Art & Collectibles', 'Bags & Purses'];
+const shopLink = (name) => `/shop?category=${encodeURIComponent(name)}`;
+
 const Footer = () => {
   const [open, setOpen] = useState(null);
+  const { categories } = useCategoryTree();
+
+  // Live tree is in depth-first order: each top-level category is followed by
+  // everything under it. Group them for the "Browse all categories" block.
+  const groups = [];
+  categories.forEach((c) => {
+    if (!c.parent) groups.push({ top: c, subs: [] });
+    else if (groups.length) groups[groups.length - 1].subs.push(c);
+  });
+  const nonTop = categories.filter((c) => c.parent);
+  const featured = nonTop.filter((c) => c.isFeatured).slice(0, 8);
+  const popular = [...nonTop].sort((a, b) => b.count - a.count).slice(0, 8);
+  const categoryColumns = categories.length
+    ? [
+        { title: 'Shop by Category', links: groups.map((g) => [g.top.name, shopLink(g.top.name)]) },
+        ...(featured.length ? [{ title: 'Featured', links: featured.map((c) => [c.name, shopLink(c.name)]) }] : []),
+        { title: 'Popular Categories', links: popular.map((c) => [c.name, shopLink(c.name)]) },
+      ]
+    : [{ title: 'Shop by Category', links: FALLBACK_TOP.map((n) => [n, shopLink(n)]) }];
+  const columns = [...categoryColumns, ...DIRECTORY];
+  const linkedPages = columns.reduce((n, col) => n + col.links.length, 0) + categories.length;
+  const stats = STATS.map(([n, l]) => (l === 'Product categories' && categories.length ? [String(categories.length), l] : [n, l]));
+  const siteOrigin = typeof window !== 'undefined' ? window.location.origin : '';
 
   const toTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -202,7 +190,7 @@ const Footer = () => {
         onClick={toTop}
         className="w-full bg-[#4A1614] py-2 font-body text-[11px] sm:text-[12px] tracking-wide text-white/90 hover:bg-[#3F1311]"
       >
-        â–² Back to top
+        ▲ Back to top
       </button>
 
       <div className="relative overflow-hidden bg-[#2A100E]">
@@ -216,10 +204,10 @@ const Footer = () => {
         <div className="relative z-[1]">
           <div className="footer-pichwai" aria-hidden />
 
-          {/* Layer 1 â€” Heritage + brand + app */}
+          {/* Layer 1 — Heritage + brand + app */}
           <div className="site-container pt-4 pb-3 sm:pt-8 sm:pb-6 text-center">
             <p className="font-body text-[8px] sm:text-[10px] font-semibold tracking-[0.22em] uppercase text-[#E8C4A0]">
-              â€” Rajasthani Heritage â€”
+              — Rajasthani Heritage —
             </p>
             <h2 className="font-playfair font-semibold text-[16px] sm:text-[26px] md:text-[32px] leading-snug mt-1 px-2">
               Painted like a Pichwai, packed like an heirloom
@@ -265,11 +253,11 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Layer 2 â€” Stats + actions + directory */}
+          {/* Layer 2 — Stats + actions + directory */}
           <div className="bg-[#F6EFE4] text-[#2B1E1A]">
             <div className="site-container py-2.5 sm:py-3">
               <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto scrollbar-none snap-x">
-                {STATS.map(([n, l]) => (
+                {stats.map(([n, l]) => (
                   <div key={l} className="snap-start shrink-0 min-w-[118px] md:min-w-0 text-center">
                     <p className="font-playfair font-semibold text-[15px] sm:text-[18px] leading-none">{n}</p>
                     <p className="font-body text-[9px] sm:text-[11px] text-[#6B5748] mt-0.5 leading-tight">{l}</p>
@@ -304,16 +292,16 @@ const Footer = () => {
                 <div>
                   <h3 className="font-playfair font-semibold text-[15px] sm:text-[20px]">Complete site directory</h3>
                   <p className="font-body text-[9px] sm:text-[11px] text-white/60 hidden sm:block">
-                    Every category, artisan house, and customer page â€” tap a heading to open.
+                    Every category, artisan house, and customer page — tap a heading to open.
                   </p>
                 </div>
                 <span className="shrink-0 px-2 py-0.5 rounded-full border border-white/20 font-body text-[9px] text-white/70">
-                  40+ linked pages
+                  {linkedPages} linked pages
                 </span>
               </div>
 
-              <div className="md:grid md:grid-cols-4 lg:grid-cols-7 md:gap-4 border-t border-white/10 md:border-0">
-                {DIRECTORY.map((col, i) => {
+              <div className="md:grid md:grid-cols-3 lg:grid-cols-6 md:gap-4 border-t border-white/10 md:border-0">
+                {columns.map((col, i) => {
                   const isOpen = open === i;
                   return (
                     <div key={col.title} className="border-b border-white/10 md:border-0">
@@ -347,7 +335,49 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Layer 3 â€” Shipping + office */}
+          {/* All categories with their sub-categories — plain crawlable links */}
+          {groups.length > 0 && (
+            <nav aria-label="All product categories" className="border-t border-white/10">
+              <div className="site-container py-3 sm:py-5">
+                <h3 className="font-playfair font-semibold text-[15px] sm:text-[20px] mb-2.5">Browse all categories</h3>
+                <div className="space-y-2 sm:space-y-2.5">
+                  {groups.map(({ top, subs }) => (
+                    <p key={top.id} className="font-body text-[11px] sm:text-[12.5px] leading-relaxed text-white/75">
+                      <Link to={shopLink(top.name)} className="font-bold text-white hover:text-[#E8C4A0] mr-1.5">
+                        {top.name}:
+                      </Link>
+                      {subs.map((c, i) => (
+                        <React.Fragment key={c.id}>
+                          <Link to={shopLink(c.name)} className="hover:text-white hover:underline">
+                            {c.name}
+                          </Link>
+                          {i < subs.length - 1 && <span className="mx-1.5 text-white/30" aria-hidden="true">|</span>}
+                        </React.Fragment>
+                      ))}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify({
+                    '@context': 'https://schema.org',
+                    '@type': 'ItemList',
+                    name: 'Jaipurio product categories',
+                    itemListElement: groups.map((g, i) => ({
+                      '@type': 'ListItem',
+                      position: i + 1,
+                      name: g.top.name,
+                      url: `${siteOrigin}${shopLink(g.top.name)}`,
+                    })),
+                  }),
+                }}
+              />
+            </nav>
+          )}
+
+          {/* Layer 3 — Shipping + office */}
           <div className="border-t border-white/10">
             <div className="site-container py-3 sm:py-5">
               <p className="font-body text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E8C4A0] mb-1.5">
@@ -390,7 +420,7 @@ const Footer = () => {
                     rel="noreferrer"
                     className="inline-block mt-1.5 font-body text-[11px] font-semibold text-[#E8C4A0]"
                   >
-                    Open in Maps â†’
+                    Open in Maps →
                   </a>
                 </div>
                 <div className="relative rounded-lg overflow-hidden border border-white/15 h-[88px] sm:h-[140px] bg-black/30">
@@ -412,7 +442,7 @@ const Footer = () => {
               </div>
 
               <p className="mt-3 pt-2 border-t border-white/10 font-body text-[9px] sm:text-[10px] text-white/45 text-center sm:text-left">
-                Â© 2026 Jaipurio. All Rights Reserved.
+                © 2026 Jaipurio. All Rights Reserved.
               </p>
             </div>
           </div>

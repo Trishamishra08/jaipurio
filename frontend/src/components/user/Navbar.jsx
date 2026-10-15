@@ -129,12 +129,12 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Promo bar â€” all screens */}
+      {/* Promo bar — all screens */}
       <div className="relative z-[60] bg-[#C45C6A] text-[#FFF0EE] py-1 px-3 text-center text-[10px] sm:text-xs tracking-wider font-dm">
-        <span className="font-medium">Free Shipping on Orders Above â‚¹499 | 100% Pure Mitti</span>
+        <span className="font-medium">Free Shipping on Orders Above ₹499 | 100% Pure Mitti</span>
       </div>
 
-      {/* â”€â”€â”€ MOBILE APP HEADER (unchanged behaviour) â”€â”€â”€ */}
+      {/* ─── MOBILE APP HEADER (unchanged behaviour) ─── */}
       <div
         className={`lg:hidden ${homeOverlay ? 'bg-transparent' : 'bg-white'} ${scrolled ? 'shadow-sm' : ''}`}
       >
@@ -248,7 +248,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* â”€â”€â”€ DESKTOP WEBSITE HEADER (compact) â”€â”€â”€ */}
+      {/* ─── DESKTOP WEBSITE HEADER (compact) ─── */}
       <div className="hidden lg:block bg-white border-b border-[#E8E2D9] shadow-[0_1px_0_rgba(111,36,29,0.06)]">
         {/* Utility strip */}
         <div className="bg-[#FCF8F2] border-b border-[#E8E2D9]/80">
@@ -264,7 +264,7 @@ const Navbar = () => {
               <ChevronDown size={12} className="text-[#6F241D]" />
             </button>
             <div className="flex items-center gap-3 xl:gap-4">
-              <span className="hidden xl:inline text-[#9A8B7A]">100% Handmade Â· Pan India Delivery</span>
+              <span className="hidden xl:inline text-[#9A8B7A]">100% Handmade · Pan India Delivery</span>
               <Link to="/login" className="hover:text-[#6F241D] transition-colors">
                 Login
               </Link>
@@ -276,7 +276,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Logo left Â· search fills middle Â· icons right */}
+        {/* Logo left · search fills middle · icons right */}
         <div className="site-container py-2">
           <div className="flex items-center gap-3 xl:gap-4">
             <Link
