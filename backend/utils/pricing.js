@@ -4,14 +4,22 @@ const Settings = require('../models/settingsModel');
 
 const roundMoney = (value) => Math.round((Number(value) || 0) * 100) / 100;
 
+// The price the customer actually pays: the sale price when one is set below
+// the list price (what the storefront shows), otherwise the list price.
+const effectivePrice = (row) => {
+  const list = Number(row.price) || 0;
+  const sale = Number(row.salePrice) || 0;
+  return sale > 0 && (list <= 0 || sale < list) ? sale : list;
+};
+
 const unitPriceFromProduct = (product, size) => {
   if (size && Array.isArray(product.variants) && product.variants.length) {
     const match = product.variants.find(
       (variant) => String(variant.size || '').trim().toLowerCase() === String(size).trim().toLowerCase()
     );
-    if (match && match.price != null) return Number(match.price) || 0;
+    if (match && (match.price != null || match.salePrice != null)) return effectivePrice(match);
   }
-  return Number(product.price) || 0;
+  return effectivePrice(product);
 };
 
 const isCouponValid = (coupon) => {

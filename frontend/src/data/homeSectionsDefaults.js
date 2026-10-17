@@ -50,7 +50,8 @@ export const HOME_SECTIONS = [
     fields: [['eyebrow', 'Small label'], ['title', 'Heading'], ['copy', 'Text'], ['buttonText', 'Button text'], ['link', 'Button link (e.g. /shop?category=Jewellery)'], ['image', 'Background image', 'image']],
   },
   { key: 'popular', label: 'Popular Picks', kind: 'rail', scope: 'page', defaults: { title: 'Popular Picks', limit: 8 } },
-  { key: 'categoryRails', label: 'One product row per category', kind: 'cats', scope: 'page', defaults: { limit: 4 } },
+  // rails (source 'rows'): [{ id, title, category, productIds }] — rows the admin adds, renames, deletes and adds products to
+  { key: 'categoryRails', label: 'One product row per category', kind: 'cats', scope: 'page', defaults: { limit: 4, rails: [] } },
   {
     key: 'coupons', label: 'Coupon strip (offers & codes)', kind: 'content', scope: 'page',
     defaults: {
@@ -114,7 +115,20 @@ export const HOME_SECTIONS = [
   { key: 'trending', label: 'Trending right now', kind: 'rail', scope: 'block', defaults: { eyebrow: "This Week's Workshop", title: 'Trending right now', limit: 8 } },
   { key: 'recent', label: 'Recently viewed', kind: 'scroll', scope: 'block', defaults: { eyebrow: 'Pick Up Where You Left Off', title: 'Recently viewed', limit: 6 } },
   { key: 'recommended', label: 'Recommended for you', kind: 'scroll', scope: 'block', defaults: { eyebrow: 'Because You Browsed Marble Idols', title: 'Recommended for you', limit: 6 } },
-  { key: 'styled', label: 'Styled edits', kind: 'simple', scope: 'block', defaults: { eyebrow: 'Curated, Not Just Categorised', title: 'Styled edits', copy: 'Complete looks and room sets, put together from our live catalogue — shop the whole edit in one tap.' } },
+  {
+    key: 'styled', label: 'Styled edits', kind: 'simple', scope: 'block',
+    defaults: {
+      eyebrow: 'Curated, Not Just Categorised', title: 'Styled edits',
+      copy: 'Complete looks and room sets, put together from our live catalogue — shop the whole edit in one tap.',
+      // Each edit: a heading + up to 4 pictures — the top product of each chosen category, or products picked by hand.
+      items: [
+        { title: 'The Wedding Trousseau Edit', mode: 'category', categories: ['Rajputi Poshak', 'Jodhpuri Bandhgala Suits', 'Necklaces', 'Bangles'], productIds: [] },
+        { title: 'The Pooja Room Edit', mode: 'category', categories: ['Marble Idols', 'Brass Idols', 'Thali & Thali Sets', 'Torans'], productIds: [] },
+        { title: "The Groom's Edit", mode: 'category', categories: ['Jodhpuri Achkans', 'Safa / Head Turban', 'Cufflinks', 'Pocket Squares'], productIds: [] },
+      ],
+    },
+    custom: 'edits',
+  },
   { key: 'collections', label: 'Shop our curated collections', kind: 'simple', scope: 'block', defaults: { eyebrow: 'Product Collections', title: 'Shop our curated collections' } },
   {
     key: 'occasion', label: 'Shop by occasion', kind: 'content', scope: 'block',
@@ -133,11 +147,15 @@ export const HOME_SECTIONS = [
     fields: [['eyebrow', 'Small label above heading'], ['title', 'Heading']],
     custom: 'occasions',
   },
-  { key: 'bestsellers', label: 'Bestsellers across Jaipurio', kind: 'rail', scope: 'block', defaults: { eyebrow: 'Top Rated This Month', title: 'Bestsellers across Jaipurio', limit: 8 } },
+  { key: 'bestsellers', label: 'Bestsellers across Jaipurio', kind: 'rail', scope: 'block', defaults: { eyebrow: 'Top Rated This Month', title: 'Bestsellers across Jaipurio', limit: 8, source: 'rating' } },
   { key: 'more', label: 'More to explore', kind: 'rail', scope: 'block', defaults: { eyebrow: 'Keep Browsing', title: 'More to explore', limit: 8 } },
 ];
 
-const BASE = { enabled: true, source: 'auto', categories: [], productIds: [], eyebrow: '', title: '', copy: '', linkText: '', limit: 8 };
+// rankBy / minReviews / fillWithPopular only apply when source is 'rating' (top rated from customer reviews)
+const BASE = {
+  enabled: true, source: 'auto', categories: [], productIds: [], eyebrow: '', title: '', copy: '', linkText: '', limit: 8,
+  rankBy: 'seller', minReviews: 1, fillWithPopular: true,
+};
 
 export const HOME_SECTION_DEFAULTS = Object.fromEntries(
   HOME_SECTIONS.map((s) => {
@@ -153,6 +171,67 @@ export const DEFAULT_PAGE_ORDER = [
   'coupons', 'trustStrip', 'whyChoose', 'testimonials',
 ];
 
+// ── Custom sections ──────────────────────────────────────────────
+// Sections the admin adds themselves (Appearance → Home Page → Add section).
+// Saved as  homePage.custom = [{ id, type, label }]  with their content in
+// homePage.sections['custom:<id>'], and placed in pageOrder / order like any
+// other section.
+export const MAX_CUSTOM = 20;
+export const customKey = (id) => 'custom:' + id;
+export const isCustomKey = (key) => typeof key === 'string' && key.startsWith('custom:');
+
+export const CUSTOM_TYPES = [
+  { type: 'products', title: 'Product row', hint: 'A row of product cards — automatic, top rated, from categories, or hand-picked.' },
+  { type: 'banner', title: 'Banner', hint: 'A wide picture with a heading, short text and a button.' },
+  { type: 'text', title: 'Text block', hint: 'A heading with a few paragraphs (e.g. a short story or announcement).' },
+  { type: 'categories', title: 'Category cards', hint: 'Cards for the categories you choose.' },
+  { type: 'tiles', title: 'Image tiles', hint: 'A grid of pictures with captions, each linking anywhere.' },
+];
+
+/** Content a new custom section of this type starts with. */
+export const customDefaults = (type, label = '') => {
+  switch (type) {
+    case 'products':
+      return { ...BASE, title: label };
+    case 'categories':
+      return { ...BASE, title: label };
+    case 'banner':
+      return { ...BASE, title: label, buttonText: 'Shop now', link: '/shop', image: '' };
+    case 'text':
+      return { ...BASE, title: label, copy: '' };
+    case 'tiles':
+      return { ...BASE, title: label, items: [] };
+    default:
+      return { ...BASE, title: label };
+  }
+};
+
+/** The "definition" the admin card needs for a custom section (what fields it can edit). */
+export const customDef = (meta) => {
+  const key = customKey(meta.id);
+  const base = { key, label: meta.label, scope: 'custom', custom: false, isCustom: true, customType: meta.type };
+  switch (meta.type) {
+    case 'products':
+      return { ...base, kind: 'rail', defaults: { eyebrow: '', title: '', copy: '', limit: 8 } };
+    case 'categories':
+      return { ...base, kind: 'cats', defaults: { eyebrow: '', title: '', limit: 8 } };
+    case 'banner':
+      return {
+        ...base, kind: 'content', defaults: {},
+        fields: [['eyebrow', 'Small label'], ['title', 'Heading'], ['copy', 'Text'], ['buttonText', 'Button text'], ['link', 'Button link (e.g. /shop?category=Jewellery)'], ['image', 'Background image', 'image']],
+      };
+    case 'text':
+      return { ...base, kind: 'content', defaults: {}, fields: [['title', 'Heading'], ['copy', 'Text (leave a blank line between paragraphs)', 'textarea']] };
+    case 'tiles':
+      return {
+        ...base, kind: 'content', defaults: {}, fields: [['title', 'Heading']],
+        list: { name: 'items', title: 'Tiles', fields: [['label', 'Caption'], ['link', 'Link, e.g. /shop?category=Clothing'], ['image', 'Picture', 'image']], max: 12 },
+      };
+    default:
+      return { ...base, kind: 'simple', defaults: {} };
+  }
+};
+
 const mergeOrder = (saved, allowed, defaults) => {
   const valid = Array.isArray(saved) ? saved.filter((k, i) => allowed.includes(k) && saved.indexOf(k) === i) : [];
   return [...valid, ...defaults.filter((k) => !valid.includes(k))];
@@ -162,9 +241,7 @@ const mergeOrder = (saved, allowed, defaults) => {
 export const mergeHomeSections = (saved) => {
   const savedSections = saved && typeof saved.sections === 'object' && saved.sections ? saved.sections : {};
   const sections = {};
-  HOME_SECTIONS.forEach((s) => {
-    const base = HOME_SECTION_DEFAULTS[s.key];
-    const mine = savedSections[s.key] && typeof savedSections[s.key] === 'object' ? savedSections[s.key] : {};
+  const mergeOne = (base, mine) => {
     const merged = { ...base };
     Object.keys(base).forEach((k) => {
       if (mine[k] !== undefined && mine[k] !== null) merged[k] = mine[k];
@@ -172,13 +249,36 @@ export const mergeHomeSections = (saved) => {
     if (!Array.isArray(merged.categories)) merged.categories = [];
     if (!Array.isArray(merged.productIds)) merged.productIds = [];
     if (Array.isArray(base.items) && !Array.isArray(merged.items)) merged.items = base.items;
-    sections[s.key] = merged;
-  });
-  return {
-    sections,
-    order: mergeOrder(saved?.order, DEFAULT_ORDER, DEFAULT_ORDER),
-    pageOrder: mergeOrder(saved?.pageOrder, DEFAULT_PAGE_ORDER, DEFAULT_PAGE_ORDER),
+    return merged;
   };
+  HOME_SECTIONS.forEach((s) => {
+    const mine = savedSections[s.key] && typeof savedSections[s.key] === 'object' ? savedSections[s.key] : {};
+    sections[s.key] = mergeOne(HOME_SECTION_DEFAULTS[s.key], mine);
+  });
+
+  // custom sections the admin added
+  const knownTypes = CUSTOM_TYPES.map((t) => t.type);
+  const seen = new Set();
+  const custom = (Array.isArray(saved?.custom) ? saved.custom : [])
+    .filter((m) => m && typeof m.id === 'string' && /^[a-z0-9]{3,12}$/i.test(m.id) && knownTypes.includes(m.type) && !seen.has(m.id) && seen.add(m.id))
+    .slice(0, MAX_CUSTOM)
+    .map((m) => ({ id: m.id, type: m.type, label: String(m.label || '').slice(0, 60) || 'Custom section' }));
+  const customKeys = custom.map((m) => customKey(m.id));
+  custom.forEach((meta) => {
+    const key = customKey(meta.id);
+    const mine = savedSections[key] && typeof savedSections[key] === 'object' ? savedSections[key] : {};
+    sections[key] = mergeOne(customDefaults(meta.type, meta.label), mine);
+  });
+
+  const order = mergeOrder(saved?.order, [...DEFAULT_ORDER, ...customKeys], DEFAULT_ORDER);
+  const pageOrder = mergeOrder(saved?.pageOrder, [...DEFAULT_PAGE_ORDER, ...customKeys], DEFAULT_PAGE_ORDER);
+  // a custom section can live in one list only; any not placed yet goes to the end of the page
+  const dupes = new Set(customKeys.filter((k) => order.includes(k) && pageOrder.includes(k)));
+  const cleanOrder = order.filter((k) => !dupes.has(k));
+  const placed = new Set([...cleanOrder, ...pageOrder]);
+  customKeys.filter((k) => !placed.has(k)).forEach((k) => pageOrder.push(k));
+
+  return { sections, order: cleanOrder, pageOrder, custom };
 };
 
 export const DEFAULT_HOME = mergeHomeSections(null);

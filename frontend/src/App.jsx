@@ -15,6 +15,7 @@ import StandaloneCheckout from './components/user/StandaloneCheckout';
 import UserOrders from './components/user/UserOrders';
 import Wishlist from './components/user/Wishlist';
 import Affiliate from './components/user/Affiliate';
+import MyReviews from './components/user/MyReviews';
 import Profile from './components/user/Profile';
 import LocationPage from './components/user/LocationPage';
 import CartDrawer from './components/user/CartDrawer';
@@ -173,6 +174,7 @@ function App() {
             <Route path="/orders" element={<UserOrders />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/affiliate" element={<Affiliate />} />
+            <Route path="/reviews" element={<MyReviews />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/location" element={<LocationPage />} />
             <Route

@@ -40,6 +40,16 @@ import api from '../../utils/api';
 import { useCategoryTree } from '../../utils/useCategoryTree';
 import { useProductPageSettings } from '../../utils/useProductPageSettings';
 import ImageLightbox from '../shared/ImageLightbox';
+import ReviewModal from './ReviewModal';
+import { getCustomerToken } from '../../utils/customerAuth';
+import { checkReviewEligibility } from '../../utils/reviewApi';
+
+// "Priya Sharma" -> "Priya S." (customers' full names are not shown publicly)
+const maskName = (name) => {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'Customer';
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+};
 
 const TRUST_ICON = {
   truck: { Icon: Truck, tone: 'bg-amber-50 text-amber-600' },
@@ -60,8 +70,6 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const {
     products,
-    vendors,
-    reviews,
     addToCart,
     toggleWishlist,
     isInWishlist,
@@ -86,14 +94,57 @@ const ProductDetail = () => {
   // Prefer full API product over minimal context list
   const product = remoteProduct || contextProduct;
 
-  const vendor =
-    vendors.find((v) => v._id === product?.vendorId) ||
-    vendors.find((v) => v.name === product?.vendor) ||
-    vendors[0];
+  // The real seller (store name from the product) — products listed by the shop itself are sold by Jaipurio.
+  const sellerId = typeof product?.vendorId === 'string' && /^[a-f0-9]{24}$/i.test(product.vendorId) ? product.vendorId : '';
+  const vendor = { name: product?.vendor || product?.sellerName || '' };
 
   const related = relatedProducts;
   const together = related.slice(0, 4);
-  const productReviews = (reviews || []).filter((r) => r.productName === product?.name);
+  // Approved customer reviews for this product, loaded from the database
+  const [productReviews, setProductReviews] = useState([]);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewNote, setReviewNote] = useState(''); // why the customer can't review right now
+
+  const startReview = async () => {
+    setReviewNote('');
+    if (!getCustomerToken()) {
+      setReviewNote('login');
+      return;
+    }
+    try {
+      const { canReview, reason } = await checkReviewEligibility(product._id);
+      if (canReview) setReviewOpen(true);
+      else setReviewNote(reason === 'already-reviewed' ? 'You have already reviewed this product.' : 'Only customers who have received this product can review it.');
+    } catch {
+      setReviewNote('Could not check right now. Please try again in a moment.');
+    }
+  };
+
+  useEffect(() => {
+    if (!product?._id) {
+      setProductReviews([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api
+      .get(`/reviews/product/${product._id}`)
+      .then((res) => {
+        if (cancelled) return;
+        setProductReviews(
+          (res.data?.data?.reviews || []).map((r) => ({
+            id: r._id,
+            name: maskName(r.user?.name || r.guestName),
+            date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+            comment: r.comment || r.review || '',
+            rating: r.rating || 5,
+          }))
+        );
+      })
+      .catch(() => !cancelled && setProductReviews([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [product?._id]);
 
   useEffect(() => {
     setLoadError('');
@@ -294,7 +345,7 @@ const ProductDetail = () => {
           ? {
               aggregateRating: {
                 '@type': 'AggregateRating',
-                ratingValue: String(product.rating || 4.8),
+                ratingValue: String(product.rating),
                 reviewCount: String(product.reviews),
               },
             }
@@ -709,18 +760,18 @@ const ProductDetail = () => {
             </div>
 
             {/* Rating */}
-            {pageCfg.showRating && (
+            {pageCfg.showRating && product.reviews > 0 && (
             <div className="flex items-center gap-2 text-xs text-gray-600">
               <div className="flex items-center text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
                     size={14}
-                    fill={i < Math.round(product.rating || 4.8) ? 'currentColor' : 'none'}
+                    fill={i < Math.round(product.rating) ? 'currentColor' : 'none'}
                   />
                 ))}
               </div>
-              <span className="font-semibold text-gray-800">{product.rating || '4.9'}</span>
+              <span className="font-semibold text-gray-800">{product.rating}</span>
               <span className="text-gray-400">•</span>
               <button
                 type="button"
@@ -730,7 +781,7 @@ const ProductDetail = () => {
                 }}
                 className="text-[#8B2E3A] hover:underline"
               >
-                ({product.reviews || productReviews.length || 18} Verified Reviews)
+                ({product.reviews} {product.reviews === 1 ? 'review' : 'reviews'})
               </button>
             </div>
             )}
@@ -846,13 +897,13 @@ const ProductDetail = () => {
             </div>
 
             {/* Wishlist & Compare & Share Links */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-600">
-              <div className="flex items-center gap-4">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between pt-3 border-t border-gray-100 text-xs text-gray-600">
+              <div className="contents sm:flex sm:items-center sm:gap-4">
                 {pageCfg.actions.wishlist && (
                 <button
                   type="button"
                   onClick={() => toggleWishlist(product)}
-                  className="inline-flex items-center gap-1.5 hover:text-[#8B2E3A] font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap hover:text-[#8B2E3A] font-medium transition-colors"
                 >
                   <Heart
                     size={15}
@@ -865,7 +916,7 @@ const ProductDetail = () => {
                 <button
                   type="button"
                   onClick={copyLink}
-                  className="inline-flex items-center gap-1.5 hover:text-[#8B2E3A] font-medium transition-colors"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap hover:text-[#8B2E3A] font-medium transition-colors"
                 >
                   {copied ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
                   <span>{copied ? 'Link Copied' : 'Share'}</span>
@@ -873,24 +924,24 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="contents sm:flex sm:items-center sm:gap-4">
                 {pageCfg.actions.whatsapp && (
                 <a
                   href={`https://wa.me/${String(pageCfg.actions.whatsappNumber || WHATSAPP_PHONE).replace(/\D/g, '')}?text=${encodeURIComponent(fillTemplate(pageCfg.actions.whatsappMessage, { product: product.name }))}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap text-emerald-600 hover:text-emerald-700 font-semibold"
                 >
-                  <MessageCircle size={15} />
+                  <MessageCircle size={15} className="shrink-0" />
                   Ask on WhatsApp
                 </a>
                 )}
                 {pageCfg.actions.call && (
                 <a
                   href={`tel:+${String(pageCfg.actions.callNumber || WHATSAPP_PHONE).replace(/\D/g, '')}`}
-                  className="inline-flex items-center gap-1 text-[#8B2E3A] hover:text-[#6F241D] font-semibold"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap text-[#8B2E3A] hover:text-[#6F241D] font-semibold"
                 >
-                  <Phone size={15} />
+                  <Phone size={15} className="shrink-0" />
                   Call Us
                 </a>
                 )}
@@ -1060,7 +1111,13 @@ const ProductDetail = () => {
                     </tr>
                     <tr className="border-b border-gray-100">
                       <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Artisan House</td>
-                      <td className="py-3 px-4 text-gray-800">{vendor?.name || product.vendor || 'Master Potters Guild'}</td>
+                      <td className="py-3 px-4 text-gray-800">
+                        {sellerId && vendor.name ? (
+                          <Link to={`/store/${sellerId}`} className="font-semibold text-[#8B2E3A] hover:underline">{vendor.name}</Link>
+                        ) : (
+                          vendor.name || 'Jaipurio'
+                        )}
+                      </td>
                     </tr>
                     <tr className="border-b border-gray-100">
                       <td className="py-3 px-4 font-semibold text-gray-700 bg-gray-50">Weight</td>
@@ -1109,34 +1166,49 @@ const ProductDetail = () => {
           {activeTab === 'reviews' && (
             <div className="w-full space-y-6">
               <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-200">
-                <div className="text-center sm:text-left">
-                  <div className="text-4xl font-bold text-gray-900">{product.rating || '4.9'}</div>
-                  <div className="flex items-center justify-center sm:justify-start text-amber-500 my-1">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={16} fill="currentColor" />
-                    ))}
+                {product.reviews > 0 ? (
+                  <div className="text-center sm:text-left">
+                    <div className="text-4xl font-bold text-gray-900">{product.rating}</div>
+                    <div className="flex items-center justify-center sm:justify-start text-amber-500 my-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={16} fill={i < Math.round(product.rating) ? 'currentColor' : 'none'} />
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Based on {product.reviews} customer {product.reviews === 1 ? 'review' : 'reviews'}
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500">Based on {product.reviews || productReviews.length || 18} verified buyer ratings</p>
+                ) : (
+                  <p className="text-sm text-gray-500 py-2">No reviews yet for this product.</p>
+                )}
+                <div className="sm:ml-auto text-center sm:text-right">
+                  <button
+                    type="button"
+                    onClick={startReview}
+                    className="px-5 py-2.5 rounded-lg bg-[#6F241D] hover:bg-[#5A1C17] text-white text-xs sm:text-sm font-bold transition-colors"
+                  >
+                    Write a review
+                  </button>
+                  {reviewNote === 'login' ? (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Please{' '}
+                      <Link to="/login" className="font-semibold text-[#8B2E3A] underline">log in</Link>{' '}
+                      to write a review.
+                    </p>
+                  ) : (
+                    reviewNote && <p className="text-xs text-gray-500 mt-2 max-w-[260px]">{reviewNote}</p>
+                  )}
                 </div>
               </div>
+              {reviewOpen && (
+                <ReviewModal
+                  product={{ _id: product._id, name: product.name, image: images[0] }}
+                  onClose={() => setReviewOpen(false)}
+                />
+              )}
 
               <div className="space-y-3">
-                {(productReviews.length ? productReviews : [
-                  {
-                    id: '1',
-                    name: 'Priya Sharma',
-                    date: '2 weeks ago',
-                    comment: 'Stunning piece! The carving detail on the marble is immaculate. Packaging was extremely secure with heavy foam.',
-                    rating: 5,
-                  },
-                  {
-                    id: '2',
-                    name: 'Rajesh Meena',
-                    date: '1 month ago',
-                    comment: 'Authentic quality, exactly as shown in photos. Brings a sacred aura to our home courtyard.',
-                    rating: 5,
-                  },
-                ]).map((rev) => (
+                {productReviews.map((rev) => (
                   <div key={rev.id || rev.name} className="p-4 bg-white border border-gray-200 rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1148,7 +1220,7 @@ const ProductDetail = () => {
                       <span className="text-xs text-gray-400">{rev.date}</span>
                     </div>
                     <div className="flex text-amber-500">
-                      {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                      {Array.from({ length: rev.rating }).map((_, i) => (
                         <Star key={i} size={13} fill="currentColor" />
                       ))}
                     </div>

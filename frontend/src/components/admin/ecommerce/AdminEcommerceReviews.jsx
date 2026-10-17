@@ -10,6 +10,7 @@ export const AdminEcommerceReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [filter, setFilter] = useState('all'); // all | pending
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +47,9 @@ export const AdminEcommerceReviews = () => {
       setLoadError(err.parsedMessage || err.message || 'Failed to delete review.');
     }
   };
+
+  const pending = reviews.filter((r) => r.status !== 'Approved');
+  const shown = filter === 'pending' ? pending : reviews;
 
   const columns = [
     { header: 'ID', accessor: 'id', width: '70px' },
@@ -91,6 +95,19 @@ export const AdminEcommerceReviews = () => {
       sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-2">
+          {row.status === 'Approved' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleApprove(row);
+              }}
+              className="text-amber-600 hover:underline text-[11px] font-medium"
+              title="Hide this review from the product page"
+            >
+              Hide
+            </button>
+          )}
           {row.status !== 'Approved' && (
             <button
               type="button"
@@ -125,6 +142,25 @@ export const AdminEcommerceReviews = () => {
           {loadError}
         </div>
       )}
+      {pending.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-md bg-amber-50 text-amber-800 text-xs font-medium border border-amber-200">
+          <span>
+            <strong>{pending.length}</strong> {pending.length === 1 ? 'review is' : 'reviews are'} waiting for your approval. Customers do not see them (and they do not count towards ratings) until you approve.
+          </span>
+          <span className="ml-auto inline-flex rounded-md overflow-hidden border border-amber-300 bg-white">
+            {[['all', `All (${reviews.length})`], ['pending', `Pending (${pending.length})`]].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`px-3 py-1 text-[11px] font-semibold ${filter === key ? 'bg-amber-500 text-white' : 'text-amber-800 hover:bg-amber-100'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+        </div>
+      )}
       {!loading && reviews.length === 0 ? (
         <div className="bg-white rounded-md border border-slate-200 shadow-2xs px-6 py-14 text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mb-4">
@@ -145,7 +181,7 @@ export const AdminEcommerceReviews = () => {
       ) : (
         <AdminDataTable
           columns={columns}
-          data={reviews}
+          data={shown}
           createLabel="Create Review"
           onCreate={() => navigate('/admin/ecommerce/reviews/create')}
           searchPlaceholder="Search reviews..."

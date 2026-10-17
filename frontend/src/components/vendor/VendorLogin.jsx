@@ -65,7 +65,7 @@ const VendorLogin = () => {
         transition={{ duration: 0.2 }}
         className="flex flex-col md:flex-row w-full h-full relative"
       >
-        <div className="relative w-full md:w-[50%] lg:w-[55%] h-[32vh] sm:h-[40vh] md:h-full shrink-0">
+        <div className="relative w-full md:w-[50%] lg:w-[55%] max-md:[@media(max-height:480px)]:hidden aspect-[16/10] max-h-[46vh] sm:aspect-auto sm:h-[42vh] sm:max-h-[380px] md:h-full md:max-h-none shrink-0">
           <img
             src={mediaUrl('/jaipurio_banner_clean.png')}
             alt="jaipurio artisan"
@@ -83,18 +83,18 @@ const VendorLogin = () => {
             </svg>
           </div>
 
-          <div className="block md:hidden absolute bottom-0 left-0 w-full h-[80px] z-20">
+          <div className="block md:hidden absolute bottom-0 left-0 w-full h-[34px] z-20">
             <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="w-full h-full text-white fill-current">
               <path d="M0,100 L1000,100 L1000,40 C800,120 400,0 0,60 Z" />
             </svg>
           </div>
 
-          <div className="absolute inset-0 p-4 pt-4 md:p-12 flex flex-col z-30 text-white">
+          <div className="absolute inset-0 p-4 pt-[max(1rem,env(safe-area-inset-top))] md:p-12 flex flex-col z-30 text-white">
             <div className="flex items-center gap-3 md:gap-4">
               <img
                 src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
-                className="h-12 md:h-16 w-auto object-contain rounded-md shrink-0"
+                className="h-[72px] sm:h-20 md:h-24 -my-3 -ml-2 w-auto object-contain rounded-md shrink-0"
                 style={{ mixBlendMode: 'screen' }}
               />
               <div className="flex flex-col">
@@ -104,7 +104,7 @@ const VendorLogin = () => {
               </div>
             </div>
 
-            <div className="mt-4 md:mt-28">
+            <div className="hidden md:block md:mt-28">
               <h2 className="text-2xl md:text-4xl font-playfair font-semibold text-white mb-2">
                 Welcome Back!
               </h2>
@@ -115,26 +115,26 @@ const VendorLogin = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center items-center px-6 py-4 md:px-12 md:py-8 relative z-20 bg-white overflow-y-auto">
-          <div className="w-full max-w-md md:-translate-x-6 lg:-translate-x-10 relative z-10 pt-2">
-            <div className="text-center mb-5">
+        <div className="flex-1 min-h-0 flex flex-col justify-start md:justify-center items-center px-5 pt-0 pb-3 md:px-12 md:py-8 relative z-20 bg-white overflow-y-auto">
+          <div className="w-full max-w-md md:-translate-x-6 lg:-translate-x-10 relative z-10 pt-0 md:pt-2">
+            <div className="text-center mb-3 md:mb-5">
               <img
                 src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
-                className="h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
+                className="hidden md:block h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
                 draggable={false}
               />
-              <h2 className="text-3xl md:text-4xl font-playfair font-semibold text-[#6F241D]">Sign In</h2>
-              <p className="text-[11px] text-[#806653] mt-2">Demo: {DEMO_EMAIL} / {DEMO_PASSWORD}</p>
+              <h2 className="text-2xl md:text-4xl font-playfair font-semibold text-[#6F241D]">Sign In</h2>
+              <p className="text-[11px] text-[#806653] mt-1 md:mt-2">Demo: {DEMO_EMAIL} / {DEMO_PASSWORD}</p>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold border border-red-100">
+              <div className="mb-3 p-2.5 md:p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold border border-red-100">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-3.5">
+            <form onSubmit={handleLogin} className="space-y-2.5 md:space-y-3.5">
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
@@ -142,7 +142,7 @@ const VendorLogin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email Address *"
-                  className="w-full bg-white border border-[#E8E2D9] focus:border-[#6F241D] pl-11 pr-4 py-3 rounded-xl text-sm font-medium outline-none text-[#3F261B]"
+                  className="w-full bg-white border border-[#E8E2D9] focus:border-[#6F241D] pl-11 pr-4 py-2.5 md:py-3 rounded-xl text-sm font-medium outline-none text-[#3F261B]"
                   required
                 />
               </div>
@@ -154,7 +154,7 @@ const VendorLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password *"
-                  className="w-full bg-white border border-[#E8E2D9] focus:border-[#6F241D] pl-11 pr-12 py-3 rounded-xl text-sm font-medium outline-none text-[#3F261B]"
+                  className="w-full bg-white border border-[#E8E2D9] focus:border-[#6F241D] pl-11 pr-12 py-2.5 md:py-3 rounded-xl text-sm font-medium outline-none text-[#3F261B]"
                   required
                 />
                 <button
@@ -177,7 +177,7 @@ const VendorLogin = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full text-white py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
+                className={`w-full text-white py-3 md:py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
                   isSubmitting ? 'bg-gray-400' : 'bg-[#6F241D] hover:bg-[#3D1E16]'
                 }`}
               >
@@ -185,7 +185,7 @@ const VendorLogin = () => {
               </button>
             </form>
 
-            <p className="text-center text-xs text-[#806653] mt-5">
+            <p className="text-center text-xs text-[#806653] mt-3 md:mt-5">
               Don&apos;t have a seller account?{' '}
               <Link to="/vendor/register" className="font-semibold text-[#6F241D]">
                 Register as Vendor

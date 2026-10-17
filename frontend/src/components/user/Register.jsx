@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { FiUser, FiMail, FiPhone, FiLock, FiCheckCircle } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import api from '../../utils/api';
 import AuthFrame from './AuthFrame';
 
 const Register = () => {
+  const location = useLocation();
+  // Login sends people here (with their number) when no account exists yet.
   const [form, setForm] = useState({
     name: '',
     gender: '',
     email: '',
-    mobile: '',
+    mobile: String(location.state?.mobile || '').replace(/D/g, '').slice(-10),
     otp: '',
     agreed: false,
   });
@@ -123,7 +125,9 @@ const Register = () => {
         }
 
         showNotification('Account created successfully! Welcome to jaipurio.', 'success');
-        setTimeout(() => navigate('/home'), 1200);
+        const from = location.state?.from;
+        const back = typeof from === 'string' ? from : from?.pathname;
+        setTimeout(() => navigate(back && back !== '/login' ? back : '/home'), 1200);
       }
     } catch (error) {
       showNotification(error.response?.data?.message || 'Registration failed', 'error');

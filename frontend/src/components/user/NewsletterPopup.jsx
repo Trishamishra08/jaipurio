@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Check, Copy, X } from 'lucide-react';
 import api from '../../utils/api';
+import { usePopupSettings } from '../../utils/usePopupSettings';
+import { isInApp } from '../../utils/appContext';
+import { isExternalUrl } from '../../utils/menuUrl';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
-// Same artwork the old jaipurio.in popup used (now served from MinIO).
-const POPUP_IMAGE = 'https://minio-jaipurio.sakha.cloud/jaipurio/5-8.jpg';
-const HIDE_FOREVER_KEY = 'jp_newsletter_hide';
-const SEEN_SESSION_KEY = 'jp_newsletter_seen';
-const OPEN_DELAY_MS = 2500;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const readStore = (store, key) => {
   try {
@@ -23,25 +24,63 @@ const writeStore = (store, key, value) => {
   }
 };
 
+// Changing the offer (heading, text or code) in the admin shows the popup again
+// to visitors who closed or dismissed the old one.
+const offerSignature = (v) => [v.heading, v.text, v.couponCode].join('|');
+
+const shouldShow = (variant, v, frequency) => {
+  const sig = offerSignature(v);
+  if (readStore(localStorage, `jp_popup_hide_${variant}`) === sig) return false;
+  if (frequency === 'once') return readStore(localStorage, `jp_popup_seen_${variant}`) !== sig;
+  if (frequency === 'day') {
+    const last = Number(readStore(localStorage, `jp_popup_last_${variant}`)) || 0;
+    return Date.now() - last > DAY_MS;
+  }
+  return !readStore(sessionStorage, `jp_popup_seen_${variant}`);
+};
+
+const markSeen = (variant, v) => {
+  writeStore(sessionStorage, `jp_popup_seen_${variant}`, '1');
+  writeStore(localStorage, `jp_popup_seen_${variant}`, offerSignature(v));
+  writeStore(localStorage, `jp_popup_last_${variant}`, String(Date.now()));
+};
+
+const ActionLink = ({ to, className, onClick, children }) =>
+  isExternalUrl(to) ? (
+    <a href={to} target="_blank" rel="noreferrer" className={className} onClick={onClick}>
+      {children}
+    </a>
+  ) : (
+    <Link to={to} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+
 /**
- * Newsletter popup shown once per visit, a moment after the storefront opens
- * (website and app). "Don't show this popup again" or a successful signup
- * hides it for good on this device.
+ * Storefront popup, managed in Appearance → Popup. The website shows the "web"
+ * version (newsletter / get-the-app offer); inside the mobile app the "app"
+ * version is shown instead, so app users never see "download our app".
  */
 const NewsletterPopup = () => {
+  const config = usePopupSettings();
+  const variant = useMemo(() => (isInApp() ? 'app' : 'web'), []);
+  const v = config?.[variant];
+
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [dontShow, setDontShow] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState({ state: 'idle', message: '' });
 
   useEffect(() => {
-    if (readStore(localStorage, HIDE_FOREVER_KEY) || readStore(sessionStorage, SEEN_SESSION_KEY)) return undefined;
+    if (!v || !v.enabled || !shouldShow(variant, v, config.frequency)) return undefined;
+    const delay = Math.max(0, Number(config.delaySeconds) || 0) * 1000;
     const id = setTimeout(() => {
       setOpen(true);
-      writeStore(sessionStorage, SEEN_SESSION_KEY, '1');
-    }, OPEN_DELAY_MS);
+      markSeen(variant, v);
+    }, delay);
     return () => clearTimeout(id);
-  }, []);
+  }, [v, variant, config]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -51,18 +90,30 @@ const NewsletterPopup = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, dontShow]);
 
+  const hideForGood = () => writeStore(localStorage, `jp_popup_hide_${variant}`, offerSignature(v));
+
   const close = () => {
-    if (dontShow) writeStore(localStorage, HIDE_FOREVER_KEY, '1');
+    if (dontShow) hideForGood();
     setOpen(false);
+  };
+
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(v.couponCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard blocked — the code is still visible to type */
+    }
   };
 
   const submit = async (e) => {
     e.preventDefault();
     setStatus({ state: 'loading', message: '' });
     try {
-      await api.post('/newsletters/subscribe', { email, source: 'popup' });
-      writeStore(localStorage, HIDE_FOREVER_KEY, '1');
-      setStatus({ state: 'success', message: 'Thank you! You are subscribed — watch your inbox for your 10% off.' });
+      await api.post('/newsletters/subscribe', { email, source: variant === 'app' ? 'app-popup' : 'popup' });
+      hideForGood();
+      setStatus({ state: 'success', message: v.successText || 'Thank you! You are subscribed.' });
       setTimeout(() => setOpen(false), 2200);
     } catch (err) {
       setStatus({
@@ -72,60 +123,106 @@ const NewsletterPopup = () => {
     }
   };
 
-  if (!open) return null;
+  if (!open || !v) return null;
+
+  const storeButtons = variant === 'web' && v.showStoreButtons && (v.playStoreUrl || v.appStoreUrl);
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 font-mulish" role="dialog" aria-modal="true" aria-labelledby="newsletter-title">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 font-mulish" role="dialog" aria-modal="true" aria-labelledby="site-popup-title">
       <div className="absolute inset-0 bg-black/55" onClick={close} />
 
-      <div className="relative w-full max-w-[880px] bg-white rounded-xl overflow-hidden shadow-2xl grid md:grid-cols-2">
+      <div className={`relative w-full max-h-[92vh] overflow-y-auto bg-white rounded-xl shadow-2xl grid ${v.image ? 'max-w-[880px] md:grid-cols-2' : 'max-w-[460px]'}`}>
         <button
           type="button"
           onClick={close}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-[#2B1E1A] hover:bg-black/5"
+          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-[#2B1E1A] bg-white/80 hover:bg-white"
           aria-label="Close"
         >
           <X size={22} />
         </button>
 
-        <div className="hidden md:block bg-white">
-          <img src={POPUP_IMAGE} alt="" className="w-full h-full object-cover" />
-        </div>
+        {v.image && (
+          <div className="relative overflow-hidden bg-[#F7F2EA] h-[30vh] max-h-56 min-h-[150px] sm:h-60 sm:max-h-none md:h-auto md:min-h-[420px]">
+            {/* phones: the whole image fits the card; a soft blurred copy fills the sides */}
+            <img src={mediaUrl(v.image)} alt="" aria-hidden="true" className="md:hidden absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-60" />
+            <img src={mediaUrl(v.image)} alt="" className="relative w-full h-full object-contain md:absolute md:inset-0 md:object-cover" />
+          </div>
+        )}
 
-        <div className="p-6 sm:p-10 flex flex-col justify-center">
-          <p className="text-[14px] text-[#3F3F3F] tracking-wide">Newsletter</p>
-          <h3 id="newsletter-title" className="text-[28px] sm:text-[34px] font-extrabold text-[#1F1F1F] leading-tight mt-1">
-            Subscribe Now
-          </h3>
-          <p className="text-[15px] text-[#555] leading-relaxed mt-2">
-            Subscribe to our newsletter and get 10% off your first purchase
-          </p>
+        <div className="p-5 sm:p-10 flex flex-col justify-center">
+          {v.eyebrow && <p className="text-[14px] text-[#3F3F3F] tracking-wide">{v.eyebrow}</p>}
+          {v.heading && (
+            <h3 id="site-popup-title" className="text-[26px] sm:text-[34px] font-extrabold text-[#1F1F1F] leading-tight mt-1">
+              {v.heading}
+            </h3>
+          )}
+          {v.text && <p className="text-[15px] text-[#555] leading-relaxed mt-2 whitespace-pre-line">{v.text}</p>}
 
-          {status.state === 'success' ? (
-            <p className="mt-6 rounded-lg bg-[#EAF5EA] text-[#2E7D32] text-[14px] font-semibold px-4 py-3">{status.message}</p>
-          ) : (
-            <form onSubmit={submit} className="mt-6">
-              <label htmlFor="newsletter-email" className="block text-[14px] font-semibold text-[#1F1F1F] mb-2">
-                Email Address <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="newsletter-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter Your Email"
-                className="w-full border border-[#DADADA] rounded-md px-4 py-3 text-[14px] focus:outline-none focus:border-[#F5B82E]"
-              />
-              {status.state === 'error' && <p className="mt-2 text-[12px] text-red-600">{status.message}</p>}
+          {v.couponCode && (
+            <div className="mt-5 flex items-center justify-between gap-3 rounded-lg border-2 border-dashed border-[#F5B82E] bg-[#FFF8E6] px-4 py-3">
+              <span className="font-mono text-[18px] font-bold tracking-[0.15em] text-[#1F1F1F]">{v.couponCode}</span>
               <button
-                type="submit"
-                disabled={status.state === 'loading'}
-                className="mt-4 w-full rounded-md bg-[#F5B82E] hover:bg-[#E9A915] disabled:opacity-60 text-[#1F1F1F] text-[15px] font-bold py-3 transition-colors"
+                type="button"
+                onClick={copyCode}
+                className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#8B2E3A] hover:text-[#6F241D]"
               >
-                {status.state === 'loading' ? 'Subscribing…' : 'Subscribe'}
+                {copied ? <Check size={15} /> : <Copy size={15} />}
+                {copied ? 'Copied' : 'Copy'}
               </button>
-            </form>
+            </div>
+          )}
+
+          {v.showEmailForm &&
+            (status.state === 'success' ? (
+              <p className="mt-6 rounded-lg bg-[#EAF5EA] text-[#2E7D32] text-[14px] font-semibold px-4 py-3">{status.message}</p>
+            ) : (
+              <form onSubmit={submit} className="mt-6">
+                <label htmlFor="site-popup-email" className="block text-[14px] font-semibold text-[#1F1F1F] mb-2">
+                  Email Address <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="site-popup-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter Your Email"
+                  className="w-full border border-[#DADADA] rounded-md px-4 py-3 text-[14px] focus:outline-none focus:border-[#F5B82E]"
+                />
+                {status.state === 'error' && <p className="mt-2 text-[12px] text-red-600">{status.message}</p>}
+                <button
+                  type="submit"
+                  disabled={status.state === 'loading'}
+                  className="mt-4 w-full rounded-md bg-[#F5B82E] hover:bg-[#E9A915] disabled:opacity-60 text-[#1F1F1F] text-[15px] font-bold py-3 transition-colors"
+                >
+                  {status.state === 'loading' ? 'Subscribing…' : v.submitText || 'Subscribe'}
+                </button>
+              </form>
+            ))}
+
+          {v.buttonText && v.buttonLink && (
+            <ActionLink
+              to={v.buttonLink}
+              onClick={() => setOpen(false)}
+              className="mt-5 block w-full text-center rounded-md bg-[#F5B82E] hover:bg-[#E9A915] text-[#1F1F1F] text-[15px] font-bold py-3 transition-colors"
+            >
+              {v.buttonText}
+            </ActionLink>
+          )}
+
+          {storeButtons && (
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              {v.playStoreUrl && (
+                <a href={v.playStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
+                  Get it on Google Play
+                </a>
+              )}
+              {v.appStoreUrl && (
+                <a href={v.appStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
+                  Download on the App Store
+                </a>
+              )}
+            </div>
           )}
 
           <label className="mt-5 flex items-center gap-2.5 text-[14px] text-[#3F3F3F] cursor-pointer select-none">

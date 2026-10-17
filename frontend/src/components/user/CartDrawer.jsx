@@ -47,8 +47,8 @@ const CartDrawer = () => {
         onClick={() => setIsCartDrawerOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-12 sm:pl-16">
-        <div className="w-screen max-w-sm bg-white border-l border-[#E8E2D9] shadow-2xl flex flex-col h-full">
+      <div className="fixed inset-y-0 right-0 flex w-[88vw] max-w-sm">
+        <div className="w-full bg-white border-l border-[#E8E2D9] shadow-2xl flex flex-col h-full">
           <div className="px-3.5 py-2.5 bg-[#6F241D] text-white flex items-center justify-between shrink-0">
             <h2 className="font-playfair font-semibold text-base text-white">
               Your Mitti Bag ({cart.length})
@@ -99,7 +99,7 @@ const CartDrawer = () => {
                       </h4>
                       <p className="font-dm text-[9px] text-[#9A8B7A] truncate">{item.vendor}</p>
                       <span className="font-dm text-[11px] font-bold text-[#6F241D]">
-                        ₹{item.price}
+                        ₹{Number(item.price || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
 
@@ -145,7 +145,7 @@ const CartDrawer = () => {
             <div className="px-3.5 py-3 bg-white border-t border-[#E8E2D9] space-y-2 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <div className="flex items-center justify-between">
                 <span className="font-dm text-[12px] font-medium text-[#806653]">Subtotal</span>
-                <span className="font-dm text-base font-bold text-[#6F241D]">₹{cartTotal}</span>
+                <span className="font-dm text-base font-bold text-[#6F241D]">₹{Number(cartTotal || 0).toLocaleString('en-IN')}</span>
               </div>
               <p className="font-dm text-[9px] text-[#9A8B7A]">
                 Shipping & taxes calculated at checkout.

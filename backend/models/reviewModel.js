@@ -22,6 +22,8 @@ const reviewSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // The order this review was written from (set for customer reviews — proves they bought it).
+  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   images: [{ type: String }],
   rating: {
     type: Number,
@@ -51,5 +53,13 @@ const reviewSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// One review per customer per product (guest / admin-entered reviews have no user and are not limited).
+reviewSchema.index(
+  { user: 1, product: 1 },
+  { unique: true, partialFilterExpression: { user: { $type: 'objectId' } } }
+);
+// Ratings are computed per product / seller from approved reviews.
+reviewSchema.index({ product: 1, isApproved: 1 });
 
 module.exports = mongoose.model('Review', reviewSchema);

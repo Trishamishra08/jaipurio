@@ -11,6 +11,8 @@ import TrustFooterStrip from './TrustFooterStrip';
 import WhyChooseJaipurio from './WhyChooseJaipurio';
 import Testimonials from './Testimonials';
 import { useHomeSections } from '../../utils/useHomeSections';
+import { CustomSection } from './HomeAfterCategory';
+import { isCustomKey } from '../../data/homeSectionsDefaults';
 
 // Everything below the hero is rendered in the order set in
 // Admin → Appearance → Home Page (each part hides itself when switched off).
@@ -37,7 +39,8 @@ const Home = () => {
       <div className="relative z-10 pt-1">
         {home.pageOrder.map((key) => {
           const Part = PARTS[key];
-          return Part ? <Part key={key} /> : null;
+          if (Part) return <Part key={key} />;
+          return isCustomKey(key) ? <CustomSection key={key} id={key.slice('custom:'.length)} /> : null;
         })}
       </div>
     </div>

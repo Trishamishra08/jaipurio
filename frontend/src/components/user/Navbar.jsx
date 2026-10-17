@@ -149,7 +149,13 @@ const Navbar = () => {
   const menuItems = useMobileMenu();
   const { categories: menuCategories } = useCategoryTree();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
+
+  // Any navigation (menu row, bottom tab, logo, back button) closes the side menu.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.key]);
   const isHome = pathname === '/home';
   const locationLabel = deliveryLocation?.label || 'Jaipur, Rajasthan';
 

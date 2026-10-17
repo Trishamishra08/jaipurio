@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { initialProducts, initialCategories, initialOffers, initialVendors, initialReviews } from '../data/products';
-import { PHOTOS } from '../data/photos';
 import api from '../utils/api';
 import { mapApiProductToStorefront } from '../utils/storefrontProduct';
-import { ensureCustomerAuth, isDemoToken } from '../utils/customerAuth';
+import { isLegacyDemoSession } from '../utils/customerAuth';
 import { captureReferralFromUrl } from '../utils/referralTracking';
 
 const ShopContext = createContext();
@@ -137,7 +136,15 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
       const saved = localStorage.getItem('jaipurio_wishlist');
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return ['mitti-prod-1', 'mitti-prod-4'];
+    return [];
+  });
+  // When each wishlist item was saved (id → ISO time), so the wishlist can show "Added today" vs "Saved earlier".
+  const [wishlistAddedAt, setWishlistAddedAt] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('jaipurio_wishlist_dates') || '{}') || {};
+    } catch {
+      return {};
+    }
   });
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
@@ -165,21 +172,18 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
     };
   });
 
-  /* Upgrade legacy demo-token sessions to real API JWT */
+  /* Sessions from the old shared demo login are signed out — customers now log in with their own number. */
   useEffect(() => {
-    if (!isAuthenticated && !isDemoToken()) return;
-    if (isDemoToken() || (isAuthenticated && !localStorage.getItem('customer_token'))) {
-      ensureCustomerAuth().then((token) => {
-        if (!token) return;
-        try {
-          const saved = localStorage.getItem('jaipurio_user');
-          if (saved) setUser(JSON.parse(saved));
-        } catch {
-          /* ignore */
-        }
-      });
+    if (!isLegacyDemoSession()) return;
+    try {
+      localStorage.removeItem('jaipurio_auth');
+      localStorage.removeItem('jaipurio_user');
+      localStorage.removeItem('customer_token');
+    } catch {
+      /* ignore */
     }
-  }, [isAuthenticated]);
+    setIsAuthenticated(false);
+  }, []);
 
   const [deliveryLocation, setDeliveryLocation] = useState(() => {
     try {
@@ -203,33 +207,6 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
       /* ignore */
     }
   }, [deliveryLocation]);
-
-  const [orders, setOrders] = useState([
-    {
-      id: 'ORD-JM-8921',
-      date: '2026-08-19',
-      status: 'In Transit',
-      total: 897,
-      items: [
-        {
-          name: 'Rajasthani Design Matka (5L)',
-          price: 399,
-          quantity: 1,
-          image: PHOTOS.matka,
-          vendor: 'Shyam Pottery'
-        },
-        {
-          name: 'Kulhad (Pack of 6)',
-          price: 249,
-          quantity: 2,
-          image: PHOTOS.kulhad,
-          vendor: 'Shyam Pottery'
-        }
-      ],
-      shippingAddress: 'Haveli 12, Johari Bazaar, Jaipur, Rajasthan 302003',
-      trackingNumber: 'SHIP-JM-89103'
-    }
-  ]);
 
   const [flyingItems, setFlyingItems] = useState([]);
 
@@ -260,6 +237,12 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
       localStorage.setItem('jaipurio_wishlist', JSON.stringify(wishlist));
     } catch (e) {}
   }, [wishlist]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('jaipurio_wishlist_dates', JSON.stringify(wishlistAddedAt));
+    } catch (e) {}
+  }, [wishlistAddedAt]);
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -298,32 +281,19 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
 
   const toggleWishlist = (product) => {
     const id = product._id || product;
-    setWishlist(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(item => item !== id);
-      } else {
-        return [...prev, id];
-      }
+    const removing = wishlist.includes(id);
+    setWishlist((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+    setWishlistAddedAt((prev) => {
+      const next = { ...prev };
+      if (removing) delete next[id];
+      else next[id] = new Date().toISOString();
+      return next;
     });
   };
 
   const isInWishlist = (productId) => wishlist.includes(productId);
 
   const clearCart = () => setCart([]);
-
-  const addOrder = (orderData) => {
-    const newOrder = {
-      id: `ORD-JM-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().split('T')[0],
-      status: 'Confirmed',
-      total: cartTotal,
-      items: [...cart],
-      ...orderData
-    };
-    setOrders(prev => [newOrder, ...prev]);
-    clearCart();
-    return newOrder;
-  };
 
   // Vendor Functions
   const addProduct = (newProd) => {
@@ -360,6 +330,7 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
         cartTotal,
         wishlist,
         wishlistCount,
+        wishlistAddedAt,
         isCartDrawerOpen,
         setIsCartDrawerOpen,
         isAuthenticated,
@@ -368,14 +339,12 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
         setUser,
         deliveryLocation,
         setDeliveryLocation,
-        orders,
         addToCart,
         removeFromCart,
         updateQuantity,
         toggleWishlist,
         isInWishlist,
         clearCart,
-        addOrder,
         addProduct,
         deleteProduct,
         updateProduct,

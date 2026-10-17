@@ -617,7 +617,59 @@ const updateVendorProfile = async (req, res, next) => {
   }
 };
 
+// @desc    A seller's public store page: name, story, location and real stats (no private details)
+// @route   GET /api/vendors/public/:id
+// @access  Public
+const getPublicVendor = async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const Product = require('../models/productModel');
+    const Review = require('../models/reviewModel');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Store not found' });
+    }
+    const vendor = await Vendor.findOne({ _id: req.params.id, isApproved: true, isBlocked: { $ne: true } })
+      .select('storeName storeDescription city state categories createdAt')
+      .lean();
+    if (!vendor) return res.status(404).json({ success: false, message: 'Store not found' });
+
+    const published = { vendor: vendor._id, $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+    const productIds = await Product.find(published).distinct('_id');
+    const [ratingRow] = productIds.length
+      ? await Review.aggregate([
+          { $match: { isApproved: true, product: { $in: productIds } } },
+          { $group: { _id: null, sum: { $sum: '$rating' }, count: { $sum: 1 } } },
+        ])
+      : [];
+    // Categories the seller actually has live products in (most products first).
+    const liveCategories = await Product.aggregate([
+      { $match: { ...published, category: { $nin: [null, ''] } } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 12 },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: vendor._id,
+        storeName: vendor.storeName,
+        description: vendor.storeDescription || '',
+        location: [vendor.city, vendor.state].filter(Boolean).join(', '),
+        joinedAt: vendor.createdAt,
+        productCount: productIds.length,
+        rating: ratingRow ? Math.round((ratingRow.sum / ratingRow.count) * 10) / 10 : 0,
+        reviewCount: ratingRow ? ratingRow.count : 0,
+        categories: liveCategories.map((c) => ({ name: c._id, count: c.count })),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
+  getPublicVendor,
   registerVendor,
   loginVendor,
   getPendingVendors,

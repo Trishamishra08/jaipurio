@@ -89,11 +89,13 @@ const ProductCard = ({ product }) => {
           {product.name}
         </h3>
 
-        <div className="flex items-center gap-0.5 mt-1">
-          <Star size={11} className="fill-[#F5B82E] text-[#F5B82E] shrink-0" />
-          <span className="font-semibold text-[11px] text-[#5B4638]">{product.rating}</span>
-          {product.reviews != null && <span className="text-[11px] text-[#5B4638]/70">({product.reviews})</span>}
-        </div>
+        {product.reviews > 0 && (
+          <div className="flex items-center gap-0.5 mt-1">
+            <Star size={11} className="fill-[#F5B82E] text-[#F5B82E] shrink-0" />
+            <span className="font-semibold text-[11px] text-[#5B4638]">{product.rating}</span>
+            <span className="text-[11px] text-[#5B4638]/70">({product.reviews})</span>
+          </div>
+        )}
 
         <div className="mt-auto pt-1.5 flex items-end justify-between gap-2">
           <div className="min-w-0 flex items-baseline flex-wrap gap-x-1.5">

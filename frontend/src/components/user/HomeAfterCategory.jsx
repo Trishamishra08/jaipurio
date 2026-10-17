@@ -10,7 +10,10 @@ import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 import ThumbImg from '../shared/ThumbImg';
 import PagedCarousel from '../shared/PagedCarousel';
 import { useHomeSections } from '../../utils/useHomeSections';
-import { useSectionProducts } from '../../utils/useSectionProducts';
+import { sectionViewAllLink, useSectionProducts } from '../../utils/useSectionProducts';
+import { resolveMenuUrl, isExternalUrl } from '../../utils/menuUrl';
+import { customKey, isCustomKey } from '../../data/homeSectionsDefaults';
+import { mediaUrl } from '../../data/cloudinaryMedia';
 
 
 /** Groups real products by category into offer tiles (up to 12 = 3 pages of 4) — replaces the
@@ -31,8 +34,9 @@ const makeOfferTile = (category, list) => {
   return {
     title: maxDiscount > 0 ? `Up to ${maxDiscount}% off ${category}` : `Shop ${category}`,
     badge: maxDiscount > 0 ? `${maxDiscount}% OFF` : 'New',
-    to: `/shop?category=${encodeURIComponent(category)}`,
-    link: `Shop ${category}`,
+    // Heading and link open exactly these offers: the category's discounted products, biggest discount first.
+    to: maxDiscount > 0 ? `/shop?category=${encodeURIComponent(category)}&offers=1` : `/shop?category=${encodeURIComponent(category)}`,
+    link: maxDiscount > 0 ? `Shop ${category} offers` : `Shop ${category}`,
     maxDiscount,
     items: withDiscount.slice(0, 2),
   };
@@ -216,7 +220,7 @@ const CatalogCard = ({ item, compact }) => {
           )}
           {off > 0 && <span className="text-[10px] font-semibold text-[#C45C6A]">−{off}%</span>}
         </div>
-        {item.rating && (
+        {item.rating > 0 && item.reviews > 0 && (
           <p className="font-dm text-[10px] text-[#C69A45] mt-0.5">
             ★ {item.rating} {item.reviews ? `(${item.reviews})` : ''}
           </p>
@@ -232,18 +236,6 @@ const Wrap = ({ children, alt, className = '', compact = false }) => (
   </section>
 );
 
-/** Styled edits — each is a set of real categories; the card pictures one
- * product from each and links to the first. Categories missing from the live
- * tree are skipped, and an edit with none left is hidden. */
-const STYLED_EDITS = [
-  { title: 'The Wedding Trousseau Edit', categories: ['Rajputi Poshak', 'Jodhpuri Bandhgala Suits', 'Necklaces', 'Bangles'] },
-  { title: 'The Pooja Room Edit', categories: ['Marble Idols', 'Brass Idols', 'Thali & Thali Sets', 'Torans'] },
-  { title: "The Groom's Edit", categories: ['Jodhpuri Achkans', 'Safa / Head Turban', 'Cufflinks', 'Pocket Squares'] },
-];
-
-const listNames = (names) =>
-  names.length > 1 ? `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}` : names[0] || '';
-
 const chunk = (list, size) => {
   const out = [];
   for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
@@ -258,16 +250,24 @@ const chunk = (list, size) => {
  *   deals  – compact cards, pages of 6
  *   scroll – compact cards in a swipeable row
  */
-const HomeProductSection = ({ cfg, variant = 'rail', alt = false, fallback = [], tagFor }) => {
+const HomeProductSection = ({ cfg, variant = 'rail', alt = false, fallback = [], tagFor, viewAll }) => {
   const { items: custom, loading } = useSectionProducts(cfg);
   if (!cfg.enabled || loading) return null;
   const limit = cfg.limit || 8;
-  const list = (custom ?? fallback)
+  const byRating = cfg.source === 'rating';
+  let source = custom ?? fallback;
+  if (byRating) {
+    // Only products with real reviews are ranked; if there are fewer than the limit, popular products fill the rest.
+    const rated = custom || [];
+    source = cfg.fillWithPopular === false ? rated : [...rated, ...fallback.filter((p) => !rated.some((r) => r._id === p._id))];
+  }
+  const list = source
     .filter(Boolean)
     .slice(0, limit)
     .map((p) => ({ ...p, to: `/product/${p._id}` }));
   if (!list.length) return null;
-  const withTag = (p) => ({ ...p, tag: tagFor ? tagFor(p) : undefined });
+  // For rating-ranked sections the seller's name replaces the brand line, so the ranking is visible.
+  const withTag = (p) => ({ ...p, brand: byRating && p.reviews > 0 && p.sellerName ? p.sellerName : p.brand, tag: tagFor ? tagFor(p) : undefined });
 
   let body;
   if (variant === 'scroll') {
@@ -301,7 +301,13 @@ const HomeProductSection = ({ cfg, variant = 'rail', alt = false, fallback = [],
 
   return (
     <Wrap alt={alt}>
-      <SectionHead eyebrow={cfg.eyebrow} title={cfg.title} copy={cfg.copy} link={cfg.linkText || 'View All →'} />
+      <SectionHead
+        eyebrow={cfg.eyebrow}
+        title={cfg.title}
+        copy={cfg.copy}
+        to={cfg.source === 'products' ? undefined : sectionViewAllLink(cfg, viewAll || '/shop')}
+        link={cfg.linkText || 'View All →'}
+      />
       {body}
     </Wrap>
   );
@@ -325,11 +331,172 @@ const buildCollections = (products, newest) => {
     return picked;
   };
   return [
-    { title: 'Festive Collection', items: take(withImage.filter((p) => FESTIVE_RE.test(`${p.name} ${p.category}`))) },
-    { title: 'Best Seller Collection', items: take(withImage) },
-    { title: 'New Arrivals Collection', items: take(newest.filter((p) => p.image)) },
-    { title: 'Under ₹5,000 Collection', items: take(withImage.filter((p) => p.price && p.price <= 5000)) },
+    { title: 'Festive Collection', to: `/shop?search=${encodeURIComponent(FESTIVE_RE.source)}`, items: take(withImage.filter((p) => FESTIVE_RE.test(`${p.name} ${p.category}`))) },
+    { title: 'Best Seller Collection', to: '/shop?sort=popular', items: take(withImage) },
+    { title: 'New Arrivals Collection', to: '/shop?sort=new', items: take(newest.filter((p) => p.image)) },
+    { title: 'Under ₹5,000 Collection', to: '/shop?maxPrice=5000', items: take(withImage.filter((p) => p.price && p.price <= 5000)) },
   ].filter((c) => c.items.length > 0);
+};
+
+/** A link that may be internal (/shop…, /category/…) or external (https://…). */
+const AnyLink = ({ to, categories, className, children }) => {
+  const href = resolveMenuUrl(to, categories);
+  return isExternalUrl(href) ? (
+    <a href={href} target="_blank" rel="noreferrer" className={className}>
+      {children}
+    </a>
+  ) : (
+    <Link to={href} className={className}>
+      {children}
+    </Link>
+  );
+};
+
+/**
+ * A section the admin added in Appearance → Home Page → Add section.
+ * Types: product row, banner, text block, category cards, image tiles.
+ */
+export const CustomSection = ({ id }) => {
+  const home = useHomeSections();
+  const { categories } = useCategoryTree();
+  const mixed = useMixedProducts();
+  const meta = home.custom.find((m) => m.id === id);
+  const cfg = home.sections[customKey(id)];
+  if (!meta || !cfg || !cfg.enabled) return null;
+
+  if (meta.type === 'products') {
+    return <HomeProductSection cfg={cfg} fallback={mixed.filter((p) => p.image).slice(0, cfg.limit || 8)} />;
+  }
+
+  if (meta.type === 'banner') {
+    return (
+      <Wrap>
+        <div className="relative overflow-hidden rounded-none sm:rounded-2xl min-h-[160px] sm:min-h-[220px] md:min-h-[280px] bg-gradient-to-br from-[#F8EEDD] to-[#EBD6B8]">
+          {cfg.image && (
+            <img
+              src={mediaUrl(cfg.image)}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover object-center select-none"
+              draggable={false}
+            />
+          )}
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.45) 42%, rgba(255,255,255,0.05) 100%)' }}
+            aria-hidden="true"
+          />
+          <div className="relative z-[1] flex flex-col justify-center px-4 sm:px-7 py-6 sm:py-8 max-w-[78%] sm:max-w-[52%] min-h-[160px] sm:min-h-[220px] md:min-h-[280px]">
+            {cfg.eyebrow && <p className="font-dm text-[9px] sm:text-[10px] font-semibold tracking-[0.18em] uppercase text-[#C45C6A]">{cfg.eyebrow}</p>}
+            {cfg.title && <h3 className="font-playfair font-semibold text-[18px] sm:text-[24px] md:text-[28px] text-[#6F241D] leading-tight mt-1">{cfg.title}</h3>}
+            {cfg.copy && <p className="font-dm text-[11px] sm:text-[13px] text-[#5B4638] mt-1 leading-snug">{cfg.copy}</p>}
+            {cfg.buttonText && (
+              <AnyLink
+                to={cfg.link || '/shop'}
+                categories={categories}
+                className="mt-3 inline-flex items-center self-start bg-[#C45C6A] hover:bg-[#8B2E3A] text-white font-dm text-[10px] sm:text-[11px] font-semibold tracking-wide px-4 py-2 rounded-full shadow-md transition-colors"
+              >
+                {cfg.buttonText} →
+              </AnyLink>
+            )}
+          </div>
+        </div>
+      </Wrap>
+    );
+  }
+
+  if (meta.type === 'text') {
+    const paragraphs = String(cfg.copy || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    if (!cfg.title && !paragraphs.length) return null;
+    return (
+      <Wrap>
+        <div className="max-w-3xl mx-auto text-center px-2">
+          {cfg.title && <h2 className="font-playfair font-semibold text-[20px] sm:text-[26px] text-[#3F261B] leading-tight">{cfg.title}</h2>}
+          {paragraphs.map((p, i) => (
+            <p key={i} className="font-mulish text-[13px] sm:text-[15px] text-[#5B4638] leading-relaxed mt-3 whitespace-pre-line">
+              {p}
+            </p>
+          ))}
+        </div>
+      </Wrap>
+    );
+  }
+
+  if (meta.type === 'categories') {
+    const chosen = cfg.source === 'categories' && cfg.categories.length
+      ? cfg.categories.map((name) => categories.find((c) => c.name === name)).filter(Boolean)
+      : categories.filter((c) => !c.parent);
+    const list = chosen.slice(0, cfg.limit || 8);
+    if (!list.length) return null;
+    return (
+      <Wrap alt>
+        <SectionHead eyebrow={cfg.eyebrow} title={cfg.title} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
+          {list.map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/shop?category=${encodeURIComponent(cat.name)}`}
+              className="group font-mulish bg-white rounded-2xl border border-[#EADFCF] overflow-hidden shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_10px_24px_rgba(111,36,29,0.12)] hover:-translate-y-1 transition-all duration-300"
+            >
+              <div className="relative aspect-[4/3] bg-gradient-to-b from-[#FBF6EE] to-[#F3E7D3] overflow-hidden">
+                {cat.image && (
+                  <ThumbImg
+                    src={cat.image}
+                    width={400}
+                    alt={cat.name}
+                    className="absolute inset-0 w-full h-full object-contain p-2.5 sm:p-3 transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                )}
+              </div>
+              <div className="px-2.5 py-2 sm:px-3 sm:py-2.5 border-t border-[#F1E6D6]">
+                <h4 className="font-bold text-[13px] sm:text-[15px] text-[#222222] group-hover:text-[#8B2E3A] transition-colors leading-tight line-clamp-1">{cat.name}</h4>
+                <span className="text-[10px] sm:text-[11px] font-bold text-[#C45C6A]">Shop now →</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Wrap>
+    );
+  }
+
+  if (meta.type === 'tiles') {
+    const tiles = (cfg.items || []).filter((t) => t && (t.image || t.label));
+    if (!tiles.length) return null;
+    return (
+      <Wrap>
+        {cfg.title && <SectionHead title={cfg.title} />}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          {tiles.map((t, i) => (
+            <AnyLink
+              key={`${t.label}-${i}`}
+              to={t.link || '/shop'}
+              categories={categories}
+              className="group relative overflow-hidden rounded-xl aspect-[4/3] bg-[#F7EFE0] block"
+            >
+              {t.image && (
+                <img
+                  src={mediaUrl(t.image)}
+                  alt={t.label || ''}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              )}
+              {t.label && (
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pt-8 pb-2.5 text-white font-mulish font-bold text-[13px] sm:text-[15px] leading-tight">
+                  {t.label}
+                </span>
+              )}
+            </AnyLink>
+          ))}
+        </div>
+      </Wrap>
+    );
+  }
+
+  return null;
 };
 
 const HomeAfterCategory = () => {
@@ -355,23 +522,27 @@ const HomeAfterCategory = () => {
   const offerTiles = useMemo(() => buildOfferTiles(products), [products]);
   // Admin-chosen categories for the offer tiles (Home Page → Today's Offers)
   const [customOfferTiles, setCustomOfferTiles] = useState(null);
-  const offersKey = JSON.stringify([sec.offers.source, sec.offers.categories]);
+  const chosenOfferCats = sec.offers.source === 'category' ? sec.offers.categories : [];
+  const offersKey = JSON.stringify([chosenOfferCats, sec.offers.limit]);
   useEffect(() => {
-    if (sec.offers.source !== 'category' || !sec.offers.categories.length) {
-      setCustomOfferTiles(null);
-      return undefined;
-    }
     let cancelled = false;
-    Promise.all(
-      sec.offers.categories.map((name) =>
-        api
-          .get('/products', { params: { category: name, limit: 24, sort: 'popular' } })
-          .then((res) => ({ name, list: (res.data?.data?.products || []).map(mapApiProductToStorefront).filter(Boolean) }))
-          .catch(() => ({ name, list: [] }))
-      )
-    ).then((rows) => {
-      if (!cancelled) setCustomOfferTiles(rows.filter((r) => r.list.length).map((r) => makeOfferTile(r.name, r.list)));
-    });
+    // Real discounts from the whole catalogue: per category, its biggest discount and top 2 discounted products.
+    api
+      .get('/products/offers', {
+        params: {
+          categories: chosenOfferCats.length ? JSON.stringify(chosenOfferCats) : undefined,
+          per: 2,
+          limit: sec.offers.limit || OFFER_TILE_LIMIT,
+        },
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const tiles = (res.data?.data?.tiles || [])
+          .map((t) => makeOfferTile(t.category, (t.products || []).map(mapApiProductToStorefront).filter(Boolean)))
+          .filter((t) => t.items.length);
+        setCustomOfferTiles(tiles.length ? tiles : null);
+      })
+      .catch(() => !cancelled && setCustomOfferTiles(null));
     return () => {
       cancelled = true;
     };
@@ -382,9 +553,9 @@ const HomeAfterCategory = () => {
     // Automatic: keep every page full. Admin-chosen: show exactly what they picked.
     const source = customOfferTiles ?? offerTiles;
     const full = source.length - (source.length % OFFER_PAGE_SIZE || 0);
-    const usable = customOfferTiles || full < OFFER_PAGE_SIZE ? source : source.slice(0, full);
+    const usable = chosenOfferCats.length || full < OFFER_PAGE_SIZE ? source : source.slice(0, full);
     return chunk(usable.slice(0, sec.offers.limit || OFFER_TILE_LIMIT), OFFER_PAGE_SIZE);
-  }, [customOfferTiles, offerTiles, sec.offers.limit]);
+  }, [customOfferTiles, offerTiles, sec.offers.limit, chosenOfferCats.length]);
   const { categories } = useCategoryTree();
   const exploreCards = useMemo(() => {
     if (sec.explore.source === 'categories' && sec.explore.categories.length) {
@@ -418,13 +589,32 @@ const HomeAfterCategory = () => {
     };
   }, []);
 
-  const categoryKey = categories.map((c) => c.id).join('|');
+  // Styled edits come from Admin → Appearance → Home Page: each is a set of categories
+  // (one top product pictured from each) or up to 4 hand-picked products.
+  const styledItems = sec.styled.items || [];
+  const categoryKey = categories.map((c) => c.id).join('|') + JSON.stringify(styledItems);
   useEffect(() => {
     if (!categories.length) return undefined;
     let cancelled = false;
     Promise.all(
-      STYLED_EDITS.map(async (edit) => {
-        const cats = edit.categories.map((n) => categories.find((c) => c.name === n)).filter(Boolean);
+      styledItems.map(async (edit) => {
+        if (edit.mode === 'products') {
+          const ids = (edit.productIds || []).slice(0, 4);
+          if (!ids.length) return { title: edit.title, count: 0, tiles: [], categories: [] };
+          const rows = await api
+            .get('/products', { params: { ids: ids.join(',') } })
+            .then((res) => (res.data?.data?.products || []).map(mapApiProductToStorefront).filter(Boolean))
+            .catch(() => []);
+          const byId = new Map(rows.map((p) => [String(p._id), p]));
+          const picked = ids.map((id) => byId.get(String(id))).filter((p) => p && p.image);
+          return {
+            title: edit.title,
+            count: picked.length,
+            tiles: picked.map((p) => ({ category: p.category, product: p })),
+            categories: [...new Set(picked.map((p) => p.category).filter(Boolean))],
+          };
+        }
+        const cats = (edit.categories || []).slice(0, 4).map((n) => categories.find((c) => c.name === n)).filter(Boolean);
         const picks = await Promise.all(
           cats.map((c) =>
             api
@@ -435,21 +625,23 @@ const HomeAfterCategory = () => {
         );
         return {
           title: edit.title,
-          to: cats[0] ? `/shop?category=${encodeURIComponent(cats[0].name)}` : '/shop',
-          copy: `${listNames(cats.map((c) => c.name))} — styled together.`,
           count: cats.reduce((n, c) => n + c.count, 0),
-          images: picks.filter((p) => p && p.image),
+          // every tile keeps the category it came from, so it opens the right product
+          tiles: cats
+            .map((c, i) => ({ category: c.name, product: picks[i] }))
+            .filter((t) => t.product && t.product.image),
+          categories: cats.map((c) => c.name),
         };
       })
     ).then((edits) => {
-      if (!cancelled) setStyledEdits(edits.filter((e) => e.images.length > 0));
+      if (!cancelled) setStyledEdits(edits.filter((e) => e.tiles.length > 0));
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryKey]);
-  const maxDiscount = useMemo(
+  const sampleMaxDiscount = useMemo(
     () =>
       products.reduce((max, p) => {
         const d = p.oldPrice && p.price ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : 0;
@@ -457,6 +649,8 @@ const HomeAfterCategory = () => {
       }, 0),
     [products]
   );
+  // Real biggest discount in the catalogue (from the offers feed), else the sample's.
+  const maxDiscount = Math.max(0, ...(customOfferTiles || []).map((t) => t.maxDiscount || 0)) || sampleMaxDiscount;
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -487,7 +681,7 @@ const HomeAfterCategory = () => {
           <SectionHead
             title={sec.offers.title}
             copy={sec.offers.copy}
-            to="/shop"
+            to="/shop?offers=1"
             link="View All →"
             compact
           />
@@ -641,7 +835,7 @@ const HomeAfterCategory = () => {
                   </div>
                 ))}
                 <Link
-                  to="/shop"
+                  to="/shop?offers=1"
                   className="ml-auto bg-white text-[#6F241D] font-body text-[10px] sm:text-[12px] font-semibold px-3 sm:px-5 py-2 sm:py-2.5 rounded-full shrink-0"
                 >
                   Shop the Sale
@@ -663,38 +857,57 @@ const HomeAfterCategory = () => {
             />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {styledEdits.map((e) => (
-                <Link
+                <div
                   key={e.title}
-                  to={e.to}
-                  className="group bg-white rounded-2xl overflow-hidden border border-[#EADFCF] shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_12px_28px_rgba(111,36,29,0.14)] hover:-translate-y-1 transition-all duration-300"
+                  className="group bg-white rounded-2xl overflow-hidden border border-[#EADFCF] shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_12px_28px_rgba(111,36,29,0.14)] transition-shadow duration-300"
                 >
+                  {/* Each picture opens ITS OWN product */}
                   <div className="relative grid grid-cols-2 gap-px bg-[#F1E6D6]">
-                    {e.images.slice(0, 4).map((p) => (
-                      <div key={p._id} className="aspect-square bg-white overflow-hidden">
+                    {e.tiles.slice(0, 4).map(({ category, product }) => (
+                      <Link
+                        key={product._id}
+                        to={`/product/${product._id}`}
+                        className="relative aspect-square bg-white overflow-hidden group/tile"
+                        aria-label={`${product.name} — ${category}`}
+                      >
                         <ThumbImg
-                          src={p.image}
-                          alt={p.name}
-                          className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.06]"
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-contain p-2 transition-transform duration-500 group-hover/tile:scale-[1.06]"
                           loading="lazy"
                           decoding="async"
                         />
-                      </div>
+                        <span className="absolute top-1.5 left-1.5 max-w-[88%] truncate bg-white/90 text-[#6F241D] font-mulish text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                          {category}
+                        </span>
+                      </Link>
                     ))}
-                    <span className="absolute bottom-2 left-2 bg-black/70 text-white font-mulish text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    <span className="pointer-events-none absolute bottom-2 left-2 bg-black/70 text-white font-mulish text-[10px] font-semibold px-2 py-0.5 rounded-full">
                       {e.count} products
                     </span>
                   </div>
                   <div className="p-3 sm:p-4">
-                    <h4 className="font-playfair font-semibold text-[15px] sm:text-[17px] text-[#3F261B] group-hover:text-[#8B2E3A] transition-colors">
-                      {e.title}
-                    </h4>
-                    <p className="font-mulish text-[11px] sm:text-[12px] text-[#8A6A68] mt-1 leading-snug line-clamp-2">{e.copy}</p>
-                    <span className="inline-flex items-center gap-1 mt-2 font-mulish text-[11px] font-bold text-[#C45C6A]">
-                      Shop the edit
-                      <span className="transition-transform duration-300 group-hover:translate-x-0.5">→</span>
-                    </span>
+                    {e.categories.length ? (
+                      <Link to={`/shop?category=${encodeURIComponent(e.categories[0])}`} className="block font-playfair font-semibold text-[15px] sm:text-[17px] text-[#3F261B] hover:text-[#8B2E3A]">
+                        {e.title}
+                      </Link>
+                    ) : (
+                      <h4 className="font-playfair font-semibold text-[15px] sm:text-[17px] text-[#3F261B]">{e.title}</h4>
+                    )}
+                    {/* Each category is its own link to that category's products */}
+                    <p className="font-mulish text-[11px] sm:text-[12px] text-[#8A6A68] mt-1.5 leading-relaxed">
+                      Shop:{' '}
+                      {e.categories.map((name, i) => (
+                        <React.Fragment key={name}>
+                          <Link to={`/shop?category=${encodeURIComponent(name)}`} className="font-bold text-[#C45C6A] hover:underline">
+                            {name}
+                          </Link>
+                          {i < e.categories.length - 1 && <span className="mx-1 text-[#D8C9B5]">·</span>}
+                        </React.Fragment>
+                      ))}
+                    </p>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           </Wrap>
@@ -712,9 +925,9 @@ const HomeAfterCategory = () => {
                   key={d.title}
                   className="group bg-white rounded-2xl border border-[#EADFCF] p-2.5 sm:p-3 shadow-[0_1px_6px_rgba(63,38,27,0.05)] hover:shadow-[0_12px_28px_rgba(111,36,29,0.14)] hover:-translate-y-1 transition-all duration-300"
                 >
-                  <h4 className="font-playfair font-semibold text-[13px] sm:text-[15px] text-[#3F261B] leading-snug mb-2">
+                  <Link to={d.to} className="block font-playfair font-semibold text-[13px] sm:text-[15px] text-[#3F261B] hover:text-[#8B2E3A] leading-snug mb-2">
                     {d.title}
-                  </h4>
+                  </Link>
                   <div className="grid grid-cols-2 gap-1.5 mb-2">
                     {d.items.map((p) => (
                       <Link
@@ -732,7 +945,7 @@ const HomeAfterCategory = () => {
                       </Link>
                     ))}
                   </div>
-                  <Link to="/shop" className="font-mulish text-[11px] font-bold text-[#C45C6A]">
+                  <Link to={d.to} className="font-mulish text-[11px] font-bold text-[#C45C6A]">
                     View collection →
                   </Link>
                 </div>
@@ -749,6 +962,7 @@ const HomeAfterCategory = () => {
         <HomeProductSection
           cfg={sec.deals}
           variant="deals"
+          viewAll="/shop?offers=1"
           fallback={pick(16, sec.deals.limit)}
           tagFor={(p) => (discountOf(p) > 0 ? `−${discountOf(p)}%` : undefined)}
         />
@@ -760,16 +974,18 @@ const HomeAfterCategory = () => {
           tagFor={(p) => (discountOf(p) > 0 ? `${discountOf(p)}% OFF` : undefined)}
         />
       ),
-      recent: () => <HomeProductSection cfg={sec.recent} variant="scroll" alt fallback={pick(36, sec.recent.limit)} />,
+      recent: () => <HomeProductSection cfg={sec.recent} variant="scroll" alt viewAll="/shop?sort=new" fallback={pick(36, sec.recent.limit)} />,
       recommended: () => <HomeProductSection cfg={sec.recommended} variant="scroll" fallback={pick(42, sec.recommended.limit)} />,
-      bestsellers: () => <HomeProductSection cfg={sec.bestsellers} alt fallback={pick(48, sec.bestsellers.limit)} tagFor={() => 'Best Seller'} />,
+      bestsellers: () => <HomeProductSection cfg={sec.bestsellers} alt viewAll="/shop?sort=rating" fallback={pick(48, sec.bestsellers.limit)} tagFor={(p) => (p.reviews > 0 ? 'Top Rated' : undefined)} />,
       more: () => <HomeProductSection cfg={sec.more} fallback={pick(56, sec.more.limit)} />,
   };
 
   return (
     <>
       {home.order.map((key) => (
-        <React.Fragment key={key}>{renderers[key] ? renderers[key]() : null}</React.Fragment>
+        <React.Fragment key={key}>
+          {renderers[key] ? renderers[key]() : isCustomKey(key) ? <CustomSection id={key.slice('custom:'.length)} /> : null}
+        </React.Fragment>
       ))}
     </>
   );

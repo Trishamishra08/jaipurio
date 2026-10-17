@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+  getPublicVendor,
   registerVendor,
   loginVendor,
   getPendingVendors,
@@ -20,6 +21,7 @@ const router = express.Router();
 
 router.post('/register', registerVendor);
 router.post('/login', loginVendor);
+router.get('/public/:id', getPublicVendor);
 
 // Vendor specific routes
 router.get('/profile', protect, authorize('vendor'), getVendorProfile);

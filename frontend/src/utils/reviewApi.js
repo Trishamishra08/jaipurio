@@ -32,3 +32,18 @@ export const deleteReview = async (id) => {
   const res = await api.delete(`/admins/reviews/${id}`);
   return unwrap(res);
 };
+
+// ── Customer side ────────────────────────────────────────────────
+
+/** The logged-in customer's reviews (with Pending / Approved status) and received products still waiting for one. */
+export const fetchMyReviews = async () => {
+  const res = await api.get('/reviews/mine');
+  const data = unwrap(res);
+  return { reviews: data?.reviews || [], toReview: data?.toReview || [] };
+};
+
+/** { canReview, reason } where reason is 'not-purchased' | 'already-reviewed' | null. */
+export const checkReviewEligibility = async (productId) => {
+  const res = await api.get(`/reviews/eligibility/${productId}`);
+  return unwrap(res);
+};

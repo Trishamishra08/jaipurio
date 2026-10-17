@@ -7,7 +7,7 @@ import api from '../../utils/api';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 
 const Wishlist = () => {
-  const { wishlist } = useShop();
+  const { wishlist, wishlistAddedAt } = useShop();
   const [wishProducts, setWishProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +26,8 @@ const Wishlist = () => {
         const rows = (res.data?.data?.products || []).map(mapApiProductToStorefront).filter(Boolean);
         // Keep wishlist order rather than whatever order the server returns.
         const byId = new Map(rows.map((p) => [String(p._id), p]));
-        setWishProducts(wishlist.map((id) => byId.get(String(id))).filter(Boolean));
+        // Newest saved first.
+        setWishProducts([...wishlist].reverse().map((id) => byId.get(String(id))).filter(Boolean));
       })
       .catch(() => {
         if (!cancelled) setWishProducts([]);
@@ -39,8 +40,31 @@ const Wishlist = () => {
     };
   }, [wishlist]);
 
+  // Items saved today, then everything saved before — each stays until the customer removes it.
+  const todayKey = new Date().toDateString();
+  const savedToday = (p) => {
+    const at = wishlistAddedAt?.[p._id];
+    return !!at && new Date(at).toDateString() === todayKey;
+  };
+  const today = wishProducts.filter(savedToday);
+  const earlier = wishProducts.filter((p) => !savedToday(p));
+
+  const Group = ({ title, items }) =>
+    items.length > 0 && (
+      <section className="mb-8">
+        <h2 className="text-sm font-bold text-[#6F241D] mb-3">
+          {title} <span className="font-medium text-[#A8977F]">({items.length})</span>
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {items.map((prod) => (
+            <ProductCard key={prod._id} product={prod} />
+          ))}
+        </div>
+      </section>
+    );
+
   return (
-    <div className="min-h-screen bg-white py-6 pb-14">
+    <div className="min-h-screen bg-white py-6 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <div className="border-b border-[#E8D4B5] pb-4 mb-6">
@@ -49,10 +73,10 @@ const Wishlist = () => {
             <h1
               className="text-2xl sm:text-3xl font-black text-[#6F241D]"
             >
-              My Saved Handicrafts ({wishProducts.length})
+              My Wishlist ({wishProducts.length})
             </h1>
           </div>
-          <p className="text-xs text-[#70452F] mt-1">Pottery and Rajasthani folk artifacts you loved.</p>
+          <p className="text-xs text-[#70452F] mt-1">Everything you saved stays here until you remove it.</p>
         </div>
 
         {loading ? (
@@ -70,11 +94,11 @@ const Wishlist = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {wishProducts.map(prod => (
-              <ProductCard key={prod._id} product={prod} />
-            ))}
-          </div>
+          <>
+            <Group title="Added today" items={today} />
+            <Group title={today.length ? 'Saved earlier' : 'Saved items'} items={earlier} />
+            <p className="text-[11px] text-[#A8977F] text-center">Tap the heart on a product to remove it from your wishlist.</p>
+          </>
         )}
 
       </div>

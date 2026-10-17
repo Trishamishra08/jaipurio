@@ -25,12 +25,13 @@ const interleave = (lists) => {
  * Products for an admin-configured home section.
  *   source "products"  → exactly the picked products, in the admin's order
  *   source "category"  → popular products from the chosen categories, mixed
+ *   source "rating"    → top-rated products from real customer reviews (best sellers first, or by product)
  *   source "auto"      → nothing fetched; `items` is null so the page uses its own default pool
  * Returns { items, loading }.
  */
 export const useSectionProducts = (cfg) => {
   const [state, setState] = useState({ items: null, loading: cfg.source !== 'auto' });
-  const key = JSON.stringify([cfg.source, cfg.categories, cfg.productIds, cfg.limit]);
+  const key = JSON.stringify([cfg.source, cfg.categories, cfg.productIds, cfg.limit, cfg.rankBy, cfg.minReviews]);
 
   useEffect(() => {
     if (cfg.source === 'auto') {
@@ -41,6 +42,12 @@ export const useSectionProducts = (cfg) => {
     setState((prev) => ({ ...prev, loading: true }));
 
     const run = async () => {
+      if (cfg.source === 'rating') {
+        const res = await api.get('/products/top-rated', {
+          params: { limit: cfg.limit || 8, minReviews: cfg.minReviews || 1, rankBy: cfg.rankBy === 'product' ? 'product' : 'seller' },
+        });
+        return toList(res);
+      }
       if (cfg.source === 'products') {
         const ids = (cfg.productIds || []).filter(Boolean).slice(0, 200);
         if (!ids.length) return [];
@@ -72,4 +79,16 @@ export const useSectionProducts = (cfg) => {
   }, [key]);
 
   return state;
+};
+
+/**
+ * Where a product section's "View All" should go, so the listing matches the heading:
+ * its first chosen category, the top-rated list, or the whole shop.
+ */
+export const sectionViewAllLink = (cfg, fallback = '/shop') => {
+  if ((cfg.source === 'category' || cfg.source === 'categories') && cfg.categories?.length) {
+    return `/shop?category=${encodeURIComponent(cfg.categories[0])}`;
+  }
+  if (cfg.source === 'rating') return '/shop?sort=rating';
+  return fallback;
 };

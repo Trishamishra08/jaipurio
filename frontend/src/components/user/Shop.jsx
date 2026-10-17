@@ -11,6 +11,8 @@ const SORT_MAP = {
   rating: 'rating',
   'price-low': 'price-low',
   'price-high': 'price-high',
+  discount: 'discount',
+  new: 'new',
 };
 
 const PAGE_SIZE = 100;
@@ -19,7 +21,10 @@ const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || '';
   const searchParam = searchParams.get('search') || '';
-  const sortParam = searchParams.get('sort') || 'popular';
+  // ?offers=1 (from "Today's Offers"): only discounted products, biggest discount first.
+  const offersOnly = searchParams.get('offers') === '1';
+  const maxPrice = Number(searchParams.get('maxPrice')) || 0;
+  const sortParam = searchParams.get('sort') || (offersOnly ? 'discount' : 'popular');
   const pageParam = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
 
   const selectedCategory = categoryParam === 'More' ? '' : categoryParam;
@@ -75,6 +80,8 @@ const Shop = () => {
           search: searchParam || undefined,
           category: selectedCategory || undefined,
           sort: SORT_MAP[sortParam] || 'popular',
+          onSale: offersOnly ? 'true' : undefined,
+          maxPrice: maxPrice || undefined,
         },
       })
       .then((res) => {
@@ -95,7 +102,7 @@ const Shop = () => {
     return () => {
       cancelled = true;
     };
-  }, [pageParam, searchParam, selectedCategory, sortParam]);
+  }, [pageParam, searchParam, selectedCategory, sortParam, offersOnly, maxPrice]);
 
   const updateParams = (patch, resetPage = true) => {
     const next = new URLSearchParams(searchParams);
@@ -108,6 +115,7 @@ const Shop = () => {
   };
 
   const selectCategory = (value) => updateParams({ category: value === 'More' ? '' : value });
+  const toggleOffers = () => updateParams({ offers: offersOnly ? '' : '1', sort: '' });
   const setSortBy = (value) => updateParams({ sort: value });
   const goToPage = (page) => {
     updateParams({ page: page > 1 ? String(page) : '' }, false);
@@ -154,12 +162,16 @@ const Shop = () => {
             )}
           </div>
           <h1 className="font-playfair font-semibold text-[18px] sm:text-2xl text-[#3F261B] leading-tight">
-            {selectedCategory
-              ? `${selectedNode?.name || selectedCategory} Collection`
-              : 'Authentic Rajasthani Pottery & Crafts'}
+            {maxPrice && !offersOnly
+              ? `Under ₹${maxPrice.toLocaleString('en-IN')}${selectedCategory ? ` in ${selectedNode?.name || selectedCategory}` : ''}`
+              : offersOnly
+              ? `Offers on ${selectedNode?.name || selectedCategory || 'everything'}`
+              : selectedCategory
+                ? `${selectedNode?.name || selectedCategory} Collection`
+                : 'Authentic Rajasthani Pottery & Crafts'}
           </h1>
           <p className="font-dm text-[11px] text-[#806653] mt-0.5">
-            {loading ? 'Loading…' : `Showing ${products.length} of ${total} handmade products`}
+            {loading ? 'Loading…' : `Showing ${products.length} of ${total} ${offersOnly ? 'discounted' : 'handmade'} products`}
           </p>
         </div>
 
@@ -215,9 +227,19 @@ const Shop = () => {
         )}
 
         <div className="flex items-center justify-between gap-2 mb-3 py-2 border-y border-[#EFEAE3]">
-          <div className="flex items-center gap-1.5 font-dm text-[11px] text-[#5B4638]">
-            <SlidersHorizontal size={13} />
-            <span className="font-medium">{total} items</span>
+          <div className="flex items-center gap-2 font-dm text-[11px] text-[#5B4638] min-w-0">
+            <SlidersHorizontal size={13} className="shrink-0" />
+            <span className="font-medium whitespace-nowrap">{total} items</span>
+            <button
+              type="button"
+              onClick={toggleOffers}
+              aria-pressed={offersOnly}
+              className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${
+                offersOnly ? 'bg-[#C45C6A] border-[#C45C6A] text-white' : 'bg-white border-[#E8E2D9] text-[#5B4638] hover:border-[#C45C6A]/50'
+              }`}
+            >
+              {offersOnly ? 'On offer ✕' : 'On offer'}
+            </button>
           </div>
           <select
             value={sortParam}
@@ -225,6 +247,8 @@ const Shop = () => {
             className="font-dm bg-white border border-[#E8E2D9] rounded-lg px-2.5 py-1 text-[11px] font-medium text-[#3F261B] focus:outline-none focus:border-[#6F241D]"
           >
             <option value="popular">Most Popular</option>
+            <option value="discount">Biggest Discount</option>
+            <option value="new">Newest</option>
             <option value="rating">Highest Rated</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useShop } from '../../context/ShopContext';
 import { useMixedProducts } from '../../utils/useMixedProducts';
 import { useHomeSections } from '../../utils/useHomeSections';
-import { useSectionProducts } from '../../utils/useSectionProducts';
+import { sectionViewAllLink, useSectionProducts } from '../../utils/useSectionProducts';
 import PagedCarousel from '../shared/PagedCarousel';
 import ProductCard from './ProductCard';
 import SectionHeading from './SectionHeading';
@@ -18,7 +18,13 @@ const BestSellers = () => {
   const { items: custom, loading } = useSectionProducts(cfg);
 
   if (!cfg.enabled || loading) return null;
-  const list = (custom ?? (mixed.length ? mixed : popular)).filter(Boolean).slice(0, cfg.limit || 8);
+  const fallback = mixed.length ? mixed : popular;
+  let source = custom ?? fallback;
+  if (cfg.source === 'rating') {
+    const rated = custom || [];
+    source = cfg.fillWithPopular === false ? rated : [...rated, ...fallback.filter((p) => !rated.some((r) => r._id === p._id))];
+  }
+  const list = source.filter(Boolean).slice(0, cfg.limit || 8);
   if (!list.length) return null;
 
   const pages = [];
@@ -27,7 +33,7 @@ const BestSellers = () => {
   return (
     <section className="w-full bg-white pt-1.5 pb-3">
       <div className="site-container">
-        <SectionHeading title={cfg.title} to="/shop" />
+        <SectionHeading title={cfg.title} to={sectionViewAllLink(cfg)} />
 
         <PagedCarousel
           pages={pages.map((page, pi) => (

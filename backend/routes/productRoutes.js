@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   getProducts,
   getProductCategories,
+  getTopRatedProducts,
+  getOfferTiles,
   getProductById,
   getRelatedProducts,
   createProduct,
@@ -19,6 +21,8 @@ const { cachePublic } = require('../utils/cache');
 
 router.get('/', cachePublic('products', 45), getProducts);
 router.get('/categories', cachePublic('product-categories', 300), getProductCategories);
+router.get('/top-rated', getTopRatedProducts);
+router.get('/offers', cachePublic('product-offers', 120), getOfferTiles);
 router.get('/vendor', protect, authorize('vendor'), getVendorProducts);
 router.get('/admin', protect, authorize('admin'), getAdminProducts);
 router.post('/', protect, createProduct);

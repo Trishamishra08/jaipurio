@@ -21,15 +21,16 @@ const sendSmsOtp = async (mobile, otp) => {
     process.env.SMS_INDIA_HUB_URL ||
     'http://cloud.smsindiahub.in/vendorsms/pushsms.aspx';
 
-  if (!API_KEY || !SENDER_ID) {
-    console.warn('SMS India Hub API Key or Sender ID missing. Skipping SMS sending.');
-    return { success: false, message: 'SMS Provider not configured' };
-  }
-
-  // Mock only when explicitly enabled or for the test number
+  // Mock only when explicitly enabled or for the test number. Checked before the
+  // credentials so test mode works on a server without an SMS account.
   if (process.env.USE_DEFAULT_OTP === 'true' || mobile === '9999988888') {
     console.log(`[MOCK SMS] To: ${mobile} | OTP: ${otp} | Msg: ${buildOtpMessage(otp)}`);
     return { success: true, message: 'OTP sent (Mock)' };
+  }
+
+  if (!API_KEY || !SENDER_ID) {
+    console.warn('SMS India Hub API Key or Sender ID missing. Skipping SMS sending.');
+    return { success: false, message: 'SMS Provider not configured' };
   }
 
   let cleanMobile = String(mobile).replace(/\D/g, '');

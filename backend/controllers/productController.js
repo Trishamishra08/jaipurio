@@ -1,6 +1,7 @@
 const Product = require('../models/productModel');
 const Inventory = require('../models/inventoryModel');
 const Category = require('../models/categoryModel');
+const Review = require('../models/reviewModel');
 const mongoose = require('mongoose');
 const { invalidateCatalog } = require('../utils/cache');
 const { optimizeMediaUrls } = require('../utils/imageOptimize');
@@ -120,12 +121,141 @@ const syncInventory = async (product, stock, extra = {}) => {
 // without a unique tiebreaker Mongo's tie order isn't guaranteed stable
 // between separate skip/limit calls, which silently duplicates or skips rows
 // across pages.
+// Discount as a fraction (0.4 = 40% off), worked out the same way the storefront
+// shows it: selling price = sale price when it is below the list price; compared
+// against the marked old price, else the list price.
+const DISCOUNT_EXPR = {
+  $let: {
+    vars: { list: { $ifNull: ['$price', 0] }, sale: { $ifNull: ['$salePrice', 0] }, old: { $ifNull: ['$oldPrice', 0] } },
+    in: {
+      $let: {
+        vars: { sell: { $cond: [{ $and: [{ $gt: ['$$sale', 0] }, { $lt: ['$$sale', '$$list'] }] }, '$$sale', '$$list'] } },
+        in: {
+          $let: {
+            vars: { cmp: { $cond: [{ $gt: ['$$old', '$$sell'] }, '$$old', '$$list'] } },
+            in: { $cond: [{ $and: [{ $gt: ['$$cmp', '$$sell'] }, { $gt: ['$$cmp', 0] }] }, { $divide: [{ $subtract: ['$$cmp', '$$sell'] }, '$$cmp'] }, 0] },
+          },
+        },
+      },
+    },
+  },
+};
+
+// The price the customer pays (sale price when below the list price).
+const SELLING_PRICE_EXPR = {
+  $cond: [
+    { $and: [{ $gt: [{ $ifNull: ['$salePrice', 0] }, 0] }, { $lt: ['$salePrice', { $ifNull: ['$price', 0] }] }] },
+    '$salePrice',
+    { $ifNull: ['$price', 0] },
+  ],
+};
+
 const PRODUCT_SORTS = {
   popular: { reviews: -1, rating: -1, _id: 1 },
   new: { createdAt: -1, _id: 1 },
   'price-low': { price: 1, _id: 1 },
   'price-high': { price: -1, _id: 1 },
   rating: { rating: -1, reviews: -1, _id: 1 },
+};
+
+// ── Ratings (computed from approved customer reviews — never a placeholder) ──────────
+const RATING_PRIOR = 3; // a product / seller starts with this many "average" reviews, so one lucky 5★ cannot outrank 50 genuine 4.8★
+
+const roundRating = (sum, count) => (count ? Math.round((sum / count) * 10) / 10 : 0);
+
+/** Sets the real `rating` (average) and `reviews` (count) on serialized products; 0 / 0 when nobody has reviewed yet. */
+const attachRatings = async (products) => {
+  const list = (Array.isArray(products) ? products : [products]).filter(Boolean);
+  const ids = list.map((p) => p._id).filter(Boolean).map((id) => new mongoose.Types.ObjectId(String(id)));
+  if (!ids.length) return products;
+  const rows = await Review.aggregate([
+    { $match: { isApproved: true, product: { $in: ids } } },
+    { $group: { _id: '$product', sum: { $sum: '$rating' }, count: { $sum: 1 } } },
+  ]);
+  const byId = new Map(rows.map((r) => [String(r._id), r]));
+  list.forEach((p) => {
+    const r = byId.get(String(p._id));
+    p.rating = r ? roundRating(r.sum, r.count) : 0;
+    p.reviews = r ? r.count : 0;
+  });
+  return products;
+};
+
+// @desc    Top-rated products, ranked from real customer reviews
+// @route   GET /api/products/top-rated?limit=8&minReviews=1&rankBy=seller|product
+//   rankBy=seller  → products of the best-rated SELLERS first (a seller's rating = all reviews on their products),
+//                    then the product's own rating
+//   rankBy=product → purely each product's own rating
+// Ratings are smoothed (see RATING_PRIOR) so a single review cannot dominate. Only products with at least
+// `minReviews` approved reviews are returned; products without reviews are never ranked.
+const getTopRatedProducts = async (req, res) => {
+  try {
+    const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+    const limit = clamp(parseInt(req.query.limit, 10) || 8, 1, 40);
+    const minReviews = clamp(parseInt(req.query.minReviews, 10) || 1, 1, 50);
+    const rankBy = req.query.rankBy === 'product' ? 'product' : 'seller';
+
+    const rows = await Review.aggregate([
+      { $match: { isApproved: true } },
+      { $group: { _id: '$product', sum: { $sum: '$rating' }, count: { $sum: 1 } } },
+    ]);
+    if (!rows.length) return res.status(200).json({ success: true, data: { products: [], ratedCount: 0 } });
+
+    const live = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+    const filter = { _id: { $in: rows.map((r) => r._id) }, $and: [live] };
+    if (req.query.category) filter.$and.push(await buildCategoryClause(req.query.category));
+    const products = await Product.find(filter)
+      .populate('vendor', 'storeName fullName')
+      .populate('admin', 'name')
+      .lean();
+
+    const stat = new Map(rows.map((r) => [String(r._id), r]));
+    const sellerKey = (p) => (p.vendor ? String(p.vendor._id || p.vendor) : 'platform');
+
+    // average over every review of the live products, and per seller
+    let allSum = 0;
+    let allCount = 0;
+    const sellers = new Map();
+    products.forEach((p) => {
+      const s = stat.get(String(p._id));
+      allSum += s.sum;
+      allCount += s.count;
+      const k = sellerKey(p);
+      const cur = sellers.get(k) || { sum: 0, count: 0 };
+      sellers.set(k, { sum: cur.sum + s.sum, count: cur.count + s.count });
+    });
+    const globalAvg = allCount ? allSum / allCount : 4;
+    const smooth = (sum, count) => (sum + RATING_PRIOR * globalAvg) / (count + RATING_PRIOR);
+
+    const ranked = products
+      .filter((p) => stat.get(String(p._id)).count >= minReviews)
+      .map((p) => {
+        const s = stat.get(String(p._id));
+        const sel = sellers.get(sellerKey(p));
+        return { p, s, sel, productScore: smooth(s.sum, s.count), sellerScore: smooth(sel.sum, sel.count) };
+      })
+      .sort((a, b) =>
+        rankBy === 'seller'
+          ? b.sellerScore - a.sellerScore || b.productScore - a.productScore || b.s.count - a.s.count
+          : b.productScore - a.productScore || b.s.count - a.s.count
+      )
+      .slice(0, limit);
+
+    const out = await resolveProductImages(await injectStock(ranked.map((r) => r.p)));
+    out.forEach((item, i) => {
+      const { s, sel, p } = ranked[i];
+      item.rating = roundRating(s.sum, s.count);
+      item.reviews = s.count;
+      item.sellerName = (p.vendor && (p.vendor.storeName || p.vendor.fullName)) || 'Jaipurio';
+      item.sellerRating = roundRating(sel.sum, sel.count);
+      item.sellerReviews = sel.count;
+    });
+
+    res.set('Cache-Control', 'public, max-age=60');
+    res.status(200).json({ success: true, data: { products: out, ratedCount: ranked.length } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -171,6 +301,86 @@ const buildCategoryTrail = async (product) => {
   return trail;
 };
 
+// Mongoose casts ids in find() but not in aggregate().
+const castForAggregate = (filter) => {
+  const out = { ...filter };
+  if (typeof out.vendor === 'string' && mongoose.Types.ObjectId.isValid(out.vendor)) out.vendor = new mongoose.Types.ObjectId(out.vendor);
+  return out;
+};
+
+/** A page of products matching the filter, ordered by a computed value (biggest discount first by default). */
+const findByDiscount = async (filter, skip, limit, expr = DISCOUNT_EXPR, dir = -1) => {
+  const rows = await Product.aggregate([
+    { $match: castForAggregate(filter) },
+    { $project: { _d: expr } },
+    { $sort: { _d: dir, _id: 1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ]).allowDiskUse(true);
+  const docs = await Product.find({ _id: { $in: rows.map((r) => r._id) } })
+    .populate('vendor', 'storeName fullName')
+    .populate('admin', 'name')
+    .lean();
+  const byId = new Map(docs.map((d) => [String(d._id), d]));
+  return rows.map((r) => byId.get(String(r._id))).filter(Boolean);
+};
+
+const PUBLISHED = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+const ON_SALE = { $expr: { $gt: [DISCOUNT_EXPR, 0.005] } };
+
+// @desc    "Today's Offers" cards: per category, its biggest real discount and its top discounted products
+// @route   GET /api/products/offers?categories=["A","B"]&per=2&limit=12
+// @access  Public
+const getOfferTiles = async (req, res) => {
+  try {
+    const per = Math.min(Math.max(parseInt(req.query.per, 10) || 2, 1), 6);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 24);
+    let names = [];
+    try {
+      names = JSON.parse(req.query.categories || '[]');
+    } catch {
+      names = [];
+    }
+    names = (Array.isArray(names) ? names : []).map((n) => String(n).trim()).filter(Boolean).slice(0, 24);
+
+    // Which categories get a card: the admin's choice, else the ones with the deepest discounts.
+    let groups;
+    if (names.length) {
+      groups = await Promise.all(names.map(async (name) => ({ name, clause: await buildCategoryClause(name) })));
+    } else {
+      const top = await Product.aggregate([
+        { $match: { ...PUBLISHED, ...ON_SALE, category: { $nin: [null, ''] } } },
+        { $project: { category: 1, _d: DISCOUNT_EXPR } },
+        { $group: { _id: '$category', max: { $max: '$_d' }, count: { $sum: 1 } } },
+        { $match: { count: { $gte: per } } },
+        { $sort: { max: -1, count: -1 } },
+        { $limit: limit },
+      ]).allowDiskUse(true);
+      groups = top.map((g) => ({ name: g._id, clause: { category: g._id } }));
+    }
+
+    const tiles = await Promise.all(
+      groups.map(async ({ name, clause }) => {
+        const filter = { ...PUBLISHED, $and: [clause, ON_SALE] };
+        const [products, count] = await Promise.all([findByDiscount(filter, 0, per), Product.countDocuments(filter)]);
+        return { category: name, count, products };
+      })
+    );
+    const withProducts = tiles.filter((t) => t.products.length);
+    const ready = await resolveProductImages(await injectStock(withProducts.flatMap((t) => t.products)));
+    await attachRatings(ready);
+    const byId = new Map(ready.map((p) => [String(p._id), p]));
+    res.status(200).json({
+      success: true,
+      data: {
+        tiles: withProducts.map((t) => ({ ...t, products: t.products.map((p) => byId.get(String(p._id))).filter(Boolean) })),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getProducts = async (req, res) => {
   try {
     const filter = {
@@ -204,9 +414,20 @@ const getProducts = async (req, res) => {
       const re = new RegExp(String(req.query.search).trim(), 'i');
       andClauses.push({ $or: [{ name: re }, { title: re }, { tags: re }] });
     }
+    // Offers: only discounted products, optionally at least N% off.
+    const minDiscount = Math.min(95, Math.max(0, Number(req.query.minDiscount) || 0));
+    if (req.query.onSale === 'true' || minDiscount > 0) {
+      andClauses.push({ $expr: { $gte: [DISCOUNT_EXPR, Math.max(minDiscount / 100, 0.005)] } });
+    }
+    const maxPrice = Number(req.query.maxPrice) || 0;
+    if (maxPrice > 0) andClauses.push({ $expr: { $lte: [SELLING_PRICE_EXPR, maxPrice] } });
     if (andClauses.length) filter.$and = andClauses;
 
     const sort = PRODUCT_SORTS[req.query.sort] || PRODUCT_SORTS.popular;
+    // Discount and price orders are computed (price = what the customer pays, i.e. the sale price).
+    const computedSort = ids.length
+      ? null
+      : { discount: [DISCOUNT_EXPR, -1], 'price-low': [SELLING_PRICE_EXPR, 1], 'price-high': [SELLING_PRICE_EXPR, -1] }[req.query.sort];
 
     // `ids` is an exact batch lookup (cart/wishlist resolution) — always return
     // every match rather than paginating, but keep a safety cap either way.
@@ -217,7 +438,7 @@ const getProducts = async (req, res) => {
     const skip = ids.length ? 0 : (page - 1) * limit;
 
     const [products, total] = await Promise.all([
-      Product.find(filter)
+      computedSort ? findByDiscount(filter, skip, limit, ...computedSort) : Product.find(filter)
         .populate('vendor', 'storeName fullName')
         .populate('admin', 'name')
         .sort(sort)
@@ -227,6 +448,7 @@ const getProducts = async (req, res) => {
       Product.countDocuments(filter),
     ]);
     const productsWithStock = await resolveProductImages(await injectStock(products));
+    await attachRatings(productsWithStock);
     res.status(200).json({
       success: true,
       data: {
@@ -366,6 +588,7 @@ const getProductById = async (req, res) => {
 
     const data = await resolveProductImages(await injectStock(product));
     data.categoryTrail = await buildCategoryTrail(product);
+    await attachRatings(data);
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -436,6 +659,7 @@ const getRelatedProducts = async (req, res) => {
     const products = await resolveProductImages(
       await injectStock(scored.slice(0, limit).map((s) => s.p))
     );
+    await attachRatings(products);
     res.status(200).json({ success: true, data: products });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -741,6 +965,8 @@ const duplicateProduct = async (req, res) => {
 module.exports = {
   getProducts,
   getProductCategories,
+  getTopRatedProducts,
+  getOfferTiles,
   getProductById,
   getRelatedProducts,
   createProduct,

@@ -32,6 +32,8 @@ const settingsSchema = new mongoose.Schema({
   affiliate: { type: mongoose.Schema.Types.Mixed, default: {} },
   // Storefront footer content (Appearance → Footer). Shape: frontend/src/data/footerDefaults.js
   footer: { type: mongoose.Schema.Types.Mixed, default: {} },
+  // Storefront popup (Appearance → Popup): separate web and in-app versions. Shape: frontend/src/data/popupDefaults.js
+  popup: { type: mongoose.Schema.Types.Mixed, default: {} },
   menus: [{ name: String, location: String, items: String }],
   widgets: [{ name: String, sidebar: String }],
   customCss: { type: String, default: '' },

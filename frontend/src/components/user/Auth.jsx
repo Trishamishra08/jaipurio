@@ -6,11 +6,8 @@ import { useShop } from '../../context/ShopContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { registerFCMToken } from '../../services/pushNotificationService';
 import api from '../../utils/api';
-import { loginDemoCustomer } from '../../utils/customerAuth';
 import AuthFrame from './AuthFrame';
 
-const DEMO_MOBILE = '8839044030';
-const DEMO_OTP = '123456';
 
 const resolveRedirect = (from, fallback = '/home') => {
   if (!from) return fallback;
@@ -87,15 +84,6 @@ const Auth = () => {
       return;
     }
 
-    /* Demo user — local OTP */
-    if (form.mobile === DEMO_MOBILE) {
-      setOtpSent(true);
-      setTimer(60);
-      setForm((prev) => ({ ...prev, otp: DEMO_OTP }));
-      showNotification(`OTP sent! (Demo OTP: ${DEMO_OTP})`);
-      return;
-    }
-
     try {
       const res = await api.post('/users/send-otp', { mobile: form.mobile });
       if (res.data.success) {
@@ -103,16 +91,19 @@ const Auth = () => {
         setTimer(60);
         if (res.data.devOtp) {
           setForm((prev) => ({ ...prev, otp: res.data.devOtp }));
-          showNotification(`OTP sent! (Dev: ${res.data.devOtp})`);
+          showNotification(`OTP sent! (Test mode: ${res.data.devOtp})`);
         } else {
           showNotification('OTP sent successfully to your mobile number.');
         }
       }
-    } catch {
-      /* Fallback demo for any number in local UI testing */
-      setOtpSent(true);
-      setTimer(60);
-      showNotification('OTP sent (use 123456 for demo login)', 'success');
+    } catch (err) {
+      if (err.response?.status === 404) {
+        // No account for this number yet — send them to sign up with it.
+        showNotification('No account found for this number. Please create one.', 'error');
+        setTimeout(() => navigate('/register', { state: { mobile: form.mobile, from: location.state?.from } }), 1200);
+        return;
+      }
+      showNotification(err.response?.data?.message || 'Could not send OTP. Please try again.', 'error');
     }
   };
 
@@ -153,37 +144,6 @@ const Auth = () => {
           showNotification('Login Successful! Welcome to jaipurio.');
           setTimeout(() => navigate(resolveRedirect(location.state?.from, '/admin')), 800);
         }
-      } else if (form.mobile === DEMO_MOBILE && form.otp === DEMO_OTP) {
-        const userData = {
-          name: 'Demo User',
-          mobile: DEMO_MOBILE,
-          phone: `+91 ${DEMO_MOBILE}`,
-          email: 'customer@gmail.com',
-          address: 'Johari Bazaar, Jaipur, Rajasthan',
-        };
-        const session = await loginDemoCustomer(userData);
-        if (session) {
-          persistLogin(session.user);
-        } else {
-          persistLogin(userData);
-        }
-        showNotification('Login Successful! Welcome to jaipurio.');
-        setTimeout(() => navigate(resolveRedirect(location.state?.from, '/home')), 800);
-      } else if (form.otp === DEMO_OTP) {
-        const userData = {
-          name: 'Jaipurio Guest',
-          mobile: form.mobile,
-          phone: `+91 ${form.mobile}`,
-          email: '',
-        };
-        const session = await loginDemoCustomer(userData);
-        if (session) {
-          persistLogin(session.user);
-        } else {
-          persistLogin(userData);
-        }
-        showNotification('Login Successful! Welcome to jaipurio.');
-        setTimeout(() => navigate(resolveRedirect(location.state?.from, '/home')), 800);
       } else {
         const res = await api.post('/users/verify-otp', {
           mobile: form.mobile,
@@ -263,11 +223,10 @@ const Auth = () => {
                     <button
                       type="button"
                       className="font-body text-[11px] font-semibold text-[#C45C6A] hover:underline"
-                      onClick={() => {
-                        showNotification(`Demo: ${DEMO_MOBILE} / OTP ${DEMO_OTP}`);
-                      }}
+                      onClick={handleSendOtp}
+                      disabled={timer > 0}
                     >
-                      Forgot OTP?
+                      {timer > 0 ? `Resend in ${timer}s` : 'Resend OTP'}
                     </button>
                   </div>
                   <div className="relative">
@@ -295,10 +254,6 @@ const Auth = () => {
                   {errors.otp && (
                     <p className="text-red-500 text-[11px] mt-1 font-body">{errors.otp}</p>
                   )}
-                  <p className="mt-1.5 text-[10px] text-[#8A6A68] font-body">
-                    Demo login: <span className="font-semibold">{DEMO_MOBILE}</span> · OTP{' '}
-                    <span className="font-semibold">{DEMO_OTP}</span>
-                  </p>
                 </div>
 
                 <button

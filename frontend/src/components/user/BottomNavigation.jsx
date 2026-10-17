@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home as HomeIcon, Grid, ShoppingBag, Package, User } from 'lucide-react';
+import { Home as HomeIcon, Heart, ShoppingBag, Package, User } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 
 const BottomNavigation = () => {
   const location = useLocation();
-  const { cartCount } = useShop();
+  const { cartCount, wishlistCount } = useShop();
 
   const navItems = [
     { label: 'Home', path: '/home', icon: HomeIcon },
-    { label: 'Categories', path: '/shop', icon: Grid },
+    { label: 'Wishlist', path: '/wishlist', icon: Heart },
     { label: 'Shop', path: '/shop', icon: ShoppingBag },
     { label: 'Orders', path: '/orders', icon: Package },
     { label: 'Profile', path: '/profile', icon: User },
@@ -27,14 +27,8 @@ const BottomNavigation = () => {
     >
       <div className="h-[58px] flex items-center justify-around px-1">
         {navItems.map((item) => {
-          const isActive =
-            item.path === '/home'
-              ? location.pathname === '/home'
-              : item.label === 'Profile'
-                ? location.pathname.startsWith('/profile')
-                : item.label === 'Orders'
-                  ? location.pathname.startsWith('/orders')
-                  : location.pathname.startsWith('/shop');
+          const isActive = item.path === '/home' ? location.pathname === '/home' : location.pathname.startsWith(item.path);
+          const badge = item.label === 'Shop' ? cartCount : item.label === 'Wishlist' ? wishlistCount : 0;
           const Icon = item.icon;
           return (
             <Link
@@ -50,9 +44,9 @@ const BottomNavigation = () => {
                 }`}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                {item.label === 'Shop' && cartCount > 0 && (
+                {badge > 0 && (
                   <span className="absolute -top-0.5 -right-1 bg-[#6F241D] text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white">
-                    {cartCount > 9 ? '9+' : cartCount}
+                    {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </div>

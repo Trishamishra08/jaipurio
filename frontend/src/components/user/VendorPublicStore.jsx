@@ -1,121 +1,266 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useShop } from '../../context/ShopContext';
+import { MapPin, Star, Package, CalendarDays, Store, Share2, Check } from 'lucide-react';
+import api from '../../utils/api';
+import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 import ProductCard from './ProductCard';
-import { MapPin, Star, Award, Heart, Check, Store } from 'lucide-react';
 
+const PAGE_SIZE = 24;
+
+const SORTS = [
+  ['popular', 'Most Popular'],
+  ['new', 'Newest'],
+  ['discount', 'Biggest Discount'],
+  ['price-low', 'Price: Low to High'],
+  ['price-high', 'Price: High to Low'],
+];
+
+const initials = (name) =>
+  String(name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+
+/** A seller's public store: real profile, stats from customer reviews, and their live products. */
 const VendorPublicStore = () => {
   const { id } = useParams();
-  const { vendors, products } = useShop();
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [store, setStore] = useState(null);
+  const [state, setState] = useState('loading'); // loading | ready | missing | error
+  const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState('popular');
+  const [category, setCategory] = useState('');
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [copied, setCopied] = useState(false);
 
-  const vendor = vendors.find(v => v._id === id) || vendors[0];
-  const vendorProducts = products.filter(p => p.vendorId === vendor._id || p.vendor.includes(vendor.name));
+  useEffect(() => {
+    let cancelled = false;
+    setState('loading');
+    api
+      .get(`/vendors/public/${id}`)
+      .then((res) => {
+        if (cancelled) return;
+        setStore(res.data?.data || null);
+        setState('ready');
+      })
+      .catch((err) => !cancelled && setState(err.response?.status === 404 ? 'missing' : 'error'));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
-  return (
-    <div className="min-h-screen bg-[#F8F1E3] pb-12">
-      
-      {/* Artisan Store Cover Banner */}
-      <div className="relative w-full h-48 sm:h-64 bg-[#3D1E16] overflow-hidden">
-        <img 
-          src={vendor.coverImage} 
-          alt={vendor.name} 
-          className="w-full h-full object-cover opacity-60"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#2B1E1A] via-transparent to-transparent" />
-      </div>
+  useEffect(() => {
+    setPage(1);
+  }, [id, sort, category]);
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10">
-        
-        {/* Profile Card Header */}
-        <div className="bg-[#FCF8F2] border border-[#E8D4B5] rounded-3xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row items-center md:items-end justify-between gap-6">
-          
-          <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-            <img 
-              src={vendor.avatar} 
-              alt={vendor.name}
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-white shadow-lg -mt-12 sm:-mt-16 bg-[#FAF4EA]"
-            />
-            <div>
-              <div className="inline-flex items-center gap-1.5 bg-[#A94E2C]/15 text-[#A94E2C] px-3 py-0.5 rounded-full text-xs font-bold mb-1">
-                <Award size={12} />
-                <span>{vendor.badge}</span>
-              </div>
-              <h1 
-                className="text-2xl sm:text-3xl font-black text-[#6F241D]"
-              >
-                {vendor.name}
-              </h1>
-              <p className="text-xs sm:text-sm text-[#70452F] flex items-center justify-center sm:justify-start gap-1 mt-0.5">
-                <MapPin size={14} className="text-[#A94E2C]" />
-                <span>{vendor.location}</span>
-                <span>•</span>
-                <span>Experience: {vendor.experience}</span>
-              </p>
-            </div>
-          </div>
+  useEffect(() => {
+    if (state !== 'ready') return undefined;
+    let cancelled = false;
+    setLoadingProducts(true);
+    api
+      .get('/products', { params: { vendor: id, sort, category: category || undefined, page, limit: PAGE_SIZE } })
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data?.data || {};
+        const rows = (data.products || []).map(mapApiProductToStorefront).filter(Boolean);
+        setProducts((prev) => (page === 1 ? rows : [...prev, ...rows]));
+        setTotal(data.total || 0);
+      })
+      .catch(() => !cancelled && page === 1 && setProducts([]))
+      .finally(() => !cancelled && setLoadingProducts(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [state, id, sort, category, page]);
 
-          <div className="flex items-center gap-4">
-            <div className="text-center bg-[#FAF4EA] border border-[#E8D4B5] px-4 py-2 rounded-2xl">
-              <div className="flex items-center justify-center gap-1 text-sm font-bold text-[#6F241D]">
-                <Star size={14} className="fill-[#C69A45] text-[#C69A45]" />
-                <span>{vendor.rating}</span>
-              </div>
-              <span className="text-[10px] text-gray-500">{vendor.reviewsCount} Reviews</span>
-            </div>
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: store?.storeName, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      }
+    } catch {
+      /* cancelled */
+    }
+  };
 
-            <button
-              onClick={() => setIsFollowing(!isFollowing)}
-              className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 ${
-                isFollowing 
-                  ? 'bg-[#354B35] text-white' 
-                  : 'bg-[#6F241D] hover:bg-[#873A24] text-white'
-              }`}
-            >
-              {isFollowing ? <Check size={14} /> : <Heart size={14} />}
-              <span>{isFollowing ? 'Following Artisan' : 'Follow Store'}</span>
-            </button>
-          </div>
-
-        </div>
-
-        {/* About Artisan Story */}
-        <div className="mt-8 bg-[#FCF8F2] border border-[#E8D4B5] rounded-3xl p-6 sm:p-8">
-          <h2 className="text-lg font-bold font-serif text-[#6F241D] mb-2">Artisan's Heritage & Craft Specialty</h2>
-          <p className="text-xs sm:text-sm text-[#70452F] leading-relaxed mb-4">
-            {vendor.about}
-          </p>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="bg-[#FAF4EA] border border-[#E8D4B5] px-3 py-1 rounded-full text-[#6F241D] font-medium">
-              🌿 Natural Clay
-            </span>
-            <span className="bg-[#FAF4EA] border border-[#E8D4B5] px-3 py-1 rounded-full text-[#6F241D] font-medium">
-              🏺 Manual Wheel Thrown
-            </span>
-            <span className="bg-[#FAF4EA] border border-[#E8D4B5] px-3 py-1 rounded-full text-[#6F241D] font-medium">
-              🔥 Wood Kiln Baked
-            </span>
-          </div>
-        </div>
-
-        {/* Artisan's Products Grid */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between mb-6">
-            <h2 
-              className="text-xl sm:text-2xl font-black text-[#6F241D]"
-            >
-              Artisan's Creations ({vendorProducts.length || products.length})
-            </h2>
-            <span className="text-xs text-[#70452F]">100% Genuine Handcrafted Pieces</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {(vendorProducts.length > 0 ? vendorProducts : products).map(prod => (
-              <ProductCard key={prod._id} product={prod} />
+  if (state === 'loading') {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="h-28 sm:h-44 bg-[#F3E9DA] animate-pulse" />
+        <div className="site-container -mt-10 space-y-4">
+          <div className="h-32 rounded-2xl bg-[#FCF8F2] border border-[#E8D4B5] animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="aspect-[3/4] rounded-xl bg-[#FCF8F2] animate-pulse" />
             ))}
           </div>
         </div>
+      </div>
+    );
+  }
 
+  if (state !== 'ready' || !store) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <Store size={40} className="mx-auto text-[#A94E2C]/50" />
+          <h1 className="font-playfair text-xl font-semibold text-[#6F241D] mt-3">
+            {state === 'missing' ? 'This store is not available' : 'Could not load this store'}
+          </h1>
+          <p className="text-xs text-[#70452F] mt-1 mb-5">
+            {state === 'missing' ? 'The seller may have closed their store or the link is incorrect.' : 'Please check your connection and try again.'}
+          </p>
+          <Link to="/shop" className="bg-[#6F241D] text-white px-6 py-2.5 rounded-full text-xs font-bold">
+            Browse the shop
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const joined = store.joinedAt ? new Date(store.joinedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '';
+  const hasMore = products.length < total;
+
+  return (
+    <div className="min-h-screen bg-white pb-24 md:pb-12 overflow-x-hidden">
+      {/* Banner */}
+      <div className="relative h-28 sm:h-44 bg-gradient-to-br from-[#6F241D] via-[#8B2E3A] to-[#C45C6A] overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10" />
+        <div className="absolute left-1/3 -bottom-16 w-40 h-40 rounded-full bg-white/5" />
+      </div>
+
+      <div className="site-container -mt-12 sm:-mt-16 relative z-10">
+        {/* Profile card */}
+        <div className="bg-white border border-[#E8D4B5] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-md">
+          <div className="flex items-start gap-3 sm:gap-5">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-[#FCF8F2] border-4 border-white shadow-md -mt-10 sm:-mt-14 shrink-0 flex items-center justify-center font-playfair text-xl sm:text-3xl font-bold text-[#6F241D]">
+              {initials(store.storeName)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-playfair text-lg sm:text-3xl font-semibold text-[#3F261B] leading-tight break-words">{store.storeName}</h1>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] sm:text-xs text-[#70452F]">
+                {store.location && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={12} className="text-[#A94E2C]" /> {store.location}
+                  </span>
+                )}
+                {joined && (
+                  <span className="inline-flex items-center gap-1">
+                    <CalendarDays size={12} className="text-[#A94E2C]" /> Selling since {joined}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={share}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#E8D4B5] text-[11px] font-bold text-[#6F241D] hover:bg-[#FCF8F2]"
+              aria-label="Share store"
+            >
+              {copied ? <Check size={14} /> : <Share2 size={14} />}
+              <span className="hidden sm:inline">{copied ? 'Link copied' : 'Share'}</span>
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4 sm:max-w-md">
+            <div className="rounded-xl bg-[#FCF8F2] border border-[#EFE3CF] px-3 py-2">
+              <div className="flex items-center gap-1 text-sm font-bold text-[#6F241D]">
+                <Star size={14} className={store.reviewCount ? 'fill-[#C69A45] text-[#C69A45]' : 'text-[#C9B79D]'} />
+                {store.reviewCount ? store.rating.toFixed(1) : 'New'}
+              </div>
+              <p className="text-[10px] text-[#8A6A68]">
+                {store.reviewCount ? `${store.reviewCount} customer review${store.reviewCount === 1 ? '' : 's'}` : 'No reviews yet'}
+              </p>
+            </div>
+            <div className="rounded-xl bg-[#FCF8F2] border border-[#EFE3CF] px-3 py-2">
+              <div className="flex items-center gap-1 text-sm font-bold text-[#6F241D]">
+                <Package size={14} className="text-[#A94E2C]" />
+                {store.productCount}
+              </div>
+              <p className="text-[10px] text-[#8A6A68]">Products listed</p>
+            </div>
+          </div>
+
+          {store.description && (
+            <p className="mt-4 text-xs sm:text-sm text-[#5B4638] leading-relaxed whitespace-pre-line">{store.description}</p>
+          )}
+        </div>
+
+        {/* Products */}
+        <div className="mt-6 sm:mt-8">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 className="font-playfair text-lg sm:text-2xl font-semibold text-[#3F261B]">
+              Products {total ? <span className="text-[#A8977F] text-sm font-normal">({total})</span> : null}
+            </h2>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="bg-white border border-[#E8E2D9] rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-[#3F261B] focus:outline-none focus:border-[#6F241D]"
+              aria-label="Sort products"
+            >
+              {SORTS.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {store.categories?.length > 1 && (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-2 -mx-0.5 px-0.5">
+              {[{ name: '', label: 'All' }, ...store.categories.map((c) => ({ name: c.name, label: `${c.name} ${c.count}` }))].map((c) => (
+                <button
+                  key={c.name || 'all'}
+                  type="button"
+                  onClick={() => setCategory(c.name)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+                    category === c.name ? 'bg-[#6F241D] text-white' : 'bg-white text-[#3F261B] border border-[#E8E2D9] hover:border-[#6F241D]/40'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {loadingProducts && products.length === 0 ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="aspect-[3/4] rounded-xl bg-[#FCF8F2] animate-pulse" />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <p className="text-center text-sm text-[#70452F] py-12 bg-[#FCF8F2] rounded-2xl border border-[#E8D4B5]">
+              This seller has no products listed right now.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                {products.map((prod) => (
+                  <ProductCard key={prod._id} product={prod} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="text-center mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={loadingProducts}
+                    className="px-6 py-2.5 rounded-full border border-[#6F241D] text-[#6F241D] text-xs font-bold hover:bg-[#FCF8F2] disabled:opacity-60"
+                  >
+                    {loadingProducts ? 'Loading…' : `Show more (${total - products.length} left)`}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
