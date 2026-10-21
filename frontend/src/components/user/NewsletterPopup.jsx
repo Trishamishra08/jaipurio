@@ -8,6 +8,8 @@ import { isExternalUrl } from '../../utils/menuUrl';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// Shown at most once per page load, even when the layout remounts (e.g. after logging in).
+let shownThisLoad = false;
 
 const readStore = (store, key) => {
   try {
@@ -31,6 +33,8 @@ const offerSignature = (v) => [v.heading, v.text, v.couponCode].join('|');
 const shouldShow = (variant, v, frequency) => {
   const sig = offerSignature(v);
   if (readStore(localStorage, `jp_popup_hide_${variant}`) === sig) return false;
+  if (shownThisLoad) return false;
+  if (frequency === 'every') return true;
   if (frequency === 'once') return readStore(localStorage, `jp_popup_seen_${variant}`) !== sig;
   if (frequency === 'day') {
     const last = Number(readStore(localStorage, `jp_popup_last_${variant}`)) || 0;
@@ -76,6 +80,8 @@ const NewsletterPopup = () => {
     if (!v || !v.enabled || !shouldShow(variant, v, config.frequency)) return undefined;
     const delay = Math.max(0, Number(config.delaySeconds) || 0) * 1000;
     const id = setTimeout(() => {
+      if (shownThisLoad) return;
+      shownThisLoad = true;
       setOpen(true);
       markSeen(variant, v);
     }, delay);
