@@ -7,14 +7,15 @@ export const POPUP_IMAGE = 'https://minio-jaipurio.sakha.cloud/jaipurio/5-8.jpg'
 
 // How often a visitor sees the popup.
 export const POPUP_FREQUENCIES = [
-  ['session', 'Once per visit'],
+  ['every', 'Every time the website is opened'],
+  ['session', 'Once per browser tab (not again on refresh)'],
   ['day', 'Once a day'],
   ['once', 'Only once (until the offer changes)'],
 ];
 
 export const POPUP_DEFAULTS = {
   delaySeconds: 2.5,
-  frequency: 'session',
+  frequency: 'every',
   web: {
     enabled: true,
     image: POPUP_IMAGE,
