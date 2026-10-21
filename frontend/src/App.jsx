@@ -99,6 +99,9 @@ import AdminBlogs from './components/admin/AdminBlogs';
 import AdminBlogEdit from './components/admin/AdminBlogEdit';
 import AdminBlogCategories from './components/admin/AdminBlogCategories';
 import AdminRoutes from './components/admin/AdminRoutes';
+import CmsPage from './components/user/CmsPage';
+import ContactPage from './components/user/ContactPage';
+import { BrandRedirect, CartRedirect, CategorySlugRedirect } from './components/user/LegacyRedirects';
 
 import { captureReferralFromUrl } from './utils/referralTracking';
 import { useAffiliateSettings } from './utils/useAffiliateSettings';
@@ -177,33 +180,23 @@ function App() {
             <Route path="/reviews" element={<MyReviews />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/location" element={<LocationPage />} />
-            <Route
-              path="/about"
-              element={
-                <div className="py-12 bg-white text-center px-4">
-                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
-                    Our Heritage Story
-                  </h1>
-                  <p className="font-dm text-xs text-[#806653] mt-2 max-w-lg mx-auto">
-                    jaipurio connects authentic local potters and handicraft families across
-                    Rajasthan with craft lovers across India.
-                  </p>
-                </div>
-              }
-            />
-            <Route
-              path="/contact"
-              element={
-                <div className="py-12 bg-white text-center px-4">
-                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
-                    Connect with jaipurio
-                  </h1>
-                  <p className="font-dm text-xs text-[#806653] mt-2">
-                    Email: namaste@jaipurio.com • Phone: +91 98290 12345
-                  </p>
-                </div>
-              }
-            />
+            {/* Content pages (Admin → Pages) and the old jaipurio.in URLs, kept working */}
+            <Route path="/about" element={<CmsPage slug="about-us" />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/privacy-policy" element={<CmsPage slug="privacy-policy" fallbacks={['cookie-policy']} />} />
+            <Route path="/return-policy" element={<CmsPage slug="refund-policy" />} />
+            <Route path="/product-categories/:slug" element={<CategorySlugRedirect />} />
+            <Route path="/category/:slug" element={<CategorySlugRedirect />} />
+            <Route path="/brands/:slug" element={<BrandRedirect />} />
+            <Route path="/brand/:slug" element={<BrandRedirect />} />
+            <Route path="/orders/tracking" element={<Navigate to="/orders" replace />} />
+            <Route path="/customer/overview" element={<Navigate to="/profile" replace />} />
+            <Route path="/customer/*" element={<Navigate to="/profile" replace />} />
+            <Route path="/products" element={<Navigate to="/shop" replace />} />
+            <Route path="/compare" element={<Navigate to="/shop" replace />} />
+            <Route path="/cart" element={<CartRedirect />} />
+            {/* Any other single-segment URL: a page from Admin → Pages (/our-story, /faqs, …), else home */}
+            <Route path="/:slug" element={<CmsPage />} />
             <Route
               path="/notifications"
               element={
@@ -214,36 +207,6 @@ function App() {
                   <p className="font-dm text-xs text-[#806653] mt-2">
                     No unread notifications at this time.
                   </p>
-                </div>
-              }
-            />
-            <Route
-              path="/privacy-policy"
-              element={
-                <div className="py-12 bg-white text-center px-4">
-                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
-                    Privacy Policy
-                  </h1>
-                </div>
-              }
-            />
-            <Route
-              path="/terms-conditions"
-              element={
-                <div className="py-12 bg-white text-center px-4">
-                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
-                    Terms & Conditions
-                  </h1>
-                </div>
-              }
-            />
-            <Route
-              path="/return-policy"
-              element={
-                <div className="py-12 bg-white text-center px-4">
-                  <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">
-                    Safe Fragile Shipping Policy
-                  </h1>
                 </div>
               }
             />

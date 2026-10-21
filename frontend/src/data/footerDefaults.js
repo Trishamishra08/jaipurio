@@ -50,23 +50,46 @@ export const FOOTER_DEFAULTS = {
     categoriesEnabled: true,
     categoriesTitle: 'Shop by Category',
     columns: [
+      // Same addresses as the old jaipurio.in header/footer, so existing links and search results keep working.
       {
         title: 'Customer Care',
         links: [
-          { label: 'Order Tracking', to: '/orders' },
-          { label: 'Returns & Refunds', to: '/return-policy' },
-          { label: 'FAQs', to: '/contact' },
-          { label: 'Contact Us', to: '/contact' },
+          { label: 'Order Tracking', to: '/orders/tracking' },
+          { label: 'Returns and Exchanges', to: '/refund-policy' },
+          { label: 'FAQs', to: '/faqs' },
+          { label: 'Customer Service', to: '/customer-service' },
+          { label: 'Contact us', to: '/contact' },
+          { label: 'My account', to: '/customer/overview' },
         ],
       },
       {
         title: 'Company',
         links: [
-          { label: 'About Us', to: '/about' },
-          { label: 'Journal', to: '/blog' },
-          { label: 'Our Story', to: '/about' },
-          { label: 'Privacy Policy', to: '/privacy-policy' },
-          { label: 'Terms & Conditions', to: '/terms-conditions' },
+          { label: 'About Jaipurio', to: '/about-us' },
+          { label: 'Our Story', to: '/our-story' },
+          { label: 'Artisan Spotlight', to: '/artisan-spotlight' },
+          { label: 'Craft of India', to: '/crafts-of-india' },
+          { label: 'Blog', to: '/blog' },
+          { label: 'Career', to: '/career' },
+        ],
+      },
+      {
+        title: 'Policies',
+        links: [
+          { label: 'Terms Of Use', to: '/terms-of-use' },
+          { label: 'Terms of Service', to: '/terms-conditions' },
+          { label: 'Cookie Policy', to: '/cookie-policy' },
+          { label: 'Affiliate', to: '/affiliate' },
+        ],
+      },
+      {
+        title: 'Our Brands',
+        links: [
+          { label: 'LeatherMart', to: '/brands/leathermart' },
+          { label: 'Jaipurio', to: '/brands/jaipurio' },
+          { label: 'Jaipurgems', to: '/brands/jaipurgems' },
+          { label: 'Rangtara', to: '/brands/rangtara' },
+          { label: 'Royalsuits', to: '/brands/royalsuits' },
         ],
       },
       {
@@ -74,8 +97,9 @@ export const FOOTER_DEFAULTS = {
         links: [
           { label: 'Sell on Jaipurio', to: '/vendor/register' },
           { label: 'Vendor Login', to: '/vendor/login' },
-          { label: 'Terms of Use', to: '/terms-conditions' },
-          { label: 'Cookie Policy', to: '/privacy-policy' },
+          { label: 'Govindam Retreat®', to: 'https://govindamretreat.in/' },
+          { label: 'WellBite®', to: 'https://wellbite.in/' },
+          { label: 'India Tours Cabs®', to: 'https://indiatourscabs.com/' },
         ],
       },
     ],

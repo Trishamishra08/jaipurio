@@ -367,9 +367,15 @@ const Footer = () => {
                             <ul className="space-y-1">
                               {col.links.map((l, li) => (
                                 <li key={`${l.label}-${li}`}>
-                                  <Link to={l.to || '/'} className="font-body text-[11px] sm:text-[12px] text-white/80 hover:text-white">
-                                    {l.label}
-                                  </Link>
+                                  {/^(https?:)?\/\//i.test(l.to || '') ? (
+                                    <a href={l.to} target="_blank" rel="noreferrer" className="font-body text-[11px] sm:text-[12px] text-white/80 hover:text-white">
+                                      {l.label}
+                                    </a>
+                                  ) : (
+                                    <Link to={l.to || '/'} className="font-body text-[11px] sm:text-[12px] text-white/80 hover:text-white">
+                                      {l.label}
+                                    </Link>
+                                  )}
                                 </li>
                               ))}
                             </ul>

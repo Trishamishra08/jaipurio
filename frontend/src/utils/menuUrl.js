@@ -10,22 +10,19 @@ const FIXED = {
   '/products': '/shop',
   '/shop': '/shop',
   '/home': '/home',
-  '/about-us': '/about',
-  '/our-story': '/about',
   '/about': '/about',
   '/contact-us': '/contact',
   '/terms': '/terms-conditions',
   '/terms-and-conditions': '/terms-conditions',
   '/privacy': '/privacy-policy',
   '/returns': '/return-policy',
+  '/craft-of-india': '/crafts-of-india',
   '/track-order': '/orders',
+  '/orders/tracking': '/orders',
   '/order-tracking': '/orders',
   '/track': '/orders',
   '/my-account': '/profile',
   '/account': '/profile',
-  '/crafts-of-india': '/blog',
-  '/craft-of-india': '/blog',
-  '/artisan-spotlight': '/blog',
   '/journal': '/blog',
   '/blogs': '/blog',
   '/vendors': '/vendor/register',
@@ -60,15 +57,15 @@ export const resolveMenuUrl = (url, categories = []) => {
     return FIXED[clean];
   }
 
-  const cat = clean.match(/^\/(?:category|product-category|categories)\/(.+)$/);
+  const cat = clean.match(/^\/(?:category|product-category|product-categories|categories)\/(.+)$/);
   if (cat) {
     const slug = cat[1].split('/').pop();
     const found = categories.find((c) => c.slug === slug) || categories.find((c) => c.name.toLowerCase() === titleFromSlug(slug).toLowerCase());
     return found ? `/shop?category=${encodeURIComponent(found.name)}` : '/shop';
   }
 
-  const brand = clean.match(/^\/brand\/(.+)$/);
-  if (brand) return `/shop?search=${encodeURIComponent(titleFromSlug(brand[1]))}`;
+  const brand = clean.match(/^\/brands?\/(.+)$/);
+  if (brand) return `/shop?brand=${encodeURIComponent(brand[1].toLowerCase())}`;
 
   if (/^\/blog\/category\//.test(clean)) return '/blog';
 

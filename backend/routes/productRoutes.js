@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getProducts,
   getProductCategories,
+  resolveCategorySlug,
   getTopRatedProducts,
   getOfferTiles,
   getProductById,
@@ -21,6 +22,7 @@ const { cachePublic } = require('../utils/cache');
 
 router.get('/', cachePublic('products', 45), getProducts);
 router.get('/categories', cachePublic('product-categories', 300), getProductCategories);
+router.get('/categories/resolve/:id', cachePublic('category-resolve', 300), resolveCategorySlug);
 router.get('/top-rated', getTopRatedProducts);
 router.get('/offers', cachePublic('product-offers', 120), getOfferTiles);
 router.get('/vendor', protect, authorize('vendor'), getVendorProducts);

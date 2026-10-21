@@ -15,6 +15,8 @@ const productSchema = new mongoose.Schema({
   saleEndDate: { type: Date },
   barcode: { type: String },
   brand: { type: String, default: 'Jaipurio Heritage' },
+  // Brand from the old jaipurio.in shop (scripts/importLegacyBrands.js) — powers the old /brands/<slug> URLs.
+  legacyBrand: { name: { type: String }, slug: { type: String, index: true } },
   rating: { type: Number },
   reviews: { type: Number },
   image: { type: String, default: '' },

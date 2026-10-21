@@ -24,6 +24,9 @@ const Shop = () => {
   // ?offers=1 (from "Today's Offers"): only discounted products, biggest discount first.
   const offersOnly = searchParams.get('offers') === '1';
   const maxPrice = Number(searchParams.get('maxPrice')) || 0;
+  // ?brand=<slug> (old jaipurio.in /brands/<slug> links)
+  const brandParam = (searchParams.get('brand') || '').toLowerCase();
+  const [brandName, setBrandName] = useState('');
   const sortParam = searchParams.get('sort') || (offersOnly ? 'discount' : 'popular');
   const pageParam = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
 
@@ -82,12 +85,14 @@ const Shop = () => {
           sort: SORT_MAP[sortParam] || 'popular',
           onSale: offersOnly ? 'true' : undefined,
           maxPrice: maxPrice || undefined,
+          brand: brandParam || undefined,
         },
       })
       .then((res) => {
         if (cancelled) return;
         const data = res.data?.data || {};
         setProducts((data.products || []).map(mapApiProductToStorefront).filter(Boolean));
+        setBrandName(brandParam ? data.products?.[0]?.legacyBrand?.name || brandParam : '');
         setTotal(data.total || 0);
         setTotalPages(data.totalPages || 1);
       })
@@ -102,7 +107,7 @@ const Shop = () => {
     return () => {
       cancelled = true;
     };
-  }, [pageParam, searchParam, selectedCategory, sortParam, offersOnly, maxPrice]);
+  }, [pageParam, searchParam, selectedCategory, sortParam, offersOnly, maxPrice, brandParam]);
 
   const updateParams = (patch, resetPage = true) => {
     const next = new URLSearchParams(searchParams);
@@ -162,7 +167,9 @@ const Shop = () => {
             )}
           </div>
           <h1 className="font-playfair font-semibold text-[18px] sm:text-2xl text-[#3F261B] leading-tight">
-            {maxPrice && !offersOnly
+            {brandParam
+              ? `${brandName || brandParam}${selectedCategory ? ` — ${selectedNode?.name || selectedCategory}` : ''}`
+              : maxPrice && !offersOnly
               ? `Under ₹${maxPrice.toLocaleString('en-IN')}${selectedCategory ? ` in ${selectedNode?.name || selectedCategory}` : ''}`
               : offersOnly
               ? `Offers on ${selectedNode?.name || selectedCategory || 'everything'}`

@@ -403,6 +403,10 @@ const getProducts = async (req, res) => {
     if (req.query.bestseller === 'true') {
       filter.bestseller = true;
     }
+    // Old jaipurio.in brand pages (/brands/<slug>): LeatherMart, Rangtara, …
+    if (req.query.brand) {
+      filter['legacyBrand.slug'] = String(req.query.brand).trim().toLowerCase();
+    }
     if (req.query.tags) {
       const tagList = String(req.query.tags)
         .split(',')
@@ -468,6 +472,25 @@ const getProducts = async (req, res) => {
 // shop page. Returned depth-first (siblings by sortOrder) so parents sit right
 // before their children. Each row also carries an image — the category's own
 // icon, else a photo of one of its products — for the storefront tiles.
+// @desc    Where an old /product-categories/<slug> link should land: that category if it
+//          has live products, else its nearest parent that does (null = whole shop)
+// @route   GET /api/products/categories/resolve/:slug
+// @access  Public
+const resolveCategorySlug = async (req, res) => {
+  try {
+    const slug = String(req.params.id || '').trim().toLowerCase(); // :id so the response cache keys on it
+    let cat = await Category.findOne({ slug, isActive: { $ne: false } }).sort({ legacyId: -1 }).select('_id title parent').lean();
+    for (let hops = 0; cat && hops < 8; hops += 1) {
+      const live = await Product.exists({ categoryIds: cat._id, $or: [{ lifecycle: 'Published' }, { status: 'approved' }] });
+      if (live) return res.status(200).json({ success: true, data: { name: cat.title } });
+      cat = cat.parent ? await Category.findById(cat.parent).select('_id title parent').lean() : null;
+    }
+    res.status(200).json({ success: true, data: { name: null } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getProductCategories = async (req, res) => {
   try {
     const live = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
@@ -965,6 +988,7 @@ const duplicateProduct = async (req, res) => {
 module.exports = {
   getProducts,
   getProductCategories,
+  resolveCategorySlug,
   getTopRatedProducts,
   getOfferTiles,
   getProductById,
