@@ -133,8 +133,9 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
 
   const [wishlist, setWishlist] = useState(() => {
     try {
-      const saved = localStorage.getItem('jaipurio_wishlist');
-      if (saved) return JSON.parse(saved);
+      const saved = JSON.parse(localStorage.getItem('jaipurio_wishlist') || '[]');
+      // Only real product ids — drops the old sample entries (mitti-prod-1, …) older versions saved.
+      if (Array.isArray(saved)) return [...new Set(saved.map(String).filter((id) => /^[a-f0-9]{24}$/i.test(id)))];
     } catch (e) {}
     return [];
   });
@@ -329,6 +330,7 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
         cartCount,
         cartTotal,
         wishlist,
+        setWishlist,
         wishlistCount,
         wishlistAddedAt,
         isCartDrawerOpen,

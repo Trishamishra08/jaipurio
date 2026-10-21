@@ -7,7 +7,7 @@ import api from '../../utils/api';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
 
 const Wishlist = () => {
-  const { wishlist, wishlistAddedAt } = useShop();
+  const { wishlist, wishlistAddedAt, setWishlist } = useShop();
   const [wishProducts, setWishProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +28,8 @@ const Wishlist = () => {
         const byId = new Map(rows.map((p) => [String(p._id), p]));
         // Newest saved first.
         setWishProducts([...wishlist].reverse().map((id) => byId.get(String(id))).filter(Boolean));
+        // Products that no longer exist (deleted or unpublished) leave the wishlist, so the count matches what is shown.
+        if (byId.size < wishlist.length) setWishlist((prev) => prev.filter((id) => byId.has(String(id))));
       })
       .catch(() => {
         if (!cancelled) setWishProducts([]);

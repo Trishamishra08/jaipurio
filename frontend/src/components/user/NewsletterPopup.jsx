@@ -172,6 +172,20 @@ const NewsletterPopup = () => {
             </div>
           )}
 
+          {storeButtons && (
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              {v.playStoreUrl && (
+                <a href={v.playStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
+                  Get it on Google Play
+                </a>
+              )}
+              {v.appStoreUrl && (
+                <a href={v.appStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
+                  Download on the App Store
+                </a>
+              )}
+            </div>
+          )}
           {v.showEmailForm &&
             (status.state === 'success' ? (
               <p className="mt-6 rounded-lg bg-[#EAF5EA] text-[#2E7D32] text-[14px] font-semibold px-4 py-3">{status.message}</p>
@@ -210,20 +224,6 @@ const NewsletterPopup = () => {
             </ActionLink>
           )}
 
-          {storeButtons && (
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              {v.playStoreUrl && (
-                <a href={v.playStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
-                  Get it on Google Play
-                </a>
-              )}
-              {v.appStoreUrl && (
-                <a href={v.appStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
-                  Download on the App Store
-                </a>
-              )}
-            </div>
-          )}
 
           <label className="mt-5 flex items-center gap-2.5 text-[14px] text-[#3F3F3F] cursor-pointer select-none">
             <input

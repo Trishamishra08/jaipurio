@@ -18,16 +18,18 @@ export const POPUP_DEFAULTS = {
   web: {
     enabled: true,
     image: POPUP_IMAGE,
-    eyebrow: 'Newsletter',
-    heading: 'Subscribe Now',
-    text: 'Subscribe to our newsletter and get 10% off your first purchase',
+    // Website version: invite visitors to the app (store buttons appear once the links are added in the admin);
+    // the email signup keeps it useful for people who stay on the website.
+    eyebrow: 'Get the Jaipurio app',
+    heading: 'Extra 10% off on the app',
+    text: 'Download the Jaipurio app for an extra 10% off your first app order, app-only deals and live order updates.\nPrefer email? Subscribe below and get 10% off your first purchase.',
     couponCode: '',
     showEmailForm: true,
     submitText: 'Subscribe',
     successText: 'Thank you! You are subscribed — watch your inbox for your 10% off.',
     buttonText: '',
     buttonLink: '',
-    showStoreButtons: false,
+    showStoreButtons: true,
     playStoreUrl: '',
     appStoreUrl: '',
   },
