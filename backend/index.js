@@ -121,6 +121,7 @@ const ecommerceRoutes = require('./routes/ecommerceRoutes');
 app.use('/api/ecommerce', ecommerceRoutes);
 const pageRoutes = require('./routes/pageRoutes');
 app.use('/api/pages', pageRoutes);
+app.use('/api/city-pages', require('./routes/cityPageRoutes'));
 const mediaRoutes = require('./routes/mediaRoutes');
 // Public thumbnail endpoint — mounted before the (admin) media routes.
 app.use('/api/media/thumb', thumbRoutes);

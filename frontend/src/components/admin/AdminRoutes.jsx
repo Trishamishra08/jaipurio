@@ -25,6 +25,7 @@ import AdminProductPageSettings from './AdminProductPageSettings';
 import AdminHomeSections from './AdminHomeSections';
 import AdminFooterSettings from './AdminFooterSettings';
 import AdminPopupSettings from './AdminPopupSettings';
+import { AdminCityPageEdit, AdminCityPagesList } from './AdminCityPages';
 import AdminCodeEditorPage from './AdminCodeEditorPage';
 import AdminTools from './AdminTools';
 import AdminCrudPage from './AdminCrudPage';
@@ -113,6 +114,9 @@ const AdminRoutes = () => (
       <Route path="theme/home-page" element={<AdminHomeSections />} />
       <Route path="theme/footer" element={<AdminFooterSettings />} />
       <Route path="theme/popup" element={<AdminPopupSettings />} />
+      <Route path="city-pages" element={<AdminCityPagesList />} />
+      <Route path="city-pages/new" element={<AdminCityPageEdit />} />
+      <Route path="city-pages/:id" element={<AdminCityPageEdit />} />
       <Route path="appearance/theme-options" element={<AdminThemeOptions />} />
       <Route path="appearance/theme-options/:tab" element={<AdminThemeOptions />} />
       <Route path="theme/robots-txt" element={<AdminCodeEditorPage />} />

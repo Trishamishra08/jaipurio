@@ -100,6 +100,7 @@ import AdminBlogEdit from './components/admin/AdminBlogEdit';
 import AdminBlogCategories from './components/admin/AdminBlogCategories';
 import AdminRoutes from './components/admin/AdminRoutes';
 import CmsPage from './components/user/CmsPage';
+import CityPage, { ShipsToIndex } from './components/user/CityPage';
 import ContactPage from './components/user/ContactPage';
 import { BrandRedirect, CartRedirect, CategorySlugRedirect } from './components/user/LegacyRedirects';
 
@@ -164,6 +165,8 @@ function App() {
           <Route element={<PublicLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/:slug" element={<CityPage />} />
+            <Route path="/ships-to" element={<ShipsToIndex />} />
             <Route path="/blog" element={<BlogSection />} />
             <Route path="/blogs" element={<Navigate to="/blog" replace />} />
             <Route path="/journal" element={<Navigate to="/blog" replace />} />

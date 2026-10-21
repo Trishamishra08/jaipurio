@@ -126,6 +126,20 @@ router.get('/sitemap-blog.xml', async (req, res) => {
   }
 });
 
+// Published, indexable city / country pages (/shop/<slug>)
+router.get('/sitemap-cities.xml', async (req, res) => {
+  try {
+    const CityPage = require('../models/cityPageModel');
+    const rows = await CityPage.find({ status: 'Published', indexable: true }).select('slug updatedAt').lean();
+    const entries = rows.map((c) =>
+      urlEntry({ loc: `${SITE_URL}/shop/${c.slug}`, lastmod: c.updatedAt, priority: '0.7', changefreq: 'weekly' })
+    );
+    res.type('application/xml').send(urlset(entries));
+  } catch (err) {
+    res.status(500).type('text/plain').send('Error generating city sitemap');
+  }
+});
+
 router.get('/sitemap.xml', async (req, res) => {
   const now = new Date().toISOString().split('T')[0];
   const sitemaps = [
@@ -134,6 +148,7 @@ router.get('/sitemap.xml', async (req, res) => {
     'sitemap-categories.xml',
     'sitemap-brands.xml',
     'sitemap-blog.xml',
+    'sitemap-cities.xml',
   ];
   const body = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemaps
     .map((s) => `  <sitemap>\n    <loc>${SITE_URL}/${s}</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>`)

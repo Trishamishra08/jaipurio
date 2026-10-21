@@ -74,6 +74,7 @@ export const adminNav = [
     ],
   },
   { id: 'pages', title: 'Pages', path: '/admin/pages', icon: FileText },
+  { id: 'city-pages', title: 'City Pages', path: '/admin/city-pages', icon: MapPin },
   {
     id: 'blog',
     title: 'Blog',
