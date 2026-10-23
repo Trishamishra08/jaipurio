@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Jaipurio Admin — City Page Generator (Demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2A1B14; --ink-soft:#5B4A3F; --jaipur-red:#8C2F2B; --jaipur-red-deep:#6E2320;
+    --brass:#A9782F; --marble:#FBF7F1; --marble-deep:#F2E9DA; --line:#E1D5BF; --ok:#2E7D4F; --warn:#B23;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;overflow-x:hidden;max-width:100vw;}
+  body{font-family:'Work Sans',sans-serif;background:var(--marble);color:var(--ink);}
+  h1,h2,h3{font-family:'Frank Ruhl Libre',serif;margin:0;}
+  .topbar{background:var(--ink);color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .topbar strong{font-family:'Frank Ruhl Libre',serif;}
+  .layout{display:grid;grid-template-columns:420px 1fr;gap:0;min-height:calc(100vh - 56px);}
+  .panel{padding:22px;overflow-y:auto;max-height:calc(100vh - 56px);}
+  .panel-left{border-right:1px solid var(--line);background:#fff;}
+  .panel-right{background:var(--marble-deep);}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .card h3{font-size:15px;margin-bottom:4px;}
+  .card .hint{font-size:11.5px;color:var(--ink-soft);margin-bottom:12px;}
+  label{display:block;font-size:12.5px;font-weight:600;margin:10px 0 4px;}
+  input[type=text], select, textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;font-family:inherit;}
+  textarea{resize:vertical;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;cursor:pointer;user-select:none;}
+  .chip.sel{background:var(--jaipur-red);color:#fff;border-color:var(--jaipur-red);}
+  .wordcount{font-size:11.5px;margin-top:6px;}
+  .wordcount.ok{color:var(--ok);}
+  .wordcount.bad{color:var(--warn);}
+  .proof-row{display:flex;gap:6px;margin-top:6px;}
+  .proof-row input{flex:1;}
+  .btn{border:none;border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--jaipur-red);color:#fff;}
+  .btn-primary:hover{background:var(--jaipur-red-deep);}
+  .btn-ghost{background:#fff;border:1px solid var(--line);}
+  .btn-publish{background:var(--ok);color:#fff;width:100%;margin-top:6px;}
+  .btn-publish:disabled{background:#B9AE9A;cursor:not-allowed;}
+  .gate{font-size:12px;margin-top:10px;padding:10px;border-radius:8px;background:#FBEAEA;color:var(--warn);}
+  .gate.pass{background:#E8F5EC;color:var(--ok);}
+  .status-pill{font-size:11px;padding:4px 10px;border-radius:999px;background:#eee;display:inline-block;}
+  .status-pill.draft{background:#F2E9DA;color:var(--ink-soft);}
+  .status-pill.published{background:#E8F5EC;color:var(--ok);}
+  iframe{width:100%;height:100%;border:1px solid var(--line);border-radius:10px;background:#fff;}
+  .preview-wrap{height:calc(100vh - 96px);}
+  .small{font-size:11.5px;color:var(--ink-soft);}
+  .remove-fact{background:none;border:none;color:var(--warn);cursor:pointer;font-size:16px;line-height:1;padding:0 6px;}
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    .panel{max-height:none;}
+    .preview-wrap{height:70vh;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><strong>Jaipurio Admin</strong> — City/Country Page Generator <span class="small" style="color:#D8B978;">(offline demo — same logic as backend/services/cityPageContentEngine.js)</span></div>
+  <span class="status-pill draft" id="statusPill">Draft</span>
+</div>
+
+<div class="layout">
+  <div class="panel panel-left">
+
+    <div class="card">
+      <h3>1. Basic Details</h3>
+      <p class="hint">This is the ONLY card where you're just filling in facts. Everything below this card either auto-generates or needs a short bit of real writing.</p>
+      <label>City</label>
+      <input type="text" id="fCity" placeholder="e.g. London" value="London">
+      <label>Country</label>
+      <input type="text" id="fCountry" placeholder="e.g. United Kingdom" value="United Kingdom">
+      <label>Shipping Zone</label>
+      <select id="fZone"></select>
+      <p class="hint" style="margin-top:8px;margin-bottom:0;">Transit time, customs note, currency and return window all come from the zone — you never type those per city.</p>
+    </div>
+
+    <div class="card">
+      <h3>2. Categories to Feature</h3>
+      <p class="hint">Only selected categories get their own product grid (sections 16–21). Don't select a category you have nothing to say about for this city.</p>
+      <div class="chip-row" id="catChips"></div>
+    </div>
+
+    <div class="card">
+      <h3>3. Occasions to Feature</h3>
+      <div class="chip-row" id="occChips"></div>
+    </div>
+
+    <div class="card">
+      <h3>4. City Feature Note <span class="small">(real, 2–3 sentences)</span></h3>
+      <p class="hint">Used in Section 2 and referenced in Section 4. Must be about THIS city specifically — not a swappable template line.</p>
+      <textarea id="fFeatureNote" rows="3" placeholder="e.g. London's Indian-heritage households and interior stylists have long sourced marble idols and brass décor for home temples and festive gifting."></textarea>
+    </div>
+
+    <div class="card">
+      <h3>5. Main Content <span class="small">(Section 7 — 700+ words required to publish)</span></h3>
+      <p class="hint">Write real, city-specific shopping information here — benefits, materials, ordering details, delivery coverage. Plain text or simple HTML (&lt;p&gt;, &lt;h3&gt;).</p>
+      <textarea id="fMainContent" rows="8" placeholder="Paste or write your 800–1000 word section here..."></textarea>
+      <div class="wordcount bad" id="wordCountLabel">0 words — need 700+</div>
+    </div>
+
+    <div class="card">
+      <h3>6. Local Proof Facts <span class="small">(at least 1 required — real only)</span></h3>
+      <p class="hint">Genuine, verifiable claims only. Never a fabricated office, review or customer.</p>
+      <div id="proofRows"></div>
+      <button class="btn btn-ghost" style="margin-top:8px;" id="addProofBtn" type="button">+ Add fact</button>
+    </div>
+
+    <div class="card">
+      <h3>7. FAQs <span class="small">(auto-drafted from zone — edit freely)</span></h3>
+      <div id="faqPreviewList" class="small"></div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;" id="generateBtn" type="button">Generate Preview →</button>
+    <div class="gate" id="gateMsg">Fill in sections 1–6, then Generate Preview. Publish stays locked until Main Content ≥700 words and at least one Local Proof fact are filled in.</div>
+    <button class="btn btn-publish" id="publishBtn" type="button" disabled>Publish (locked)</button>
+
+  </div>
+
+  <div class="panel panel-right">
+    <h3 style="margin-bottom:10px;">Live Customer-Side Preview</h3>
+    <div class="preview-wrap">
+      <iframe id="previewFrame" title="City page preview"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   This mirrors backend/data/shippingZones.js and
+   backend/services/cityPageContentEngine.js so this demo works
+   with zero server — in production, the REAL Node engine runs
+   this same logic, this file does not replace it.
+   ============================================================ */
+
+const SHIPPING_ZONES = {
+  UK_EU: { label:'United Kingdom & European Union', currency:'GBP', paymentNote:'Cards and PayPal, converted automatically at checkout.', transitDaysMin:7, transitDaysMax:14, customsNote:'Import VAT and duty may apply depending on item value and category, set by local customs authorities, not by Jaipurio.', returnWindowDays:7 },
+  NORTH_AMERICA: { label:'United States & Canada', currency:'USD', paymentNote:'Cards and PayPal, converted automatically at checkout.', transitDaysMin:9, transitDaysMax:16, customsNote:'US/Canada customs may apply duty above the de minimis threshold — confirm whether it is collected on delivery.', returnWindowDays:10 },
+  GCC: { label:'UAE & GCC', currency:'AED', paymentNote:'Cards accepted; cash-on-delivery available in select cities.', transitDaysMin:5, transitDaysMax:10, customsNote:'Most personal shipments clear without additional duty under GCC personal-import allowances; confirm for high-value orders.', returnWindowDays:7 },
+  AUS_NZ: { label:'Australia & New Zealand', currency:'AUD', paymentNote:'Cards and PayPal, converted automatically at checkout.', transitDaysMin:10, transitDaysMax:18, customsNote:'GST applies on most imports into Australia/NZ regardless of value — expect a separate customs/courier invoice.', returnWindowDays:10 },
+  SOUTHEAST_ASIA: { label:'Southeast Asia', currency:'SGD', paymentNote:'Cards accepted at checkout.', transitDaysMin:6, transitDaysMax:12, customsNote:'Import tax thresholds vary by country — confirm for your specific country before ordering.', returnWindowDays:7 },
+  INDIA_DOMESTIC: { label:'Domestic India', currency:'INR', paymentNote:'Cards, UPI, net banking and cash-on-delivery.', transitDaysMin:2, transitDaysMax:6, customsNote:'No customs or import duty — this is a domestic shipment within India.', returnWindowDays:7 },
+};
+
+const CATEGORY_LABELS = {
+  'marble-idols':'Marble Idols', 'brass-idols':'Brass & Marble', 'jewellery':'Jewellery',
+  'home-decor':'Home Décor', 'clothing':'Clothing', 'bags-purses':'Bags & Accessories', 'arts-collectibles':'Arts & Collectibles'
+};
+const OCCASIONS = ['Diwali','Weddings','Housewarming','Birthdays','Anniversaries'];
+
+const H1_TEMPLATES = [
+  c => `Shop Rajasthani Handicrafts Online in ${c}`,
+  c => `Jaipur to ${c}: Marble, Brass & Handicrafts Online`,
+  c => `Authentic Rajasthani Crafts, Delivered to ${c}`,
+  c => `Buy Marble Idols & Handicrafts Online — Shipped to ${c}`,
+];
+const SUMMARY_OPENERS = [
+  (c,co) => `Jaipurio ships hand-carved marble idols, brass décor, kundan jewellery and Rajasthani clothing directly from our Jaipur artisans to addresses across ${c} and ${co}.`,
+  (c,co) => `From our Jaipur workshops to doorsteps in ${c}, Jaipurio delivers marble idols, brass décor, kundan jewellery and Rajasthani clothing across ${co}.`,
+  (c,co) => `${c} shoppers can now order hand-carved marble idols, brass décor, kundan jewellery and Rajasthani clothing straight from Jaipurio's artisan network in Jaipur, shipped across ${co}.`,
+];
+const SUMMARY_CLOSERS = [
+  cat => `Every piece is made to order or hand-verified before dispatch — browse ${cat} built for international delivery.`,
+  cat => `Each order is hand-checked before it leaves Jaipur — explore ${cat} ready to ship internationally.`,
+  cat => `Pieces are inspected and packed for international transit before dispatch — browse ${cat} available right now.`,
+];
+const WHY_CHOOSE = [
+  c => `A city that collects — and a craft that travels well to ${c}`,
+  c => `Why ${c} shoppers are sourcing direct from Jaipur`,
+  c => `From Jaipur's workshops to ${c}'s homes`,
+];
+
+function hashPick(city, slot, arr){
+  const str = city+'::'+slot; let h=0;
+  for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0;
+  return arr[h % arr.length];
+}
+function placeholder(label,w,h){
+  const q = encodeURIComponent(label.replace(/[,'’\-–—()"]/g,'').trim());
+  return `https://placehold.co/${w}x${h}/EADFCB/5B4A3F?font=roboto&text=${q}`;
+}
+function wordLimit50(t){ const w=t.trim().split(/\s+/); return w.length<=50? t : w.slice(0,50).join(' ')+'.'; }
+
+function generateContent(input){
+  const zone = SHIPPING_ZONES[input.zoneKey];
+  const catLabels = input.categories.map(c=>CATEGORY_LABELS[c]);
+  const catStr = catLabels.length>1 ? catLabels.slice(0,-1).join(', ')+' and '+catLabels[catLabels.length-1] : (catLabels[0]||'our full catalog');
+  const h1 = hashPick(input.city,'h1',H1_TEMPLATES)(input.city);
+  const opener = hashPick(input.city,'opener',SUMMARY_OPENERS)(input.city,input.country);
+  const closer = hashPick(input.city,'closer',SUMMARY_CLOSERS)(catStr.toLowerCase());
+  const summary = wordLimit50(opener+' '+closer);
+  return {
+    title: `Shop Rajasthani Handicrafts Online in ${input.city} | Jaipurio`,
+    h1, summary,
+    whyChoose: hashPick(input.city,'why',WHY_CHOOSE)(input.city),
+    quickAnswers: {
+      delivery: `Yes — all core categories ship to addresses in ${zone.label}.`,
+      transit: `Typically ${zone.transitDaysMin}–${zone.transitDaysMax} working days by tracked courier from dispatch in Jaipur.`,
+      payment: `${zone.paymentNote} Pricing shown in ${zone.currency} at checkout.`,
+      returns: `Standard ${zone.returnWindowDays}-day return window from delivery.`,
+      customization: `Available on select marble idols and jewellery — ask before ordering.`,
+    },
+    customsNote: zone.customsNote,
+    faqs: [
+      {q:`Do you ship to ${input.city}?`, a:`Yes. Orders are packed in Jaipur and shipped by tracked courier to ${zone.label}, typically arriving in ${zone.transitDaysMin}–${zone.transitDaysMax} working days.`},
+      {q:`Will I be charged customs duty on arrival?`, a: zone.customsNote},
+      {q:`How long does delivery take?`, a:`Typically ${zone.transitDaysMin}–${zone.transitDaysMax} working days from dispatch.`},
+      {q:`Can I return an item?`, a:`Yes, within ${zone.returnWindowDays} days of delivery.`},
+    ],
+  };
+}
+
+// ---------- UI wiring ----------
+const zoneSel = document.getElementById('fZone');
+Object.keys(SHIPPING_ZONES).forEach(k=>{
+  const o=document.createElement('option'); o.value=k; o.textContent=SHIPPING_ZONES[k].label; zoneSel.appendChild(o);
+});
+zoneSel.value='UK_EU';
+
+const selectedCats = new Set(['marble-idols','brass-idols','jewellery','home-decor','clothing','bags-purses']);
+const catChips = document.getElementById('catChips');
+Object.entries(CATEGORY_LABELS).forEach(([key,label])=>{
+  const chip=document.createElement('div'); chip.className='chip'+(selectedCats.has(key)?' sel':''); chip.textContent=label;
+  chip.onclick=()=>{ chip.classList.toggle('sel'); selectedCats.has(key)?selectedCats.delete(key):selectedCats.add(key); };
+  catChips.appendChild(chip);
+});
+
+const selectedOcc = new Set(['Diwali','Weddings','Housewarming']);
+const occChips = document.getElementById('occChips');
+OCCASIONS.forEach(o=>{
+  const chip=document.createElement('div'); chip.className='chip'+(selectedOcc.has(o)?' sel':''); chip.textContent=o;
+  chip.onclick=()=>{ chip.classList.toggle('sel'); selectedOcc.has(o)?selectedOcc.delete(o):selectedOcc.add(o); };
+  occChips.appendChild(chip);
+});
+
+// local proof facts
+const proofRowsEl = document.getElementById('proofRows');
+function addProofRow(label='', detail=''){
+  const row=document.createElement('div'); row.className='proof-row';
+  row.innerHTML = `<input type="text" class="proofLabel" placeholder="Label (e.g. United Kingdom)" value="${label}">
+                   <input type="text" class="proofDetail" placeholder="Real, verifiable detail" value="${detail}">
+                   <button class="remove-fact" type="button">&times;</button>`;
+  row.querySelector('.remove-fact').onclick=()=>row.remove();
+  proofRowsEl.appendChild(row);
+}
+document.getElementById('addProofBtn').onclick=()=>addProofRow();
+addProofRow('United Kingdom', 'Listed as a served international shipping region on Jaipurio’s coverage.');
+
+// word count gate
+const mainContentEl = document.getElementById('fMainContent');
+const wordCountLabel = document.getElementById('wordCountLabel');
+function currentWordCount(){ return mainContentEl.value.trim().split(/\s+/).filter(Boolean).length; }
+function updateWordCount(){
+  const n = currentWordCount();
+  wordCountLabel.textContent = n + (n>=700 ? ' words — meets minimum' : ' words — need 700+');
+  wordCountLabel.className = 'wordcount ' + (n>=700?'ok':'bad');
+  updateGate();
+}
+mainContentEl.addEventListener('input', updateWordCount);
+
+function proofFacts(){
+  return Array.from(proofRowsEl.querySelectorAll('.proof-row')).map(r=>({
+    label: r.querySelector('.proofLabel').value.trim(),
+    detail: r.querySelector('.proofDetail').value.trim(),
+  })).filter(f=>f.label && f.detail);
+}
+
+function updateGate(){
+  const n = currentWordCount();
+  const facts = proofFacts();
+  const ok = n>=700 && facts.length>=1;
+  const gateEl = document.getElementById('gateMsg');
+  const pubBtn = document.getElementById('publishBtn');
+  if(ok){
+    gateEl.className='gate pass';
+    gateEl.textContent='Ready to publish: main content and local proof both meet the minimum bar.';
+    pubBtn.disabled=false; pubBtn.textContent='Publish';
+  } else {
+    gateEl.className='gate';
+    const missing=[];
+    if(n<700) missing.push(`${700-n} more words of main content`);
+    if(facts.length<1) missing.push('at least 1 local proof fact');
+    gateEl.textContent='Still needed before publish: '+missing.join(' and ')+'.';
+    pubBtn.disabled=true; pubBtn.textContent='Publish (locked)';
+  }
+}
+proofRowsEl.addEventListener('input', updateGate);
+
+document.getElementById('publishBtn').onclick=()=>{
+  const pill=document.getElementById('statusPill');
+  pill.textContent='Published'; pill.className='status-pill published';
+};
+
+// ---------- preview renderer (simplified but real 25-section structure) ----------
+function buildPreviewHtml(input, content){
+  const catChipsHtml = Array.from(selectedCats).map(c=>`<a href="#" class="cp-cat-card">${CATEGORY_LABELS[c]}</a>`).join('');
+  const occHtml = Array.from(selectedOcc).map(o=>`<span class="occ">${o}</span>`).join('');
+  const faqHtml = content.faqs.map((f,i)=>`<div class="faqi"><strong>${f.q}</strong><p>${f.a}</p></div>`).join('');
+  const catGrids = Array.from(selectedCats).map(c=>`
+    <section class="block"><h2>${CATEGORY_LABELS[c]} for ${input.city}</h2>
+      <div class="grid4">
+        ${[1,2,3,4].map(i=>`<div class="pc"><img src="${placeholder(CATEGORY_LABELS[c]+' item '+i,300,300)}"><div class="pcb">${CATEGORY_LABELS[c]} Item ${i}</div></div>`).join('')}
+      </div>
+    </section>`).join('');
+  const mainContentHtml = mainContentEl.value.trim()
+    ? mainContentEl.value.split(/\n\n+/).map(p=>`<p>${p}</p>`).join('')
+    : `<p style="color:#B23;"><em>[Not written yet — add 700+ words in card 5]</em></p>`;
+  const proofHtml = proofFacts().length
+    ? proofFacts().map(f=>`<div class="proofc"><strong>${f.label}</strong><span>${f.detail}</span></div>`).join('')
+    : `<div class="proofc" style="color:#B23;">[No local proof facts yet — add at least one in card 6]</div>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:'Work Sans',Arial,sans-serif;margin:0;color:#2A1B14;background:#FBF7F1;}
+    .wrap{max-width:1000px;margin:0 auto;padding:0 20px;}
+    h1,h2{font-family:Georgia,serif;}
+    .hero{padding:28px 0;background:#F2E9DA;}
+    .hero h1{font-size:28px;margin:0 0 10px;}
+    .hero p{color:#5B4A3F;max-width:700px;}
+    .breadcrumb{font-size:12px;color:#5B4A3F;padding:10px 20px;}
+    .block{padding:20px 0;border-top:1px solid #E1D5BF;}
+    .wrap .block{padding-left:20px;padding-right:20px;}
+    .cp-cat-card{display:inline-block;border:1px solid #E1D5BF;border-radius:10px;padding:10px 14px;margin:4px;font-size:13px;color:#2A1B14;text-decoration:none;}
+    .quick{background:#F2E9DA;border-radius:10px;padding:16px 20px;margin:16px 20px;}
+    .quick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;font-size:12.5px;}
+    .quick-grid div strong{display:block;margin-bottom:4px;}
+    .occ{display:inline-block;background:#8C2F2B;color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;margin:3px;}
+    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+    .pc img{width:100%;border-radius:8px;}
+    .pcb{font-size:12px;margin-top:4px;}
+    .faqi{margin-bottom:10px;font-size:13px;}
+    .faqi p{color:#5B4A3F;margin:4px 0 0;}
+    .proofc{background:#F2E9DA;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12.5px;}
+    .proofc strong{display:block;}
+    @media (max-width:700px){ .quick-grid{grid-template-columns:repeat(2,1fr);} .grid4{grid-template-columns:repeat(2,1fr);} }
+  </style></head><body>
+  <div class="breadcrumb">Home / Ships To / ${input.city}, ${input.country}</div>
+  <section class="hero wrap" style="padding-left:0;padding-right:0;">
+    <div class="wrap">
+      <h1>${content.h1}</h1>
+      <p>${content.summary}</p>
+    </div>
+  </section>
+  <div class="quick">
+    <h3 style="margin:0 0 10px;font-size:15px;">Quick Answers</h3>
+    <div class="quick-grid">
+      <div><strong>Delivery</strong>${content.quickAnswers.delivery}</div>
+      <div><strong>Transit</strong>${content.quickAnswers.transit}</div>
+      <div><strong>Payment</strong>${content.quickAnswers.payment}</div>
+      <div><strong>Returns</strong>${content.quickAnswers.returns}</div>
+      <div><strong>Customization</strong>${content.quickAnswers.customization}</div>
+    </div>
+  </div>
+  <section class="block wrap"><h2>Shop by Category</h2>${catChipsHtml}</section>
+  <section class="block wrap"><h2>Buying Guide — Main Content (Section 7)</h2>${mainContentHtml}</section>
+  <section class="block wrap"><h2>Shop by Occasion</h2>${occHtml}</section>
+  ${catGrids}
+  <section class="block wrap"><h2>Shipping Record (Local Proof)</h2>${proofHtml}</section>
+  <section class="block wrap"><h2>FAQs</h2>${faqHtml}</section>
+  <section class="block wrap"><h2>Built for ${input.city}, shipped from Jaipur</h2><p>This page answers what a ${input.city} buyer actually needs — not a templated swap of the city name.</p></section>
+  </body></html>`;
+}
+
+document.getElementById('generateBtn').onclick=()=>{
+  const input = {
+    city: document.getElementById('fCity').value.trim() || 'City',
+    country: document.getElementById('fCountry').value.trim() || 'Country',
+    zoneKey: zoneSel.value,
+    categories: Array.from(selectedCats),
+  };
+  const content = generateContent(input);
+  document.getElementById('previewFrame').srcdoc = buildPreviewHtml(input, content);
+  updateGate();
+};
+
+// initial render
+document.getElementById('generateBtn').click();
+updateWordCount();
+</script>
+</body>
+</html>
