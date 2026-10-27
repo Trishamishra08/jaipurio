@@ -4,6 +4,7 @@ const bankTransfer = require('./bankTransfer');
 const stripe = require('./stripe');
 const paypal = require('./paypal');
 const paystack = require('./paystack');
+const cashfree = require('./cashfree');
 
 const REGISTRY = {
   cod,
@@ -12,6 +13,7 @@ const REGISTRY = {
   stripe,
   paypal,
   paystack,
+  cashfree,
 };
 
 const getGateway = (code) => REGISTRY[code] || null;

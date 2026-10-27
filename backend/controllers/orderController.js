@@ -229,6 +229,121 @@ const createRazorpayOrder = async (req, res) => {
   }
 };
 
+/** Already completed (double click, retry, refresh) → the same order, never another. Returns true when it answered. */
+const respondIfAlreadyPaid = async (txn, res) => {
+  if (txn.status !== 'success' || !txn.order) return false;
+  const existing = await Order.findById(txn.order);
+  if (!existing) return false;
+  res.status(200).json({
+    success: true,
+    message: 'Payment already verified',
+    data: { order: { orderId: existing._id, ...existing._doc } },
+  });
+  return true;
+};
+
+/**
+ * Shared final step for every online gateway, once the gateway has confirmed the payment:
+ * re-price the order, check it equals what was paid, claim the transaction atomically,
+ * save the order, then notify customer and vendors.
+ */
+const completePaidOrder = async (req, res, { txn, paymentId, orderDetails, gatewayLabel, method = '' }) => {
+  const { items, shippingAddress, couponCode, referralCode } = orderDetails || {};
+  const quote = await computeOrderQuote({
+    items: quoteItemsPayload(items || []),
+    couponCode,
+    paymentMethod: 'paynow'
+  });
+
+  // The amount the customer actually paid must equal the order being created.
+  if (Math.abs(Number(txn.amount) - Number(quote.total)) > 0.01) {
+    await PaymentTransaction.updateOne(
+      { _id: txn._id, status: { $ne: 'success' } },
+      { $set: { status: 'failed', gatewayPaymentId: paymentId, errorMessage: `Amount mismatch: paid ${txn.amount}, order ${quote.total}` } }
+    );
+    return res.status(400).json({
+      success: false,
+      message: 'The order total no longer matches the amount paid. Please contact support — your payment is safe.',
+    });
+  }
+
+  // Claim this payment atomically so two parallel requests cannot both create an order.
+  const claimed = await PaymentTransaction.findOneAndUpdate(
+    { _id: txn._id, status: 'initiated' },
+    { $set: { status: 'processing', gatewayPaymentId: paymentId, method } }
+  );
+  if (!claimed) {
+    return res.status(409).json({ success: false, message: 'This payment is already being processed. Please check My Orders.' });
+  }
+
+  let createdOrder;
+  try {
+    createdOrder = await savePricedOrder({
+      userId: req.user._id,
+      quote,
+      shippingAddress,
+      paymentMethod: 'Online',
+      paymentResult: {
+        id: paymentId,
+        status: 'completed',
+        update_time: new Date().toISOString()
+      },
+      isPaid: true,
+      referralCode,
+      skipTransactionLog: true
+    });
+  } catch (saveErr) {
+    await PaymentTransaction.updateOne(
+      { _id: txn._id },
+      { $set: { status: 'failed', errorMessage: `Order could not be saved: ${saveErr.message}` } }
+    );
+    throw saveErr;
+  }
+  await PaymentTransaction.updateOne(
+    { _id: txn._id },
+    { $set: { status: 'success', order: createdOrder._id, orderNumber: createdOrder.orderNumber, gatewayPaymentId: paymentId } }
+  );
+
+  // Trigger push notifications
+  try {
+    await sendNotificationToUser(
+      createdOrder.user,
+      'user',
+      {
+        title: 'Order Paid & Placed Successfully',
+        body: `Thank you! Your payment of ₹${createdOrder.totalPrice} is verified and Order #${createdOrder._id} has been placed.`
+      },
+      'success'
+    );
+
+    const uniqueVendors = [...new Set(createdOrder.orderItems.map(item => item.vendor?.toString()).filter(Boolean))];
+    for (const vendorId of uniqueVendors) {
+      await sendNotificationToUser(
+        vendorId,
+        'vendor',
+        {
+          title: 'New Order Received',
+          body: `You received a new paid order #${createdOrder._id}. Please review and prepare the items for delivery.`
+        },
+        'success'
+      );
+    }
+  } catch (notifErr) {
+    console.error(`FCM: Error sending ${gatewayLabel} order notifications:`, notifErr);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Payment verified successfully",
+    data: {
+      order: {
+        orderId: createdOrder._id,
+        ...createdOrder._doc
+      }
+    }
+  });
+};
+
 // @desc    Verify Razorpay Payment and Save Order
 // @route   POST /api/orders/razorpay/verify
 // @access  Private
@@ -254,17 +369,7 @@ const verifyRazorpayOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Unknown payment. Please start the payment again.' });
     }
 
-    // Already completed (double click, retry, refresh) → return the same order, never create another.
-    if (txn.status === 'success' && txn.order) {
-      const existing = await Order.findById(txn.order);
-      if (existing) {
-        return res.status(200).json({
-          success: true,
-          message: 'Payment already verified',
-          data: { order: { orderId: existing._id, ...existing._doc } },
-        });
-      }
-    }
+    if (await respondIfAlreadyPaid(txn, res)) return;
 
     const gateway = getGateway('razorpay');
     if (!gateway.verifySignature(config, { razorpay_order_id, razorpay_payment_id, razorpay_signature })) {
@@ -275,103 +380,113 @@ const verifyRazorpayOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid signature sent!" });
     }
 
-    const { items, shippingAddress, couponCode, referralCode } = orderDetails || {};
-    const quote = await computeOrderQuote({
-      items: quoteItemsPayload(items || []),
-      couponCode,
-      paymentMethod: 'paynow'
-    });
-
-    // The amount the customer actually paid must equal the order being created.
-    if (Math.abs(Number(txn.amount) - Number(quote.total)) > 0.01) {
-      await PaymentTransaction.updateOne(
-        { _id: txn._id, status: { $ne: 'success' } },
-        { $set: { status: 'failed', gatewayPaymentId: razorpay_payment_id, errorMessage: `Amount mismatch: paid ${txn.amount}, order ${quote.total}` } }
-      );
-      return res.status(400).json({
-        success: false,
-        message: 'The order total no longer matches the amount paid. Please contact support — your payment is safe.',
-      });
-    }
-
-    // Claim this payment atomically so two parallel requests cannot both create an order.
-    const claimed = await PaymentTransaction.findOneAndUpdate(
-      { _id: txn._id, status: 'initiated' },
-      { $set: { status: 'processing', gatewayPaymentId: razorpay_payment_id } }
-    );
-    if (!claimed) {
-      return res.status(409).json({ success: false, message: 'This payment is already being processed. Please check My Orders.' });
-    }
-
-    let createdOrder;
-    try {
-      createdOrder = await savePricedOrder({
-        userId: req.user._id,
-        quote,
-        shippingAddress,
-        paymentMethod: 'Online',
-        paymentResult: {
-          id: razorpay_payment_id,
-          status: 'completed',
-          update_time: new Date().toISOString()
-        },
-        isPaid: true,
-        referralCode,
-        skipTransactionLog: true
-      });
-    } catch (saveErr) {
-      await PaymentTransaction.updateOne(
-        { _id: txn._id },
-        { $set: { status: 'failed', errorMessage: `Order could not be saved: ${saveErr.message}` } }
-      );
-      throw saveErr;
-    }
-    await PaymentTransaction.updateOne(
-      { _id: txn._id },
-      { $set: { status: 'success', order: createdOrder._id, orderNumber: createdOrder.orderNumber, gatewayPaymentId: razorpay_payment_id } }
-    );
-
-    // Trigger push notifications
-    try {
-      await sendNotificationToUser(
-        createdOrder.user,
-        'user',
-        {
-          title: 'Order Paid & Placed Successfully',
-          body: `Thank you! Your payment of ₹${createdOrder.totalPrice} is verified and Order #${createdOrder._id} has been placed.`
-        },
-        'success'
-      );
-
-      const uniqueVendors = [...new Set(createdOrder.orderItems.map(item => item.vendor?.toString()).filter(Boolean))];
-      for (const vendorId of uniqueVendors) {
-        await sendNotificationToUser(
-          vendorId,
-          'vendor',
-          {
-            title: 'New Order Received',
-            body: `You received a new paid order #${createdOrder._id}. Please review and prepare the items for delivery.`
-          },
-          'success'
-        );
-      }
-    } catch (notifErr) {
-      console.error('FCM: Error sending Razorpay order notifications:', notifErr);
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Payment verified successfully",
-      data: {
-        order: {
-          orderId: createdOrder._id,
-          ...createdOrder._doc
-        }
-      }
-    });
+    return completePaidOrder(req, res, { txn, paymentId: razorpay_payment_id, orderDetails, gatewayLabel: 'Razorpay' });
 
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Create Cashfree Order (returns a payment session for Cashfree's checkout)
+// @route   POST /api/orders/cashfree/create
+// @access  Private
+const createCashfreeOrder = async (req, res) => {
+  try {
+    const quote = await computeOrderQuote({
+      items: quoteItemsPayload(req.body.items || []),
+      couponCode: req.body.couponCode,
+      paymentMethod: 'paynow'
+    });
+
+    const config = await getEnabledMethodConfig('cashfree');
+    if (config === null) {
+      return res.status(400).json({ success: false, message: 'Online payment is currently unavailable.' });
+    }
+
+    // Cashfree requires a 10-digit customer phone.
+    const customer = req.body.customer || {};
+    const phone = String(customer.phone || req.user.mobile || '').replace(/\D/g, '').slice(-10);
+    if (phone.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number for payment.' });
+    }
+
+    // After a redirect-based payment (some UPI / bank flows), Cashfree sends the customer back here.
+    const origin = req.get('origin') || process.env.FRONTEND_URL || '';
+    const returnUrl = origin.startsWith('https://') ? `${origin}/checkout?cf_order_id={order_id}` : undefined;
+
+    const gateway = getGateway('cashfree');
+    const { mock, order, mode } = await gateway.createOrder(config, {
+      amount: quote.total,
+      receipt: `jp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      customer: { id: String(req.user._id), name: customer.name || req.user.name, email: customer.email || req.user.email, phone },
+      returnUrl,
+    });
+
+    if (mock) console.warn('Cashfree not configured. Returning mock order id (development only).');
+    // Remember exactly what was asked of the gateway: verification later must match this user and amount.
+    await PaymentTransaction.create({
+      user: req.user._id,
+      gateway: 'cashfree',
+      gatewayOrderId: order.id,
+      amount: quote.total,
+      status: 'initiated',
+    });
+    res.status(200).json({ success: true, data: { order, quote, mode } });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify Cashfree Payment (asked of Cashfree server-side) and Save Order
+// @route   POST /api/orders/cashfree/verify
+// @access  Private
+const verifyCashfreeOrder = async (req, res) => {
+  try {
+    const { orderId, orderDetails } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'Incomplete payment details.' });
+    }
+
+    const config = await getEnabledMethodConfig('cashfree');
+    if (config === null) {
+      return res.status(400).json({ success: false, message: 'Online payment is currently unavailable.' });
+    }
+
+    // The payment must be one WE started, for THIS customer.
+    const txn = await PaymentTransaction.findOne({ gateway: 'cashfree', gatewayOrderId: orderId, user: req.user._id });
+    if (!txn) {
+      return res.status(400).json({ success: false, message: 'Unknown payment. Please start the payment again.' });
+    }
+    if (await respondIfAlreadyPaid(txn, res)) return;
+
+    const result = await getGateway('cashfree').verifyPayment(config, { orderId });
+    if (!result.paid) {
+      // ACTIVE = not paid yet (closed, or a UPI payment still pending) — keep it open so a late payment can still complete.
+      const final = ['EXPIRED', 'TERMINATED'].includes(result.status);
+      await PaymentTransaction.updateOne(
+        { _id: txn._id, status: 'initiated' },
+        { $set: { ...(final ? { status: 'failed' } : {}), errorMessage: `Cashfree order status: ${result.status || 'not paid'}` } }
+      );
+      return res.status(400).json({ success: false, message: 'Payment was not completed. No money has been taken — please try again.' });
+    }
+    // What Cashfree collected must be what we asked for.
+    if (result.amount !== null && Math.abs(Number(result.amount) - Number(txn.amount)) > 0.01) {
+      await PaymentTransaction.updateOne(
+        { _id: txn._id, status: { $ne: 'success' } },
+        { $set: { status: 'failed', gatewayPaymentId: result.paymentId, errorMessage: `Amount mismatch: Cashfree ${result.amount}, expected ${txn.amount}` } }
+      );
+      return res.status(400).json({ success: false, message: 'The paid amount does not match. Please contact support — your payment is safe.' });
+    }
+
+    return completePaidOrder(req, res, {
+      txn,
+      paymentId: result.paymentId || orderId,
+      orderDetails,
+      gatewayLabel: 'Cashfree',
+      method: String(result.method || '').toLowerCase(),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.response?.data?.message || error.message });
   }
 };
 
@@ -662,6 +777,8 @@ module.exports = {
   createOrder,
   createRazorpayOrder,
   verifyRazorpayOrder,
+  createCashfreeOrder,
+  verifyCashfreeOrder,
   getMyOrders,
   getOrderById,
   getVendorOrders,

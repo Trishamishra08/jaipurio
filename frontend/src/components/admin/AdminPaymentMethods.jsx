@@ -25,6 +25,7 @@ const GATEWAY_ICONS = {
   cod: { Icon: FiTruck, color: '#B45309', bg: '#FEF3E2' },
   bank_transfer: { Icon: FiHome, color: '#0F766E', bg: '#ECFDF5' },
   paystack: { Icon: FiCreditCard, color: '#00C3F7', bg: '#E6FAFF' },
+  cashfree: { Icon: FiCreditCard, color: '#5B3FD9', bg: '#F0EDFC' },
 };
 
 const MethodIcon = ({ code }) => {

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getVendorOrders, getAdminOrders, updateOrderItemStatus, createOrder, getMyOrders, createRazorpayOrder, verifyRazorpayOrder, getOrderById, requestReturn, updateRefundDetails, adminUpdateReturn, quoteOrder } = require('../controllers/orderController');
+const { getVendorOrders, getAdminOrders, updateOrderItemStatus, createOrder, getMyOrders, createRazorpayOrder, verifyRazorpayOrder, createCashfreeOrder, verifyCashfreeOrder, getOrderById, requestReturn, updateRefundDetails, adminUpdateReturn, quoteOrder } = require('../controllers/orderController');
 const { acceptOrder, updateOrderTrack, updateShipmentTrack, completeOrder, releaseEarnings, listShipments } = require('../controllers/orderFlowController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
 
@@ -8,6 +8,8 @@ router.post('/quote', quoteOrder);
 router.post('/', protect, createOrder);
 router.post('/razorpay/create', protect, createRazorpayOrder);
 router.post('/razorpay/verify', protect, verifyRazorpayOrder);
+router.post('/cashfree/create', protect, createCashfreeOrder);
+router.post('/cashfree/verify', protect, verifyCashfreeOrder);
 router.get('/my-orders', protect, getMyOrders);
 
 router.get('/vendor', protect, getVendorOrders);

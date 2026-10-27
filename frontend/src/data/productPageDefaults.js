@@ -8,7 +8,7 @@ export const PRODUCT_PAGE_DEFAULTS = {
   showRating: true,
   highlights: {
     enabled: true,
-    title: '🌿 Pure handcrafted craftsmanship from Jaipur, Rajasthan.',
+    title: 'Handcrafted by artisans in Jaipur, Rajasthan.',
     points: [
       '100% Genuine Makrana Marble / Terracotta Clay',
       'Carefully packaged in heavy-duty break-proof carton',

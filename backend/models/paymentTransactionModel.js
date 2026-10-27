@@ -6,7 +6,7 @@ const paymentTransactionSchema = new mongoose.Schema(
     /** The customer who started this payment — a payment can only be completed by the same user. */
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     orderNumber: { type: String, default: '' },
-    gateway: { type: String, enum: ['razorpay', 'cod', 'stripe', 'paypal', 'paystack', 'bank_transfer', 'other'], default: 'razorpay' },
+    gateway: { type: String, enum: ['razorpay', 'cod', 'stripe', 'paypal', 'paystack', 'cashfree', 'bank_transfer', 'other'], default: 'razorpay' },
     gatewayOrderId: { type: String, default: '', index: true },
     gatewayPaymentId: { type: String, default: '', index: true },
     amount: { type: Number, default: 0 },

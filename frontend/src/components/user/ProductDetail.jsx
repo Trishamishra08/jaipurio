@@ -65,6 +65,9 @@ const TRUST_ICON = {
 const fillTemplate = (text, vars) =>
   String(text || '').replace(/\{(\w+)\}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
 
+// Admin-saved copy may still carry decorative emoji from the old defaults.
+const stripEmoji = (text) => String(text || '').replace(/[\p{Extended_Pictographic}️]/gu, '').trim();
+
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -597,11 +600,11 @@ const ProductDetail = () => {
             <div className="text-right">
               <div className="flex items-baseline gap-2">
                 <span className="text-base font-bold text-[#E5A835] sm:text-[#C45C6A]">
-                  ₹{Number(unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  ₹{Number(unitPrice).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                 </span>
                 {originalPrice > unitPrice && (
                   <span className="text-xs text-gray-400 line-through">
-                    ₹{Number(originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                    ₹{Number(originalPrice).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                   </span>
                 )}
               </div>
@@ -679,7 +682,7 @@ const ProductDetail = () => {
             )}
 
             {/* Main Image Frame */}
-            <div className="relative w-full aspect-square md:aspect-[4/4.2] rounded-2xl overflow-hidden bg-[#FAF6EE] border border-gray-200 shadow-xs group flex-1">
+            <div className="relative w-full aspect-square md:aspect-[4/4.2] rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-xs group flex-1">
               {/* Badges */}
               <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
                 {(product.badge === 'bestseller' || product.bestseller) && (
@@ -754,7 +757,7 @@ const ProductDetail = () => {
               <div className="text-xs font-semibold text-[#8B2E3A] uppercase tracking-wider mb-1">
                 {product.brand || vendor?.name || 'Jaipurio Heritage'}
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+              <h1 className="font-sans text-lg sm:text-[22px] font-semibold text-[#2B1E1A] leading-snug tracking-normal">
                 {product.name}
               </h1>
             </div>
@@ -789,11 +792,11 @@ const ProductDetail = () => {
             {/* Price Section */}
             <div className="flex items-baseline gap-3 pt-1 border-t border-gray-100">
               <span className="text-2xl sm:text-3xl font-bold text-[#E5A835] sm:text-[#C45C6A]">
-                ₹{Number(unitPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                ₹{Number(unitPrice).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
               </span>
               {originalPrice > unitPrice && (
                 <span className="text-base text-gray-400 line-through">
-                  ₹{Number(originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                  ₹{Number(originalPrice).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                 </span>
               )}
               {discountPercent > 0 && (
@@ -805,8 +808,8 @@ const ProductDetail = () => {
 
             {/* Short Highlights / Key bullet points if available */}
             {pageCfg.highlights.enabled && (
-              <div className="text-xs text-gray-600 leading-relaxed bg-[#FAF6EE] p-3 rounded-xl border border-[#E8D4B5]/60 space-y-1">
-                {pageCfg.highlights.title && <p className="font-semibold text-gray-800">{pageCfg.highlights.title}</p>}
+              <div className="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-xl border border-gray-200 space-y-1">
+                {stripEmoji(pageCfg.highlights.title) && <p className="font-semibold text-gray-800">{stripEmoji(pageCfg.highlights.title)}</p>}
                 {pageCfg.highlights.points.filter(Boolean).length > 0 && (
                   <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-gray-600">
                     {pageCfg.highlights.points.filter(Boolean).map((point) => (
