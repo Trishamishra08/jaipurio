@@ -16,7 +16,7 @@ import {
 
 // Payment methods the storefront checkout can actually take today. Others can be
 // configured here but customers will not see them until checkout support is added.
-const CHECKOUT_READY = ['cod', 'razorpay'];
+const CHECKOUT_READY = ['cod', 'razorpay', 'cashfree'];
 
 const GATEWAY_ICONS = {
   razorpay: { Icon: SiRazorpay, color: '#0C2451', bg: '#EEF1F9' },
@@ -161,7 +161,7 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
               )}
               {!CHECKOUT_READY.includes(method.code) && (
                 <span
-                  title="Customers can't pay with this method at checkout yet — only Cash on Delivery and Razorpay are connected."
+                  title="Customers can't pay with this method at checkout yet — only Cash on Delivery, Cashfree and Razorpay are connected."
                   className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200"
                 >
                   Not in checkout yet
@@ -176,7 +176,11 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
                     : 'bg-slate-50 text-slate-500 border border-slate-200'
                 }`}
               >
-                {method.configFields?.length ? (method.hasConfig ? 'Configured' : 'Needs configuration') : 'No setup needed'}
+                {method.configFields?.length
+                  ? method.hasConfig
+                    ? method.configSource === 'server' ? 'Configured (server keys)' : 'Configured'
+                    : 'Needs configuration'
+                  : 'No setup needed'}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate">

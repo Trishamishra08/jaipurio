@@ -20,12 +20,18 @@ const serializeAdmin = (doc) => {
     const value = config[field.key] || '';
     maskedConfig[field.key] = field.secret ? mask(value) : value;
   });
+  // Keys can also come from the server environment (e.g. CASHFREE_APP_ID), which the gateway falls back to.
+  const savedInAdmin = Object.values(config).some(Boolean);
+  const required = (gateway?.configFields || []).filter((f) => !['webhookSecret', 'mode'].includes(f.key));
+  const resolved = gateway?.resolveCredentials ? gateway.resolveCredentials({}) : {};
+  const serverKeys = required.length > 0 && required.every((f) => Boolean(resolved[f.key]));
   return {
     ...o,
     id: String(o._id),
     configFields: gateway?.configFields || [],
     config: maskedConfig,
-    hasConfig: Object.values(config).some(Boolean),
+    hasConfig: savedInAdmin || serverKeys,
+    configSource: savedInAdmin ? 'admin' : serverKeys ? 'server' : '',
   };
 };
 
