@@ -48,6 +48,13 @@ const computeOrderQuote = async ({ items = [], couponCode, paymentMethod } = {})
     const size = row.size || row.selectedSize || null;
     const product = await Product.findById(productId).lean();
     if (!product) throw new Error('One or more products were not found');
+    // Only live, in-stock products can be ordered (an old cart may still hold a draft or sold-out item).
+    const live = product.lifecycle ? product.lifecycle === 'Published' : product.published !== false;
+    if (!live) throw new Error(`"${product.name}" is no longer available. Please remove it from your bag.`);
+    if (product.stockStatus === 'Out of Stock') throw new Error(`"${product.name}" is out of stock. Please remove it from your bag.`);
+    if (String(paymentMethod || '').toLowerCase() === 'cod' && product.codAvailable === false) {
+      throw new Error(`Cash on delivery is not available for "${product.name}". Please pay online.`);
+    }
 
     const price = unitPriceFromProduct(product, size);
     const image = Array.isArray(product.images) && product.images[0]
@@ -86,7 +93,8 @@ const computeOrderQuote = async ({ items = [], couponCode, paymentMethod } = {})
   }
 
   const taxableBase = Math.max(0, subtotal - discountAmount);
-  const taxAmount = roundMoney(taxableBase * (taxRate / 100));
+  // Prices already include GST (the total below does not add tax), so this is the GST share inside them.
+  const taxAmount = roundMoney(taxableBase - taxableBase / (1 + taxRate / 100));
   const shippingAmount = freeDeliveryThreshold > 0 && subtotal >= freeDeliveryThreshold ? 0 : listedShipping;
   const wantsCod = String(paymentMethod || '').toLowerCase() === 'cod';
   const codFee = wantsCod && isCodEnabled ? roundMoney(codCharge) : 0;

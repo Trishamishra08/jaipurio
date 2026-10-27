@@ -444,7 +444,9 @@ const ProductDetail = () => {
   const unitPrice = selected.now;
   const originalPrice = selected.was > selected.now ? selected.was : (product.oldPrice || 0);
   const discountPercent = originalPrice > unitPrice ? Math.round(((originalPrice - unitPrice) / originalPrice) * 100) : 0;
-  const stockCount = product.stockCount || product.quantity || 9;
+  // Products carry a stock status, not a count — never show a made-up number.
+  const stockCount = Number(product.stockCount || product.quantity) || 0;
+  const outOfStock = String(product.stockStatus || '').toLowerCase().includes('out');
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = encodeURIComponent(`${product.name} ${shareUrl}`);
@@ -822,9 +824,19 @@ const ProductDetail = () => {
 
             {/* Stock Availability Pill (matching Image 5) */}
             {pageCfg.stock.enabled && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300 w-fit">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{fillTemplate(pageCfg.stock.label, { count: stockCount })}</span>
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border w-fit ${
+                  outOfStock ? 'bg-rose-50 text-rose-700 border-rose-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${outOfStock ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
+                <span>
+                  {outOfStock
+                    ? 'Out of stock'
+                    : stockCount > 0
+                      ? fillTemplate(pageCfg.stock.label, { count: stockCount })
+                      : 'In stock'}
+                </span>
               </div>
             )}
 
