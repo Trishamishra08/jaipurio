@@ -124,29 +124,32 @@ const quoteOrder = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod, couponCode, referralCode } = req.body;
+    const { items, shippingAddress, couponCode, referralCode } = req.body;
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'No order items' });
     }
+    // Unpaid orders are cash on delivery only — online orders are created by the gateway verify routes.
+    if (req.body.paymentMethod && req.body.paymentMethod !== 'COD') {
+      return res.status(400).json({ success: false, message: 'Online payments must be completed through the payment window.' });
+    }
+    const paymentMethod = 'COD';
 
-    if ((paymentMethod || 'COD') === 'COD') {
-      const codConfig = await getEnabledMethodConfig('cod');
-      if (codConfig === null) {
-        return res.status(400).json({ success: false, message: 'Cash on delivery is currently unavailable.' });
-      }
+    const codConfig = await getEnabledMethodConfig('cod');
+    if (codConfig === null) {
+      return res.status(400).json({ success: false, message: 'Cash on delivery is currently unavailable.' });
     }
 
     const quote = await computeOrderQuote({
       items: quoteItemsPayload(items),
       couponCode,
-      paymentMethod: paymentMethod || 'COD'
+      paymentMethod
     });
 
     const createdOrder = await savePricedOrder({
       userId: req.user._id,
       quote,
       shippingAddress,
-      paymentMethod: paymentMethod || 'COD',
+      paymentMethod,
       isPaid: false,
       referralCode
     });

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node scripts/predev.js && nodemon index.js",
+    "start": "node api.js && node index.js",
+    "dev": "node api.js && node scripts/predev.js && nodemon index.js",
     "dev:watch": "node scripts/predev.js && nodemon index.js",
     "dev:once": "node scripts/predev.js && node index.js",
     "seed:flow": "node seedMarketplaceFlow.js",
