@@ -9,7 +9,7 @@ const DEMO_ADMIN = {
 };
 
 /**
- * Ensures the demo admin account exists with a known password (dev/demo).
+ * Creates the demo admin account if it does not exist yet (dev/demo).
  * Safe to run on every server start in non-production environments.
  */
 async function ensureDemoAdmin() {
@@ -32,25 +32,11 @@ async function ensureDemoAdmin() {
     return;
   }
 
-  let changed = false;
-  if (admin.role !== 'admin') {
-    admin.role = 'admin';
-    changed = true;
-  }
+  // An existing account keeps its password — a changed admin password must never be reset on restart.
   if (!admin.password) {
     admin.password = hashed;
-    changed = true;
-  } else {
-    const matches = await bcrypt.compare(DEMO_ADMIN.password, admin.password);
-    if (!matches) {
-      admin.password = hashed;
-      changed = true;
-    }
-  }
-
-  if (changed) {
     await admin.save();
-    console.log('Demo admin account synced: admin@gmail.com / admin');
+    console.log('Demo admin had no password; set to the demo password.');
   }
 }
 

@@ -1,14 +1,14 @@
 ﻿import React, { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { mediaUrl } from '../../data/cloudinaryMedia';
-import { ADMIN_DEMO, isAdminAuthenticated, loginAdmin } from '../../utils/adminAuth';
+import { isAdminAuthenticated, loginAdmin } from '../../utils/adminAuth';
 import './admin.css';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({
-    email: localStorage.getItem('jaipurio_admin_remember') || ADMIN_DEMO.email,
+    email: localStorage.getItem('jaipurio_admin_remember') || '',
     password: '',
     remember: Boolean(localStorage.getItem('jaipurio_admin_remember')),
   });
@@ -39,14 +39,15 @@ const AdminLogin = () => {
           <img src={mediaUrl('/jaipurio_logo.png')} alt="Jaipurio" />
         </Link>
 
-        <h1>Sign In Below</h1>
+        <h1>Admin sign in</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
           {error && <div className="admin-login-error">{error}</div>}
 
           <label className="admin-field">
-            <span>Email/Username</span>
+            <span>Email</span>
             <input
+              type="email"
               autoComplete="username"
               value={form.email}
               onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
@@ -55,16 +56,7 @@ const AdminLogin = () => {
           </label>
 
           <label className="admin-field">
-            <span className="flex items-center justify-between">
-              Password
-              <button
-                type="button"
-                className="admin-lost-password"
-                onClick={() => window.alert('Use admin@gmail.com / admin for this demo.')}
-              >
-                Lost your password?
-              </button>
-            </span>
+            <span>Password</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -87,14 +79,10 @@ const AdminLogin = () => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-
-        <p className="admin-login-hint">
-          Demo: {ADMIN_DEMO.email} / {ADMIN_DEMO.password}
-        </p>
       </div>
 
       <footer className="admin-login-footer">
-        Copyright {new Date().getFullYear()} Â© Jaipurio. Version 1.22.1
+        © {new Date().getFullYear()} Jaipurio
       </footer>
     </div>
   );

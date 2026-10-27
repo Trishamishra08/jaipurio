@@ -9,9 +9,7 @@ const THEME_KEY = 'jaipurio_admin_theme';
 const WIDGETS_KEY = 'jaipurio_admin_widgets';
 
 export const ADMIN_DEMO = {
-  name: 'Admin Final',
-  email: 'admin@gmail.com',
-  password: 'admin',
+  name: 'Admin',
   role: 'Super Admin',
 };
 
