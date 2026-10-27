@@ -115,6 +115,23 @@ const saveMethodConfig = async (req, res) => {
   }
 };
 
+// @desc    Reveal one credential (admin "eye" button): the value saved in admin, else the server env fallback
+// @route   GET /api/payments/methods/:id/config/:field
+const revealMethodField = async (req, res) => {
+  try {
+    const method = await PaymentMethod.findById(req.params.id);
+    if (!method) return res.status(404).json({ success: false, message: 'Not found' });
+    const gateway = getGateway(method.code);
+    const field = (gateway?.configFields || []).find((f) => f.key === req.params.field);
+    if (!field) return res.status(400).json({ success: false, message: 'Unknown field' });
+    const saved = decryptConfig(method)[field.key] || '';
+    const fromServer = gateway.resolveCredentials ? gateway.resolveCredentials({})[field.key] || '' : '';
+    res.json({ success: true, data: { value: saved || fromServer, source: saved ? 'admin' : fromServer ? 'server' : '' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Make a method the storefront's pre-selected default (only one at a time)
 // @route   PUT /api/payments/methods/:id/default
 const setDefaultMethod = async (req, res) => {
@@ -185,4 +202,5 @@ module.exports = {
   createMethod,
   deleteMethod,
   decryptConfig,
+  revealMethodField,
 };

@@ -15,6 +15,7 @@ const {
   listAvailableGateways,
   createMethod,
   deleteMethod,
+  revealMethodField,
 } = require('../controllers/paymentMethodController');
 
 const router = express.Router();
@@ -29,6 +30,7 @@ router.get('/methods/available', listAvailableGateways);
 router.post('/methods', createMethod);
 router.put('/methods/:id/toggle', toggleMethod);
 router.put('/methods/:id/config', saveMethodConfig);
+router.get('/methods/:id/config/:field', revealMethodField);
 router.put('/methods/:id/default', setDefaultMethod);
 router.delete('/methods/:id', deleteMethod);
 

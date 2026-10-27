@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiCreditCard, FiPlus, FiTrash2, FiX, FiTruck, FiHome } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiCreditCard, FiPlus, FiTrash2, FiX, FiTruck, FiHome, FiEye, FiEyeOff } from 'react-icons/fi';
 import { SiStripe, SiPaypal, SiRazorpay } from 'react-icons/si';
 import AdminPageHeader from './AdminPageHeader';
 import AdminCkEditor from './ecommerce/AdminCkEditor';
@@ -11,6 +11,7 @@ import {
   togglePaymentMethod,
   setDefaultPaymentMethod,
   savePaymentMethodConfig,
+  revealPaymentMethodField,
   deletePaymentMethod,
 } from '../../utils/paymentMethodsApi';
 
@@ -121,6 +122,33 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
   const [config, setConfig] = useState(() => ({ ...(method.config || {}) }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  // Secret fields: which are shown in plain text, and real values fetched for the eye button.
+  const [visible, setVisible] = useState({});
+  const [revealed, setRevealed] = useState({});
+
+  const isMasked = (v) => !v || String(v).startsWith('••••');
+
+  const toggleVisible = async (key) => {
+    if (visible[key]) {
+      setVisible((p) => ({ ...p, [key]: false }));
+      return;
+    }
+    // Typed (unsaved) value: just show it. Saved value is masked: fetch the real one.
+    if (isMasked(config[key]) && revealed[key] === undefined) {
+      try {
+        const { value } = await revealPaymentMethodField(method.id, key);
+        setRevealed((p) => ({ ...p, [key]: value || '' }));
+      } catch (err) {
+        setError(err.parsedMessage || err.message || 'Could not load this key.');
+        return;
+      }
+    }
+    setVisible((p) => ({ ...p, [key]: true }));
+  };
+
+  const fieldValue = (key) =>
+    visible[key] && isMasked(config[key]) && revealed[key] !== undefined ? revealed[key] : config[key] || '';
 
   const toggleCountry = (code) => {
     setSelectedCountries((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
@@ -129,6 +157,7 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
   const handleUpdate = async () => {
     setSaving(true);
     setError('');
+    setNotice('');
     try {
       const saved = await savePaymentMethodConfig(method.id, {
         name,
@@ -139,6 +168,10 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
         config,
       });
       onSaved(saved);
+      setConfig({ ...(saved?.config || {}) });
+      setRevealed({});
+      setVisible({});
+      setNotice('Saved.');
     } catch (err) {
       setError(err.parsedMessage || err.message || 'Failed to save.');
     } finally {
@@ -221,22 +254,64 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
               {error}
             </div>
           )}
+          {notice && (
+            <div className="px-3 py-2 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
+              {notice}
+            </div>
+          )}
 
           {(method.configFields || []).length > 0 && (
             <div className="bg-white border border-slate-200 rounded-md p-3 space-y-3">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Gateway credentials</h4>
-              {method.configFields.map((field) => (
-                <div key={field.key}>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">{field.label}</label>
-                  <input
-                    type={field.type === 'password' ? 'password' : 'text'}
-                    value={config[field.key] || ''}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                    placeholder={field.secret ? 'Leave unchanged to keep existing value' : ''}
-                    className="w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs focus:outline-hidden focus:border-blue-500"
-                  />
-                </div>
-              ))}
+              {method.configSource === 'server' && (
+                <p className="text-[11px] text-slate-500">
+                  These keys currently come from the server environment. Fill the fields and save only if you want to override them here.
+                </p>
+              )}
+              {method.configFields.map((field) => {
+                const secret = field.type === 'password';
+                return (
+                  <div key={field.key}>
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">{field.label}</label>
+                    <div className="relative">
+                      <input
+                        type={secret && !visible[field.key] ? 'password' : 'text'}
+                        value={fieldValue(field.key)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setConfig((prev) => ({ ...prev, [field.key]: value }));
+                          setRevealed((prev) => ({ ...prev, [field.key]: undefined }));
+                          setNotice('');
+                        }}
+                        placeholder={field.secret ? 'Leave unchanged to keep existing value' : ''}
+                        autoComplete="off"
+                        className={`w-full border border-slate-300 rounded-md py-1.5 px-2.5 text-xs focus:outline-hidden focus:border-blue-500 ${secret ? 'pr-9' : ''}`}
+                      />
+                      {secret && (
+                        <button
+                          type="button"
+                          onClick={() => toggleVisible(field.key)}
+                          aria-label={visible[field.key] ? `Hide ${field.label}` : `Show ${field.label}`}
+                          title={visible[field.key] ? 'Hide' : 'Show'}
+                          className="absolute inset-y-0 right-0 px-2.5 flex items-center text-slate-400 hover:text-slate-700"
+                        >
+                          {visible[field.key] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleUpdate}
+                  disabled={saving}
+                  className="px-4 py-1.5 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white"
+                >
+                  {saving ? 'Saving…' : 'Save credentials'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -313,7 +388,7 @@ const MethodRow = ({ method, countries, onToggle, onDelete, onSaved }) => {
                 disabled={saving}
                 className="px-4 py-1.5 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white"
               >
-                {saving ? 'Saving…' : 'Update'}
+                {saving ? 'Saving…' : 'Save'}
               </button>
             </div>
           </div>

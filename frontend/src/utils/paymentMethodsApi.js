@@ -30,6 +30,12 @@ export const setDefaultPaymentMethod = async (id) => {
 };
 
 /** payload: { config, name, instructions, minOrderAmount, allCountries, countries } — all optional. */
+/** Real value of one credential field (admin only) — { value, source: 'admin' | 'server' | '' }. */
+export const revealPaymentMethodField = async (id, field) => {
+  const res = await api.get(`/payments/methods/${id}/config/${encodeURIComponent(field)}`);
+  return unwrap(res);
+};
+
 export const savePaymentMethodConfig = async (id, payload) => {
   const res = await api.put(`/payments/methods/${id}/config`, payload);
   return unwrap(res);

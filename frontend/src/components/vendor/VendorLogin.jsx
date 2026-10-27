@@ -6,8 +6,6 @@ import { motion } from 'framer-motion';
 import { registerFCMToken } from '../../services/pushNotificationService';
 import api from '../../utils/api';
 
-const DEMO_EMAIL = 'vendor@jaipurio.com';
-const DEMO_PASSWORD = '123456';
 
 const finishLogin = (token, navigate) => {
   localStorage.setItem('vendor_token', token);
@@ -20,8 +18,8 @@ const finishLogin = (token, navigate) => {
 };
 
 const VendorLogin = () => {
-  const [email, setEmail] = useState(DEMO_EMAIL);
-  const [password, setPassword] = useState(DEMO_PASSWORD);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,16 +39,8 @@ const VendorLogin = () => {
         finishLogin(res.data.data.token, navigate);
         return;
       }
-      if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-        finishLogin('demo-vendor-token', navigate);
-        return;
-      }
       setError(res.data.message || 'Invalid Credentials');
     } catch (err) {
-      if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-        finishLogin('demo-vendor-token', navigate);
-        return;
-      }
       setError(err.response?.data?.message || err.parsedMessage || 'Invalid Credentials');
     } finally {
       setIsSubmitting(false);
@@ -125,7 +115,6 @@ const VendorLogin = () => {
                 draggable={false}
               />
               <h2 className="text-2xl md:text-4xl font-playfair font-semibold text-[#6F241D]">Sign In</h2>
-              <p className="text-[11px] text-[#806653] mt-1 md:mt-2">Demo: {DEMO_EMAIL} / {DEMO_PASSWORD}</p>
             </div>
 
             {error && (
