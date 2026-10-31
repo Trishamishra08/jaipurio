@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronDown, Mail, Phone } from 'lucide-react';
+import { usePageSeo } from '../../utils/seo';
+import NotFound from './NotFound';
 import api from '../../utils/api';
 
 // Content pages carried over from the old jaipurio.in site. If one is missing
@@ -93,14 +95,12 @@ const CmsPage = ({ slug: fixedSlug, fallbacks = [] }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  useEffect(() => {
-    if (!page) return undefined;
-    const prev = document.title;
-    document.title = page.seoTitle || `${page.name} | Jaipurio`;
-    return () => {
-      document.title = prev;
-    };
-  }, [page]);
+  usePageSeo({
+    ready: state === 'ready' && !!page,
+    title: page?.seoTitle || page?.name,
+    description: page?.seoDescription || page?.description || page?.content,
+    path: fixedSlug ? undefined : `/${slug}`,
+  });
 
   // Links inside the page content stay in the app instead of reloading it.
   const onContentClick = (e) => {
@@ -123,8 +123,9 @@ const CmsPage = ({ slug: fixedSlug, fallbacks = [] }) => {
   }
 
   if (state === 'missing') {
-    // Unknown address → home. Known old page not published yet → keep the URL alive with a short note.
-    if (!LEGACY_PAGE_SLUGS.includes(slug)) return <Navigate to="/home" replace />;
+    // Unknown address → a real "not found" page (not a redirect to home, which is a soft 404).
+    // Known old page not published yet → keep the URL alive with a short note.
+    if (!LEGACY_PAGE_SLUGS.includes(slug)) return <NotFound />;
     return (
       <div className="site-container py-14 max-w-xl text-center">
         <h1 className="font-playfair text-2xl font-semibold text-[#3F261B]">This page is being updated</h1>

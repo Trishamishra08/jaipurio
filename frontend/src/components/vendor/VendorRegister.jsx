@@ -4,6 +4,8 @@ import { mediaUrl } from '../../data/cloudinaryMedia';
 import { Upload, CheckCircle2, ChevronRight, ChevronLeft, ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
+import { usePageSeo } from '../../utils/seo';
+import { validateGstin } from '../../utils/gstin';
 
 const steps = [
   { id: 1, title: 'Personal Info' },
@@ -14,6 +16,11 @@ const steps = [
 ];
 
 const VendorRegister = () => {
+  usePageSeo({
+    title: 'Sell on Jaipurio | Register as an Artisan or Seller',
+    description: 'Register as a Jaipurio seller and reach customers across India. List handcrafted products, get orders and receive payouts directly.',
+    path: '/vendor/register',
+  });
   const [currentStep, setCurrentStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,8 +146,10 @@ const VendorRegister = () => {
         setError('Business Name is required.');
         return false;
       }
-      if (!formData.gstNumber || formData.gstNumber.trim().length !== 15) {
-        setError('GST number must be exactly 15 alphanumeric characters.');
+      // Format, check digit, and state code must match the business state below.
+      const gstError = validateGstin(formData.gstNumber, formData.state);
+      if (gstError) {
+        setError(gstError);
         return false;
       }
       if (!formData.businessType) {
@@ -795,6 +804,9 @@ const VendorRegister = () => {
               <div className="pt-4 border-t border-gray-200/80 flex items-center justify-between shrink-0">
                 <button 
                   type="button" 
+                  id="vendor-register-back"
+                  aria-label={`Back to step ${Math.max(1, currentStep - 1)}`}
+                  data-testid="vendor-register-back"
                   onClick={prevStep}
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
                     currentStep === 1 
@@ -808,6 +820,9 @@ const VendorRegister = () => {
 
                 <button 
                   type="submit" 
+                  id={currentStep === steps.length ? 'vendor-register-submit' : 'vendor-register-continue'}
+                  aria-label={currentStep === steps.length ? 'Submit vendor application' : `Continue to step ${currentStep + 1} of ${steps.length}`}
+                  data-testid={currentStep === steps.length ? 'vendor-register-submit' : `vendor-register-continue-step-${currentStep}`}
                   disabled={isSubmitting}
                   className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-md transition-all active:scale-95 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#6F241D] hover:bg-[#4E271D]'}`}
                 >

@@ -22,7 +22,8 @@ export const FOOTER_DEFAULTS = {
     linkText: 'Contact Us',
     link: '/contact',
   },
-  social: { instagram: 'https://instagram.com', facebook: 'https://facebook.com', pinterest: 'https://pinterest.com' },
+  // Real profile URLs only (bare domains are hidden in the footer).
+  social: { instagram: 'https://www.instagram.com/jaipurio/', facebook: 'https://www.facebook.com/jaipurio/', pinterest: '' },
   app: { enabled: true, title: 'Get the Jaipurio App', text: 'Shop mitti crafts on the go.', showBadges: true },
   stats: {
     enabled: true,

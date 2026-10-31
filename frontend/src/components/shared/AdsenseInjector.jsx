@@ -4,6 +4,9 @@ import api from '../../utils/api';
 /** Injects the admin-configured Google AdSense snippet into <head> once, site-wide. Renders nothing. */
 const AdsenseInjector = () => {
   useEffect(() => {
+    // Ads (and Google's cookie-consent overlay that comes with them) are for the
+    // storefront only — never on the admin or seller panels.
+    if (/^\/(admin|vendor|seller)(\/|$)/.test(window.location.pathname)) return undefined;
     let cancelled = false;
     api
       .get('/ads/settings/public')

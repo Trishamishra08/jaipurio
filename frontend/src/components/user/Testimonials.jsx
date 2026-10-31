@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useShop } from '../../context/ShopContext';
 import { Star } from 'lucide-react';
 import api from '../../utils/api';
 import { useHomeSections } from '../../utils/useHomeSections';
@@ -42,7 +41,7 @@ const ReviewCard = ({ rev }) => (
 // Live journal post — cover image, category, title and excerpt come from the blog API.
 const BlogCard = ({ blog }) => (
   <Link
-    to={`/blog/${blog._id || blog.id}`}
+    to={`/blog/${blog.slug || blog._id || blog.id}`}
     className="shrink-0 w-[248px] sm:w-[280px] bg-[#FCF8F2] border border-[#E8D4B5] rounded-2xl overflow-hidden flex flex-col"
   >
     <div className="h-28 sm:h-32 bg-[#F7EFE0]">
@@ -60,46 +59,55 @@ const BlogCard = ({ blog }) => (
   </Link>
 );
 
+// Real, admin-approved customer testimonials only (Admin → Testimonials) —
+// never sample reviews. With source "blogs" the strip shows blog posts and is
+// headed as a blog strip, not as customer reviews.
+const toReviewCard = (t) => ({
+  id: t._id,
+  name: t.name,
+  rating: Math.max(1, Math.min(5, Math.round(Number(t.rating) || 5))),
+  comment: t.content,
+  location: t.role || 'Customer',
+  productImage: t.image || '',
+});
+
 const Testimonials = () => {
-  const { reviews } = useShop();
   const cfg = useHomeSections().sections.testimonials;
-  const [blogs, setBlogs] = useState([]);
+  const wantsBlogs = cfg.source !== 'reviews';
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
-    if (cfg.source === 'reviews') return undefined;
     let cancelled = false;
-    api
-      .get('/blogs', { params: { limit: cfg.limit || 8 } })
-      .then((res) => {
-        if (!cancelled) setBlogs(res.data?.data?.blogs || []);
-      })
-      .catch(() => {});
+    const limit = cfg.limit || 8;
+    const req = wantsBlogs
+      ? api.get('/blogs', { params: { limit } }).then((res) => res.data?.data?.blogs || [])
+      : api.get('/testimonials').then((res) => (res.data?.data?.testimonials || []).slice(0, limit).map(toReviewCard));
+    req.then((rows) => !cancelled && setItems(rows)).catch(() => !cancelled && setItems([]));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [wantsBlogs, cfg.limit]);
 
-  // Blogs when there are any published; the static reviews are the fallback.
-  const items = cfg.source !== 'reviews' && blogs.length ? blogs : reviews;
-  const loop = useMemo(() => [...items, ...items], [items]);
+  // The marquee needs a second copy to loop seamlessly; it is hidden from
+  // screen readers and search engines' accessibility tree so content isn't repeated.
+  const loop = useMemo(() => items.map((item, i) => ({ item, i, copy: false })).concat(items.map((item, i) => ({ item, i, copy: true }))), [items]);
+  const heading = wantsBlogs && /patron|review|testimonial|customer/i.test(cfg.title || '') ? 'From the Jaipurio Journal' : cfg.title;
 
   if (!cfg.enabled || !items.length) return null;
 
   return (
     <section className="w-full bg-white py-6 border-t border-[#E8E2D9] overflow-hidden">
       <div className="site-container">
-        <SectionHeading title={cfg.title} />
+        <SectionHeading title={heading} />
       </div>
 
       <div className="testimonial-track site-container">
         <div className="testimonial-marquee">
-          {loop.map((item, i) =>
-            items === blogs ? (
-              <BlogCard key={`${item._id || item.id}-${i}`} blog={item} />
-            ) : (
-              <ReviewCard key={`${item.id}-${i}`} rev={item} />
-            )
-          )}
+          {loop.map(({ item, i, copy }) => (
+            <div key={`${item._id || item.id || i}-${copy ? 'b' : 'a'}`} aria-hidden={copy || undefined} className="contents">
+              {wantsBlogs ? <BlogCard blog={item} /> : <ReviewCard rev={item} />}
+            </div>
+          ))}
         </div>
       </div>
     </section>

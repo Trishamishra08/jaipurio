@@ -43,7 +43,15 @@ const Social = ({ links }) => {
     [links.instagram, 'Instagram', <IconInstagram key="ig" />],
     [links.facebook, 'Facebook', <IconFacebook key="fb" />],
     [links.pinterest, 'Pinterest', <IconPinterest key="pin" />],
-  ].filter(([href]) => href);
+  ]
+    // Only real profile URLs — a bare "https://instagram.com" isn't a profile.
+    .filter(([href]) => {
+      try {
+        return href && new URL(href).pathname.replace(/\/+$/, '').length > 1;
+      } catch {
+        return false;
+      }
+    });
   if (!items.length) return null;
   return (
     <div className="flex items-center gap-1.5">
@@ -368,7 +376,7 @@ const Footer = () => {
                               {col.links.map((l, li) => (
                                 <li key={`${l.label}-${li}`}>
                                   {/^(https?:)?\/\//i.test(l.to || '') ? (
-                                    <a href={l.to} target="_blank" rel="noreferrer" className="font-body text-[11px] sm:text-[12px] text-white/80 hover:text-white">
+                                    <a href={l.to} target="_blank" rel="nofollow noopener noreferrer" className="font-body text-[11px] sm:text-[12px] text-white/80 hover:text-white">
                                       {l.label}
                                     </a>
                                   ) : (

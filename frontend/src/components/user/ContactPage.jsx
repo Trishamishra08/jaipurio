@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, MapPin, Phone, Send } from 'lucide-react';
 import api from '../../utils/api';
 import { useFooterSettings } from '../../utils/useFooterSettings';
+import { usePageSeo } from '../../utils/seo';
 
 const PHONE = '+91 9929949258';
 const EMAIL = 'info@jaipurio.com';
@@ -11,6 +12,11 @@ const inputCls =
 
 /** Contact page — same details as the old jaipurio.in contact page; messages go to Admin → Contacts. */
 const ContactPage = () => {
+  usePageSeo({
+    title: 'Contact Jaipurio | Customer Support',
+    description: 'Get help with orders, returns, bulk and custom handicraft requests. Call, WhatsApp or email the Jaipurio team in Jaipur.',
+    path: '/contact',
+  });
   const footer = useFooterSettings();
   const office = footer.offices?.items?.[0];
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });

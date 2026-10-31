@@ -1,7 +1,8 @@
 import React from 'react';
 import { Heart, Star, ShoppingBag } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { productPath } from '../../utils/storefrontProduct';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 import ThumbImg from '../shared/ThumbImg';
 
@@ -42,7 +43,7 @@ const ProductCard = ({ product }) => {
 
   return (
     <div
-      onClick={() => navigate(`/product/${product._id}`)}
+      onClick={() => navigate(productPath(product))}
       className="bg-white rounded-[10px] overflow-hidden border border-[#E8E2D9] shadow-[0_2px_10px_rgba(62,39,35,0.06)] hover:shadow-[0_12px_28px_rgba(62,39,35,0.14)] hover:-translate-y-1 transition-all duration-300 flex flex-col group cursor-pointer font-mulish"
     >
       <div className="relative w-full aspect-square bg-white overflow-hidden">
@@ -86,7 +87,10 @@ const ProductCard = ({ product }) => {
 
       <div className="px-2.5 pt-2 pb-2.5 sm:px-3 sm:pt-2.5 sm:pb-3 flex flex-col flex-1 bg-white border-t border-[#F1ECE4]">
         <h3 className="font-semibold text-[13px] sm:text-[14px] text-[#3F261B] group-hover:text-[#8B2E3A] transition-colors leading-snug line-clamp-2">
-          {product.name}
+          {/* Real link so crawlers follow the canonical /products/<slug> URL */}
+          <Link to={productPath(product)} onClick={(e) => e.stopPropagation()} className="hover:underline-offset-2">
+            {product.name}
+          </Link>
         </h3>
 
         {product.reviews > 0 && (

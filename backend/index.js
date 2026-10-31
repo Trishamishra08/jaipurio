@@ -160,16 +160,99 @@ app.use('/api/ledger', ledgerRoutes);
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve robots.txt dynamically from admin settings
+// Serve robots.txt dynamically from admin settings — but only on the real
+// domain. Demo/preview domains block all crawling and carry noindex, so they
+// never show up in Google as a duplicate of jaipurio.in.
+const { SITE_URL, isIndexableRequest } = require('./utils/siteHost');
+const LEGACY_DEFAULT_ROBOTS = `# SEARCH ENGINES — WELCOME
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: Applebot
+Allow: /
+
+# AI SEARCH BOTS — WELCOME (they recommend you to shoppers)
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+
+# AI TRAINING BOTS — BLOCKED
+User-agent: GPTBot
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+
+# BLOCK PRIVATE AREAS
+User-agent: *
+Disallow: /cart
+Disallow: /checkout
+Disallow: /customer/
+Disallow: /login
+Disallow: /register
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+
+Sitemap: https://jaipurio.in/sitemap.xml`;
+const squash = (s) => String(s || '').replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
+const isLegacyDefaultRobots = (text) => squash(text) === squash(LEGACY_DEFAULT_ROBOTS);
 app.get('/robots.txt', async (req, res) => {
+  if (!isIndexableRequest(req)) {
+    res.set('X-Robots-Tag', 'noindex, nofollow');
+    return res.type('text/plain').send('# Non-production copy of Jaipurio - not for indexing.\nUser-agent: *\nDisallow: /\n');
+  }
   try {
     const Settings = require('./models/settingsModel');
     const settings = await Settings.findOne({});
-    const content = settings?.robotsTxt || Settings.schema.path('robotsTxt').defaultValue;
+    const currentDefault = Settings.schema.path('robotsTxt').defaultValue;
+    let content = settings?.robotsTxt || currentDefault;
+    // The old built-in default (separate "Googlebot: Allow /" groups, so the
+    // private-area blocks never applied to Google) was saved to the database
+    // untouched on many installs. Serve the corrected default in its place;
+    // anything an admin actually edited is served as written.
+    if (isLegacyDefaultRobots(content)) content = currentDefault;
+    // Point the Sitemap line at this site's own sitemap (never another domain's).
+    content = content.replace(/^Sitemap:.*$/gim, '').trimEnd() + `\n\nSitemap: ${SITE_URL}/sitemap.xml\n`;
     res.type('text/plain').send(content);
   } catch {
-    res.type('text/plain').send('User-agent: *\nAllow: /\n');
+    res.type('text/plain').send(`User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
   }
+});
+
+// llms.txt — a short plain-text guide to the site for AI assistants/search.
+app.get('/llms.txt', (req, res) => {
+  if (!isIndexableRequest(req)) res.set('X-Robots-Tag', 'noindex, nofollow');
+  res.type('text/plain').send(
+    [
+      '# Jaipurio',
+      '',
+      '> Jaipurio is an online bazaar for authentic handcrafted products from Jaipur and Rajasthan: marble idols and temples, terracotta and mitti pottery, home decor, jewellery and gifts, sold by verified artisans and sellers with pan-India delivery.',
+      '',
+      '## Main pages',
+      `- [Home](${SITE_URL}/home): featured categories, deals and new arrivals`,
+      `- [Shop](${SITE_URL}/shop): full catalogue with category filters`,
+      `- [Blog](${SITE_URL}/blog): guides on Rajasthani crafts, care and gifting`,
+      `- [About](${SITE_URL}/about): who we are`,
+      `- [Contact](${SITE_URL}/contact): customer support`,
+      '',
+      '## Policies',
+      `- [Return policy](${SITE_URL}/return-policy)`,
+      `- [Privacy policy](${SITE_URL}/privacy-policy)`,
+      '',
+      '## Sitemap',
+      `- [XML sitemap](${SITE_URL}/sitemap.xml): every product, category and blog post`,
+      '',
+    ].join('\n')
+  );
 });
 
 // Sitemaps (products/categories/brands/blog) — public, reached via a Vercel

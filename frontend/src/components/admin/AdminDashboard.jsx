@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, Package, ShoppingBag, Users } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import AdminPageHeader, { ManageWidgetsButton } from './AdminPageHeader';
-import { getActivityLogs, getWidgetPrefs, relativeTime, setWidgetPrefs } from '../../utils/adminAuth';
+import { getWidgetPrefs, relativeTime, setWidgetPrefs } from '../../utils/adminAuth';
 import { fetchAdminDashboardStats } from '../../utils/adminApi';
+import { blogsList } from '../../utils/blogsApi';
 
 const STAT_CARDS = [
   { key: 'orders', label: 'Orders', icon: ShoppingBag, tone: 'mint' },
@@ -14,37 +15,47 @@ const STAT_CARDS = [
 ];
 
 const AdminDashboard = () => {
-  const { products, orders, reviews, vendors } = useShop();
+  const { vendors } = useShop();
   const [widgets, setWidgets] = useState(getWidgetPrefs);
   const [manageOpen, setManageOpen] = useState(false);
-  const logs = getActivityLogs();
 
+  // Everything on the dashboard comes from the database (no sample/local data),
+  // so the counts match the Orders, Customers and Blog pages.
   const [liveStats, setLiveStats] = useState(null);
+  const [recentPosts, setRecentPosts] = useState([]);
 
   useEffect(() => {
     fetchAdminDashboardStats()
       .then(setLiveStats)
       .catch(() => {});
+    blogsList({ limit: 8, page: 1 })
+      .then((rows) => setRecentPosts(rows.slice(0, 8)))
+      .catch(() => setRecentPosts([]));
   }, []);
 
   const stats = useMemo(
     () => ({
-      orders: liveStats?.totalOrders ?? orders?.length ?? 0,
-      products: liveStats?.totalProducts ?? products?.length ?? 0,
+      orders: liveStats?.totalOrders ?? 0,
+      pendingOrders: liveStats?.pendingOrders ?? 0,
+      products: liveStats?.totalProducts ?? 0,
       customers: liveStats?.totalUsers ?? 0,
-      reviews: liveStats?.totalReviews ?? reviews?.length ?? 0,
+      reviews: liveStats?.totalReviews ?? 0,
     }),
-    [liveStats, orders, products, reviews]
+    [liveStats]
   );
+  const logs = liveStats?.recentActivity || [];
 
-  const posts = useMemo(() => {
-    const source = products?.length ? products : [];
-    return source.slice(0, 8).map((p, index) => ({
-      id: index + 1,
-      name: p.name,
-      createdAt: '2025-05-06',
-    }));
-  }, [products]);
+  const posts = useMemo(
+    () =>
+      recentPosts.map((p, index) => ({
+        id: index + 1,
+        key: p._id || p.id || index,
+        editId: p._id || p.id,
+        name: p.title || p.name,
+        createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '',
+      })),
+    [recentPosts]
+  );
 
   const saveWidgets = (next) => {
     setWidgets(next);
@@ -97,11 +108,16 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
+                  {posts.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="text-slate-400 text-center py-4">No posts yet</td>
+                    </tr>
+                  )}
                   {posts.map((post) => (
-                    <tr key={post.id}>
+                    <tr key={post.key}>
                       <td className="text-slate-400">{post.id}</td>
                       <td>
-                        <Link to="/admin/blogs" className="admin-table-link">
+                        <Link to={post.editId ? `/admin/blogs/edit/${post.editId}` : '/admin/blogs'} className="admin-table-link">
                           {post.name}
                         </Link>
                       </td>
@@ -121,6 +137,7 @@ const AdminDashboard = () => {
               <Link to="/admin/platform/activity-logs">View all</Link>
             </div>
             <div className="admin-log-list">
+              {logs.length === 0 && <p className="text-slate-400 text-sm px-3 py-4">No sign-in activity yet</p>}
               {logs.slice(0, 8).map((log, index) => (
                 <article key={log.id} className="admin-log-item">
                   <span className={`admin-log-avatar tone-${index % 3}`}>
@@ -129,7 +146,7 @@ const AdminDashboard = () => {
                   <div>
                     <p>{log.message}</p>
                     <small>
-                      {relativeTime(log.createdAt)} ({log.ip})
+                      {relativeTime(log.createdAt)}{log.ip ? ` (${log.ip})` : ''}
                     </small>
                   </div>
                 </article>
@@ -145,8 +162,8 @@ const AdminDashboard = () => {
           <span>Marketplace stores</span>
         </Link>
         <Link to="/admin/orders" className="admin-mini-card admin-mini-peach">
-          <strong>{stats.orders}</strong>
-          <span>Orders needing attention</span>
+          <strong>{stats.pendingOrders}</strong>
+          <span>Unpaid orders needing attention</span>
         </Link>
         <Link to="/admin/contacts" className="admin-mini-card admin-mini-lilac">
           <strong>4</strong>

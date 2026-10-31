@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { breadcrumbSchema, absoluteUrl, usePageSeo } from '../../utils/seo';
+import NotFound from './NotFound';
 import api from '../../utils/api';
+import { productPath } from '../../utils/storefrontProduct';
 import { useShop } from '../../context/ShopContext';
 import { getWhatsAppHref } from '../../utils/whatsapp';
 import JharokhaBand from './JharokhaBand';
@@ -43,6 +46,7 @@ const withHeadingAnchors = (html) => {
 
 const BlogDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { products } = useShop();
   const [blog, setBlog] = useState(null);
   const [loadState, setLoadState] = useState('loading'); // loading | ready | error
@@ -160,6 +164,42 @@ const BlogDetail = () => {
   const faqs = postFaqs.length ? postFaqs : DEFAULT_FAQS;
   const keywords = (blog?.tags || []).filter(Boolean);
 
+  // Old /blog/<mongo id> links move to the readable /blog/<slug> address.
+  useEffect(() => {
+    if (blog?.slug && id !== blog.slug) navigate(`/blog/${blog.slug}`, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blog?.slug]);
+
+  const blogPath = blog ? `/blog/${blog.slug || blog._id || blog.id}` : undefined;
+  usePageSeo({
+    ready: loadState === 'ready' && !!blog,
+    title: blog?.seo?.general?.metaTitle || blog?.seoTitle || title,
+    description: blog?.seo?.general?.metaDescription || blog?.seoDescription || excerpt || blog?.content,
+    path: blogPath,
+    image,
+    type: 'article',
+    jsonLd: blog
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            headline: title,
+            image: image ? [absoluteUrl(image)] : undefined,
+            datePublished: blog.createdAt || undefined,
+            dateModified: blog.updatedAt || blog.createdAt || undefined,
+            author: { '@type': 'Organization', name: blog.author || 'Jaipurio' },
+            publisher: { '@type': 'Organization', name: 'Jaipurio', logo: { '@type': 'ImageObject', url: absoluteUrl('/jaipurio_logo.png') } },
+            mainEntityOfPage: absoluteUrl(blogPath),
+          },
+          breadcrumbSchema([
+            { name: 'Home', path: '/home' },
+            { name: 'Blog', path: '/blog' },
+            { name: title, path: blogPath },
+          ]),
+        ]
+      : null,
+  });
+
   if (loadState === 'loading') {
     return (
       <div className="heritage-page pb-16">
@@ -169,7 +209,10 @@ const BlogDetail = () => {
     );
   }
 
-  if (loadState === 'error' || !blog) {
+  if (loadState === 'error') {
+    return <NotFound title="Article not found" message="This article has moved or no longer exists." />;
+  }
+  if (!blog) {
     return (
       <div className="heritage-page pb-16">
         <JharokhaBand />
@@ -343,7 +386,7 @@ const BlogDetail = () => {
             <div className="sb-card">
               <h4>Shop this guide</h4>
               {relatedProducts.slice(0, 2).map((p) => (
-                <Link key={p._id} to={`/product/${p._id}`} className="sb-product">
+                <Link key={p._id} to={productPath(p)} className="sb-product">
                   <img src={p.image} alt="" loading="lazy" decoding="async" />
                   <div>
                     <div className="sb-product-name">{p.name}</div>
@@ -380,7 +423,7 @@ const BlogDetail = () => {
           <div className="blog-section-head"><span className="eyebrow">From this guide</span><h2 style={{ fontSize: 22 }}>Products mentioned</h2></div>
           <div className="rel-prod-grid">
             {relatedProducts.map((p) => (
-              <Link key={p._id} to={`/product/${p._id}`} className="rel-prod-card">
+              <Link key={p._id} to={productPath(p)} className="rel-prod-card">
                 <div className="rel-prod-media"><img src={p.image} alt={p.name} loading="lazy" decoding="async" /></div>
                 <div className="rel-prod-body"><h5>{p.name}</h5><span className="price">₹{Number(p.price).toLocaleString('en-IN')}</span></div>
               </Link>
@@ -407,7 +450,7 @@ const BlogDetail = () => {
           <div className="blog-section-head"><span className="eyebrow">Recommended reads</span><h2>More from the journal</h2></div>
           <div className="rel-art-grid">
             {morePosts.map((post) => (
-              <Link key={post._id} to={`/blog/${post._id}`} className="article-card">
+              <Link key={post._id} to={`/blog/${post.slug || post._id}`} className="article-card">
                 <div className="article-media"><img src={post.image} alt="" loading="lazy" decoding="async" /></div>
                 <div className="article-body">
                   <div className="article-meta">{post.category}</div>

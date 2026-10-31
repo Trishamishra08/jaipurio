@@ -13,6 +13,7 @@ import Testimonials from './Testimonials';
 import { useHomeSections } from '../../utils/useHomeSections';
 import { CustomSection } from './HomeAfterCategory';
 import { isCustomKey } from '../../data/homeSectionsDefaults';
+import { usePageSeo, organizationSchema } from '../../utils/seo';
 
 // Everything below the hero is rendered in the order set in
 // Admin → Appearance → Home Page (each part hides itself when switched off).
@@ -30,10 +31,18 @@ const PARTS = {
 };
 
 const Home = () => {
+  usePageSeo({
+    title: 'Jaipurio | Handcrafted Marble Idols, Mitti Pottery & Rajasthani Handicrafts',
+    description: 'Shop authentic handcrafted marble idols and temples, terracotta and mitti pottery, home decor, jewellery and gifts from Jaipur artisans. Pan-India delivery, secure payments.',
+    path: '/home',
+    jsonLd: organizationSchema(),
+  });
   const home = useHomeSections();
 
   return (
     <div className="relative min-h-screen bg-white pb-16 md:pb-8 overflow-x-hidden w-full">
+      {/* The page's one H1: brand + main keyword (banner slide titles are H2s). */}
+      <h1 className="sr-only">Jaipurio: Handcrafted Marble Idols, Mitti Pottery and Rajasthani Handicrafts</h1>
       {home.sections.hero.enabled && <HeroCarousel />}
 
       <div className="relative z-10 pt-1">

@@ -8,16 +8,18 @@ import AuthFrame from './AuthFrame';
 
 const Register = () => {
   const location = useLocation();
-  // Login sends people here (with their number) when no account exists yet.
+  // Login sends people here after verifying a number that has no account yet,
+  // passing the verified number and OTP so they only add their details.
   const [form, setForm] = useState({
     name: '',
     gender: '',
     email: '',
-    mobile: String(location.state?.mobile || '').replace(/D/g, '').slice(-10),
-    otp: '',
+    mobile: String(location.state?.mobile || '').replace(/\D/g, '').slice(-10),
+    otp: location.state?.verified ? String(location.state?.otp || '') : '',
     agreed: false,
   });
-  const [otpSent, setOtpSent] = useState(false);
+  const preVerified = Boolean(location.state?.verified && location.state?.otp);
+  const [otpSent, setOtpSent] = useState(preVerified);
   const [timer, setTimer] = useState(0);
   const [isGenderDropdownOpen, setIsGenderDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);

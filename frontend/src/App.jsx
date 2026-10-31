@@ -99,12 +99,16 @@ import AdminBlogs from './components/admin/AdminBlogs';
 import AdminBlogEdit from './components/admin/AdminBlogEdit';
 import AdminBlogCategories from './components/admin/AdminBlogCategories';
 import AdminRoutes from './components/admin/AdminRoutes';
+import AdminAuthGuard from './components/admin/AdminAuthGuard';
+import AdminLogin from './components/admin/AdminLogin';
 import CmsPage from './components/user/CmsPage';
 import CityPage, { ShipsToIndex } from './components/user/CityPage';
 import ContactPage from './components/user/ContactPage';
 import { BrandRedirect, CartRedirect, CategorySlugRedirect } from './components/user/LegacyRedirects';
 
 import { captureReferralFromUrl } from './utils/referralTracking';
+import { isInApp } from './utils/appContext';
+import NotFound from './components/user/NotFound';
 import { useAffiliateSettings } from './utils/useAffiliateSettings';
 
 const ReferralTracker = () => {
@@ -151,7 +155,8 @@ function App() {
         <ReferralTracker />
         <Routes>
           {/* App load → splash → login */}
-          <Route path="/" element={<SplashPage />} />
+          {/* Web visitors land straight on the real home page; the mobile app keeps its splash. */}
+          <Route path="/" element={isInApp() ? <SplashPage /> : <Navigate to="/home" replace />} />
 
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Auth />} />
@@ -240,6 +245,9 @@ function App() {
               <Route path="settings" element={<VendorSettings />} />
             </Route>
           </Route>
+          <Route path="/admin/login" element={<AdminLogin />} />
+          {/* Every other admin page needs a signed-in admin */}
+          <Route element={<AdminAuthGuard />}>
           <Route path="/admin/ecommerce" element={<Navigate to="/admin/ecommerce/reports" replace />} />
           <Route path="/admin/ecommerce/reports" element={<AdminEcommerceReports />} />
           <Route path="/admin/ecommerce/orders" element={<AdminEcommerceOrders />} />
@@ -329,8 +337,12 @@ function App() {
           <Route path="/admin/payouts" element={<Navigate to="/admin/marketplaces/withdrawals" replace />} />
           <Route path="/admin/vendors" element={<Navigate to="/admin/marketplaces/stores" replace />} />
           <Route path="/admin/*" element={<AdminRoutes />} />
+          </Route>
 
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          {/* Unknown URLs get a real "not found" page instead of a redirect to /home (soft 404). */}
+          <Route element={<PublicLayout />}>
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
       </Router>
     </ShopProvider>

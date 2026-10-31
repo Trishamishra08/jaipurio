@@ -100,9 +100,9 @@ export const HOME_SECTIONS = [
   },
   {
     key: 'testimonials', label: 'Testimonials / blog strip (scrolling cards)', kind: 'content', scope: 'page',
-    defaults: { title: 'Words from our Patrons', source: 'blogs', limit: 8 },
+    defaults: { title: 'Words from our Patrons', source: 'reviews', limit: 8 },
     fields: [['title', 'Heading']],
-    sourceChoices: [['blogs', 'Latest blog posts (falls back to customer reviews if none)'], ['reviews', 'Customer reviews']],
+    sourceChoices: [['reviews', 'Customer testimonials (Admin → Testimonials; hidden when none are approved)'], ['blogs', 'Latest blog posts (shown as a blog strip)']],
   },
 
   // ── Inside the "Main sections" block ──────────────────────────────

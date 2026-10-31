@@ -1,13 +1,33 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProfileSidebar from './ProfileSidebar';
+import { useShop } from '../../context/ShopContext';
 import api from '../../utils/api';
 import { ensureCustomerAuth } from '../../utils/customerAuth';
 import { FiShare2, FiCopy, FiCheck } from 'react-icons/fi';
 
 import { formatInr } from '../../utils/storefrontProduct';
 import { buildReferralLink, useAffiliateSettings } from '../../utils/useAffiliateSettings';
+import { usePageSeo } from '../../utils/seo';
+
+// Shown on the program page so visitors know the terms before applying.
+// Default rate matches the backend (affiliateModel commissionRate default 10);
+// the referral window matches utils/referralTracking.js (30 days).
+const PROGRAM_TERMS = [
+  ['Commission', '10% of the order value'],
+  ['Referral window', '30 days from the click'],
+  ['Minimum payout', 'No minimum — request any available balance'],
+  ['Payout', 'Bank transfer / UPI after admin approval'],
+];
 
 const Affiliate = () => {
+  usePageSeo({
+    title: 'Jaipurio Affiliate Program | Earn 10% Commission',
+    description: 'Join the Jaipurio affiliate program: share your link and earn 10% commission on orders placed within 30 days. Payouts by bank transfer or UPI.',
+    path: '/affiliate',
+  });
+  const navigate = useNavigate();
+  const { isAuthenticated } = useShop();
   const linkFormat = useAffiliateSettings(); // site / landing page / parameter set by the admin
   const [affiliate, setAffiliate] = useState(null);
   const [earnings, setEarnings] = useState(null);
@@ -20,6 +40,11 @@ const Affiliate = () => {
   const [savingBank, setSavingBank] = useState(false);
 
   const load = useCallback(async () => {
+    if (!isAuthenticated) {
+      setAffiliate(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       await ensureCustomerAuth();
@@ -44,13 +69,17 @@ const Affiliate = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const handleApply = async () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/affiliate' } });
+      return;
+    }
     setApplying(true);
     setMessage('');
     try {
@@ -131,8 +160,16 @@ const Affiliate = () => {
               <p className="text-sm text-[#70452F] max-w-md mx-auto">
                 Share your unique link. When someone buys through it within 30 days, you earn a commission on the order.
               </p>
+              <dl className="max-w-md mx-auto grid grid-cols-1 sm:grid-cols-2 gap-2 text-left py-2">
+                {PROGRAM_TERMS.map(([k, v]) => (
+                  <div key={k} className="bg-white border border-[#E8D4B5] rounded-xl px-3 py-2">
+                    <dt className="text-[11px] uppercase tracking-wide text-[#8B2E1E] font-semibold">{k}</dt>
+                    <dd className="text-[13px] text-[#3D2418] font-semibold">{v}</dd>
+                  </div>
+                ))}
+              </dl>
               <button type="button" onClick={handleApply} disabled={applying} className="bg-[#6F241D] text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-[#873A24] disabled:opacity-60">
-                {applying ? 'Applying…' : 'Apply now'}
+                {applying ? 'Applying…' : isAuthenticated ? 'Apply now' : 'Log in to apply'}
               </button>
               {message && <p className="text-xs text-red-600">{message}</p>}
             </div>

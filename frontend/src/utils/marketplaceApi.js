@@ -11,11 +11,20 @@ export const resolveProductId = (record) => {
   return null;
 };
 
+// Sample data (platformStore) is a local-development aid only. It is never shown
+// when the server refuses the request (401/403 = not signed in / no access) or in
+// a production build — otherwise anonymous visitors saw sample orders/customers.
 export const liveApi = async (fn, fallback) => {
   try {
     return await fn();
-  } catch {
-    return typeof fallback === 'function' ? fallback() : fallback;
+  } catch (err) {
+    const status = err?.response?.status;
+    const sample = typeof fallback === 'function' ? fallback() : fallback;
+    if (status === 401 || status === 403 || !import.meta.env.DEV) {
+      if (Array.isArray(sample)) return [];
+      throw err;
+    }
+    return sample;
   }
 };
 

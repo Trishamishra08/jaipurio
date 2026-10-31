@@ -5,6 +5,10 @@
 
 export const POPUP_IMAGE = 'https://minio-jaipurio.sakha.cloud/jaipurio/5-8.jpg';
 
+// Used for the "Get it on Google Play" button until the real app link is saved
+// in Appearance → Popup (Google Play link).
+export const PLAY_STORE_FALLBACK = 'https://play.google.com/store/search?q=jaipurio&c=apps';
+
 // How often a visitor sees the popup.
 export const POPUP_FREQUENCIES = [
   ['every', 'Every time the website is opened'],

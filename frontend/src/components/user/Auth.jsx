@@ -97,12 +97,6 @@ const Auth = () => {
         }
       }
     } catch (err) {
-      if (err.response?.status === 404) {
-        // No account for this number yet — send them to sign up with it.
-        showNotification('No account found for this number. Please create one.', 'error');
-        setTimeout(() => navigate('/register', { state: { mobile: form.mobile, from: location.state?.from } }), 1200);
-        return;
-      }
       showNotification(err.response?.data?.message || 'Could not send OTP. Please try again.', 'error');
     }
   };
@@ -149,6 +143,15 @@ const Auth = () => {
           mobile: form.mobile,
           otp: form.otp,
         });
+        if (res.data.success && res.data.needsRegistration) {
+          // Number verified but no account yet — finish sign-up with the same OTP.
+          showNotification('Number verified! Just add your details to finish.');
+          setTimeout(
+            () => navigate('/register', { state: { mobile: form.mobile, otp: form.otp, verified: true, from: location.state?.from } }),
+            800
+          );
+          return;
+        }
         if (res.data.success) {
           const { token, ...userData } = res.data.data;
           localStorage.setItem('customer_token', token);

@@ -436,8 +436,16 @@ const deleteTestimonial = async (req, res) => {
 // @access  Private/Admin
 const getDashboardStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
+    // Customers only: not admins/vendors, and not unfinished OTP sign-ups.
+    const totalUsers = await User.countDocuments({ role: { $nin: ['admin', 'vendor'] }, name: { $ne: 'New Customer' } });
     const totalOrders = await Order.countDocuments();
+    // Real admin sign-ins for the dashboard's activity widget.
+    const LoginActivity = require('../models/loginActivityModel');
+    const adminIds = (await User.find({ role: 'admin' }).select('_id').lean()).map((u) => u._id);
+    const recentActivity = await LoginActivity.find({ user: { $in: adminIds } })
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .lean();
     const pendingOrders = await Order.countDocuments({ isPaid: false });
     const totalProducts = await Product.countDocuments();
     const totalReviews = await Review.countDocuments();
@@ -457,7 +465,14 @@ const getDashboardStats = async (req, res) => {
         pendingOrders,
         totalProducts,
         totalReviews,
-        totalRevenue: `₹${totalRevenue}`
+        totalRevenue: `₹${totalRevenue}`,
+        recentActivity: recentActivity.map((a) => ({
+          id: String(a._id),
+          actor: a.email,
+          message: a.status === 'Success' ? `${a.email} signed in` : `Blocked sign-in for ${a.email}${a.reason ? ` (${a.reason})` : ''}`,
+          ip: a.ip || '',
+          createdAt: a.createdAt,
+        })),
       }
     });
   } catch (error) {

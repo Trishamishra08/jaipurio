@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
   User,
   MapPin,
@@ -12,12 +12,14 @@ import {
   Users,
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
+import { usePageSeo } from '../../utils/seo';
 
 /**
  * Profile — shows registration-style details (name, gender, email, mobile, address).
  */
 const Profile = () => {
-  const { user, orders, wishlist, setUser, setIsAuthenticated } = useShop();
+  usePageSeo({ title: 'My Profile', noindex: true });
+  const { user, orders, wishlist, setUser, setIsAuthenticated, isAuthenticated } = useShop();
   const navigate = useNavigate();
 
   const profile = useMemo(() => {
@@ -30,13 +32,18 @@ const Profile = () => {
     }
     const u = { ...fromStorage, ...saved };
     return {
-      name: u.name || 'Demo User',
-      gender: u.gender || 'Female',
-      email: u.email || 'demo@jaipurio.com',
-      mobile: u.mobile || u.phone || '8839044030',
-      address: u.address || 'Johari Bazaar, Jaipur, Rajasthan 302003',
+      name: u.name || 'Customer',
+      gender: u.gender || '—',
+      email: u.email || '—',
+      mobile: u.mobile || u.phone || '',
+      address: u.address || '—',
     };
   }, [user]);
+
+  // Account pages need a signed-in customer — never show someone else's details.
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: '/profile' }} />;
+  }
 
   const initials = profile.name
     .split(' ')
@@ -62,7 +69,7 @@ const Profile = () => {
     { label: 'Full Name', value: profile.name, Icon: User },
     { label: 'Gender', value: profile.gender, Icon: Users },
     { label: 'Email', value: profile.email, Icon: Mail },
-    { label: 'Mobile', value: `+91 ${profile.mobile}`, Icon: Phone },
+    { label: 'Mobile', value: profile.mobile ? `+91 ${profile.mobile}` : '—', Icon: Phone },
     { label: 'Delivery Address', value: profile.address, Icon: MapPin },
   ];
 

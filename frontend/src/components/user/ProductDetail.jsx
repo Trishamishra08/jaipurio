@@ -35,7 +35,9 @@ import { useShop } from '../../context/ShopContext';
 import ProductCard from './ProductCard';
 import { CategoryItem } from './Categories';
 import { WHATSAPP_PHONE } from '../../utils/whatsapp';
-import { mapApiProductToStorefront, formatInr } from '../../utils/storefrontProduct';
+import { mapApiProductToStorefront, formatInr, productPath } from '../../utils/storefrontProduct';
+import { absoluteUrl, breadcrumbSchema, toMetaDescription, usePageSeo } from '../../utils/seo';
+import NotFound from './NotFound';
 import api from '../../utils/api';
 import { useCategoryTree } from '../../utils/useCategoryTree';
 import { useProductPageSettings } from '../../utils/useProductPageSettings';
@@ -282,95 +284,71 @@ const ProductDetail = () => {
     };
   }, [product?.category]);
 
-  // SEO metadata synchronization
+  // Old /product/<id> links and id-based URLs move to the canonical /products/<slug> address.
   useEffect(() => {
-    if (!product) return undefined;
-    const seo = product.seo?.general || {};
-    const title =
-      seo.metaTitle ||
-      product.seo?.social?.ogTitle ||
-      `${product.name || product.title || 'Product'} | Jaipurio`;
-    const description =
-      seo.metaDescription ||
-      product.seo?.social?.ogDescription ||
-      String(product.description || '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 160);
-    const prevTitle = document.title;
-    document.title = title;
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
+    if (!product?.slug) return;
+    const want = productPath(product);
+    const here = window.location.pathname;
+    if (decodeURIComponent(here) !== decodeURIComponent(want)) {
+      navigate(`${want}${window.location.search}`, { replace: true });
     }
-    const prevDesc = metaDesc.getAttribute('content') || '';
-    if (description) metaDesc.setAttribute('content', description);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.slug]);
 
-    let canonical = document.querySelector('link[rel="canonical"]');
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    const prevCanonical = canonical.getAttribute('href') || '';
-    const slug = product.slug || seo.slug || id;
-    const href = `${window.location.origin}/products/${slug}`;
-    canonical.setAttribute('href', seo.canonicalUrl || href);
-
-    // Product JSON-LD schema (Rule 8) — admin-authored schema wins if set,
-    // otherwise a Product schema is generated from live product data.
-    const customSchema = product.seo?.advanced?.schemaMarkup;
-    let schemaJson = customSchema && customSchema.trim();
-    if (!schemaJson) {
-      const inStock = String(product.stockStatus || '').toLowerCase().includes('out')
-        ? 'https://schema.org/OutOfStock'
-        : 'https://schema.org/InStock';
-      schemaJson = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.name || product.title,
-        image: images.length ? images : undefined,
-        description,
-        sku: product.sku || undefined,
-        brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
-        offers: {
-          '@type': 'Offer',
-          url: href,
-          priceCurrency: 'INR',
-          price: String(unitPrice ?? product.price ?? ''),
-          availability: inStock,
-          itemCondition: 'https://schema.org/NewCondition',
-        },
-        ...(product.reviews
-          ? {
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: String(product.rating),
-                reviewCount: String(product.reviews),
-              },
-            }
-          : {}),
-      });
-    }
-    let schemaScript = document.querySelector('script[data-pdp-schema="true"]');
-    if (!schemaScript) {
-      schemaScript = document.createElement('script');
-      schemaScript.setAttribute('type', 'application/ld+json');
-      schemaScript.setAttribute('data-pdp-schema', 'true');
-      document.head.appendChild(schemaScript);
-    }
-    schemaScript.textContent = schemaJson;
-
-    return () => {
-      document.title = prevTitle;
-      metaDesc.setAttribute('content', prevDesc);
-      canonical.setAttribute('href', prevCanonical);
-      schemaScript.remove();
+  // SEO: title/description/canonical/Open Graph + Product and Breadcrumb JSON-LD.
+  const seoGeneral = product?.seo?.general || {};
+  const seoTitle = seoGeneral.metaTitle || product?.seo?.social?.ogTitle || product?.name || '';
+  const seoDescription = seoGeneral.metaDescription || product?.seo?.social?.ogDescription || product?.description || '';
+  const canonicalPath = product ? productPath(product) : undefined;
+  const productSchema = useMemo(() => {
+    if (!product) return null;
+    const custom = product.seo?.advanced?.schemaMarkup;
+    if (custom && custom.trim()) return custom.trim();
+    const url = absoluteUrl(productPath(product));
+    const outOfStock = String(product.stockStatus || '').toLowerCase().includes('out');
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      image: [product.image, ...(product.images || [])].filter(Boolean).map((src) => absoluteUrl(src)),
+      description: toMetaDescription(seoDescription, 300),
+      sku: product.sku || undefined,
+      brand: { '@type': 'Brand', name: product.brand || 'Jaipurio' },
+      offers: {
+        '@type': 'Offer',
+        url,
+        priceCurrency: 'INR',
+        price: String(product.price ?? ''),
+        availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+        itemCondition: 'https://schema.org/NewCondition',
+        seller: { '@type': 'Organization', name: product.vendor || 'Jaipurio' },
+      },
+      ...(product.reviews > 0
+        ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: String(product.rating), reviewCount: String(product.reviews) } }
+        : {}),
     };
-  }, [product, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product]);
+  usePageSeo({
+    ready: !!product,
+    title: seoTitle,
+    description: seoDescription,
+    canonical: seoGeneral.canonicalUrl || undefined,
+    path: canonicalPath,
+    image: product?.image,
+    type: 'product',
+    jsonLd: product
+      ? [
+          productSchema,
+          breadcrumbSchema([
+            { name: 'Home', path: '/home' },
+            { name: 'Shop', path: '/shop' },
+            ...(product.category ? [{ name: String(product.category), path: `/shop?category=${encodeURIComponent(product.category)}` }] : []),
+            { name: product.name, path: canonicalPath },
+          ]),
+        ]
+      : null,
+  });
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -398,6 +376,18 @@ const ProductDetail = () => {
   const [zoomOpen, setZoomOpen] = useState(false);
   // Admin-editable copy and toggles (Appearance → Product Page).
   const pageCfg = useProductPageSettings();
+  // Highlight bullets are shared by every product, so material claims come from
+  // the product itself: "{material}" (or the old fixed "Makrana Marble /
+  // Terracotta Clay" line) becomes this product's material, or is dropped.
+  const highlightPoints = (pageCfg.highlights.points || [])
+    .filter(Boolean)
+    .map((point) => {
+      const isMaterialLine = point.includes('{material}') || /makrana marble\s*\/\s*terracotta/i.test(point);
+      if (!isMaterialLine) return point;
+      const material = String(product?.material || '').trim();
+      return material ? `Material: ${material}` : '';
+    })
+    .filter(Boolean);
   const [sizeIndex, setSizeIndex] = useState(0);
   const [finish, setFinish] = useState('');
   const [pack, setPack] = useState(1);
@@ -419,18 +409,7 @@ const ProductDetail = () => {
 
   if (!product) {
     if (loadState === 'error') {
-      return (
-        <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center space-y-4 font-sans">
-          <p className="text-lg text-gray-800 font-semibold">Product not found</p>
-          <p className="text-sm text-gray-500 max-w-md">{loadError}</p>
-          <Link
-            to="/shop"
-            className="px-5 py-2.5 bg-[#8B2E3A] text-white text-sm font-medium rounded-full hover:bg-[#6F241D] transition-colors"
-          >
-            Back to shop
-          </Link>
-        </div>
-      );
+      return <NotFound title="Product not found" message={loadError || 'This product is no longer available.'} />;
     }
     return (
       <div className="min-h-[50vh] flex items-center justify-center p-12 text-sm text-gray-500 font-sans">
@@ -812,9 +791,9 @@ const ProductDetail = () => {
             {pageCfg.highlights.enabled && (
               <div className="text-xs text-gray-600 leading-relaxed bg-white p-3 rounded-xl border border-gray-200 space-y-1">
                 {stripEmoji(pageCfg.highlights.title) && <p className="font-semibold text-gray-800">{stripEmoji(pageCfg.highlights.title)}</p>}
-                {pageCfg.highlights.points.filter(Boolean).length > 0 && (
+                {highlightPoints.length > 0 && (
                   <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-gray-600">
-                    {pageCfg.highlights.points.filter(Boolean).map((point) => (
+                    {highlightPoints.map((point) => (
                       <li key={point}>{point}</li>
                     ))}
                   </ul>
@@ -1324,7 +1303,7 @@ const ProductDetail = () => {
               {relevantBlogs.map((post) => (
                 <Link
                   key={post._id}
-                  to={`/blog/${post._id}`}
+                  to={`/blog/${post.slug || post._id}`}
                   className="group bg-white rounded-xl overflow-hidden border border-gray-200 hover:shadow-md transition-all"
                 >
                   <div className="aspect-[16/10] overflow-hidden bg-gray-50">

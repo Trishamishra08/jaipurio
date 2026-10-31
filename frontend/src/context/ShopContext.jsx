@@ -163,14 +163,8 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
     } catch {
       /* ignore */
     }
-    return {
-      name: 'Demo User',
-      gender: 'Female',
-      email: 'demo@jaipurio.com',
-      mobile: '8839044030',
-      phone: '8839044030',
-      address: 'Johari Bazaar, Jaipur, Rajasthan 302003',
-    };
+    // Nobody is signed in until they log in — no placeholder/demo identity.
+    return null;
   });
 
   /* Sessions from the old shared demo login are signed out — customers now log in with their own number. */

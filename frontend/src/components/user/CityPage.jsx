@@ -153,7 +153,10 @@ const useSeo = (page, preview) => {
     };
     setMeta('meta[name="description"]', { name: 'description', value: g.metaDescription });
     setMeta('link[rel="canonical"]', { tag: 'link', rel: 'canonical', value: url });
-    setMeta('meta[name="robots"]', { name: 'robots', value: page.indexable === false ? 'noindex,follow' : 'index,follow' });
+    // Demo/preview hosts keep their index.html noindex tag.
+    if (!document.head.querySelector('meta[data-host-noindex="true"]')) {
+      setMeta('meta[name="robots"]', { name: 'robots', value: page.indexable === false ? 'noindex,follow' : 'index,follow' });
+    }
     const ld = document.createElement('script');
     ld.type = 'application/ld+json';
     ld.text = JSON.stringify([

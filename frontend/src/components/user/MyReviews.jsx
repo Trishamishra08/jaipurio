@@ -109,7 +109,7 @@ const MyReviews = () => {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <Link to={`/product/${r.productId}`} className="text-sm font-semibold text-[#3F261B] hover:text-[#8B2E3A] line-clamp-1">
+                              <Link to={`/products/${r.productId}`} className="text-sm font-semibold text-[#3F261B] hover:text-[#8B2E3A] line-clamp-1">
                                 {r.productName}
                               </Link>
                               <span

@@ -41,20 +41,35 @@ const settingsSchema = new mongoose.Schema({
   customHtml: { type: String, default: '' },
   robotsTxt: {
     type: String,
-    default: `# SEARCH ENGINES — WELCOME
+    // One shared group: a crawler obeys only the most specific group naming it,
+    // so the private-area rules must sit in the same group as Googlebot/Bingbot
+    // (separate "User-agent: Googlebot / Allow: /" groups bypassed them).
+    default: `# SEARCH ENGINES + AI SEARCH BOTS — WELCOME (private areas blocked)
 User-agent: Googlebot
-Allow: /
 User-agent: Bingbot
-Allow: /
 User-agent: Applebot
-Allow: /
-
-# AI SEARCH BOTS — WELCOME (they recommend you to shoppers)
 User-agent: OAI-SearchBot
-Allow: /
 User-agent: PerplexityBot
-Allow: /
 User-agent: ChatGPT-User
+User-agent: *
+Disallow: /admin
+Disallow: /vendor/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /customer/
+Disallow: /profile
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /notifications
+Disallow: /login
+Disallow: /register
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+Disallow: /*?*offers=
+Disallow: /*?*minPrice=
+Disallow: /*?*maxPrice=
+Disallow: /*?*q=
+Disallow: /*?*ref=
 Allow: /
 
 # AI TRAINING BOTS — BLOCKED
@@ -68,16 +83,6 @@ User-agent: Google-Extended
 Disallow: /
 User-agent: Bytespider
 Disallow: /
-
-# BLOCK PRIVATE AREAS
-User-agent: *
-Disallow: /cart
-Disallow: /checkout
-Disallow: /customer/
-Disallow: /login
-Disallow: /register
-Disallow: /*?*sort=
-Disallow: /*?*filter=
 
 Sitemap: https://jaipurio.in/sitemap.xml`,
   },

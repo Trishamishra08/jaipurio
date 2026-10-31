@@ -16,6 +16,16 @@ const registerVendor = async (req, res, next) => {
   try {
     const { email, mobile, password } = req.body;
 
+    // GSTIN must be well-formed and registered in the business's own state.
+    if (req.body.gstNumber) {
+      const { validateGstin } = require('../utils/gstin');
+      const gstError = validateGstin(req.body.gstNumber, req.body.state);
+      if (gstError) {
+        res.status(400);
+        throw new Error(gstError);
+      }
+    }
+
     const vendorExists = await Vendor.findOne({ $or: [{ email }, { mobile }] });
 
     if (vendorExists) {

@@ -38,13 +38,19 @@ export const LeafRule = ({ flip }) => (
  * Home section title — matches Popular Picks:
  * Playfair, 18/22/24, #3F261B, centered, leaf rules on both sides.
  */
+// compact="md" = regular size on phones, compact from the md breakpoint up
+// (one heading instead of separate mobile/desktop copies, so the H2 isn't duplicated).
 const SectionHeading = ({ title, copy, to, link = 'View All →', compact = false }) => (
-  <div className={compact ? 'mb-1.5 sm:mb-2' : 'mb-3 sm:mb-4'}>
-    <div className={`flex items-center justify-center gap-1 sm:gap-2 ${compact ? 'mb-0.5' : 'mb-1.5'} px-1`}>
+  <div className={compact === 'md' ? 'mb-3 sm:mb-4 md:mb-2' : compact ? 'mb-1.5 sm:mb-2' : 'mb-3 sm:mb-4'}>
+    <div className={`flex items-center justify-center gap-1 sm:gap-2 ${compact === 'md' ? 'mb-1.5 md:mb-0.5' : compact ? 'mb-0.5' : 'mb-1.5'} px-1`}>
       <LeafRule />
       <h2
         className={`font-playfair font-semibold text-[#3F261B] tracking-tight text-center px-1.5 sm:px-2 leading-tight ${
-          compact ? 'text-[15px] sm:text-[17px] md:text-[18px]' : 'text-[18px] sm:text-[22px] md:text-[24px]'
+          compact === 'md'
+            ? 'text-[18px] sm:text-[22px] md:text-[18px]'
+            : compact
+              ? 'text-[15px] sm:text-[17px] md:text-[18px]'
+              : 'text-[18px] sm:text-[22px] md:text-[24px]'
         }`}
       >
         {title}

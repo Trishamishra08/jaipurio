@@ -142,6 +142,54 @@ const parseCleanPrice = (val) => {
   return Math.round(num * 100) / 100;
 };
 
+/**
+ * Customer-facing product name. Some imported names carry AI/SEO leftovers
+ * ("… Meta Title (45 characters): …", "Name | Keyword | Gift | Jaipurio");
+ * the shopper sees only the real name — the first meaningful segment.
+ */
+export function cleanProductName(rawName) {
+  let name = String(rawName || '').replace(/\s+/g, ' ').trim();
+  if (!name) return '';
+  // "<name> Meta Title (45 characters): <seo title>" → keep what comes before the note
+  const note = name.search(/\b(meta\s*title|seo\s*title|meta\s*description)\b\s*(\(\s*\d+\s*characters?\s*\))?\s*:?/i);
+  if (note > 0) name = name.slice(0, note).trim();
+  else if (note === 0) name = name.replace(/^(meta\s*title|seo\s*title)\s*(\(\s*\d+\s*characters?\s*\))?\s*:?\s*/i, '');
+  // Pipe-separated keyword stuffing → first segment
+  const segments = name.split(/\s+\|\s+/).map((s) => s.trim()).filter(Boolean);
+  if (segments.length > 1) name = segments[0];
+  // Trailing brand suffix
+  name = name.replace(/\s*[-–—|:]\s*jaipurio\s*$/i, '').replace(/[\s,:;|–—-]+$/, '').trim();
+  return name || String(rawName).trim();
+}
+
+/**
+ * Cleans product description HTML before it is shown:
+ *  - <h1> inside the description becomes <h2> (the product title is the page's only H1)
+ *  - AI placeholders such as "[specify number]" / "[Specify size options]" are removed
+ *  - leftover SEO notes ("Meta Title (45 characters): …", "Meta Description: …") are dropped
+ */
+export function sanitizeProductHtml(html) {
+  if (!html) return html;
+  return String(html)
+    .replace(/<h1(\s[^>]*)?>/gi, '<h2$1>')
+    .replace(/<\/h1>/gi, '</h2>')
+    .replace(/<(p|li|h[2-6])\b[^>]*>([\s\S]*?)<\/\1>/gi, (block, _tag, inner) =>
+      /^\s*(meta\s*title|meta\s*description|seo\s*title|seo\s*description|focus\s*keyword)/i.test(inner.replace(/<[^>]+>/g, ''))
+        ? ''
+        : block
+    )
+    .replace(/\s*\[(?:specify|insert|add|enter|mention|include|your)\b[^\]]{0,60}\]/gi, '')
+    .replace(/<td([^>]*)>\s*<\/td>/gi, '<td$1>—</td>')
+    .replace(/<li[^>]*>\s*<\/li>/gi, '');
+}
+
+/** Canonical storefront URL path for a product: /products/<slug> (falls back to the id). */
+export function productPath(product) {
+  if (!product) return '/shop';
+  const key = product.slug || product.seo?.general?.slug || product._id || product.id || '';
+  return key ? `/products/${encodeURIComponent(String(key))}` : '/shop';
+}
+
 export function mapApiProductToStorefront(raw) {
   if (!raw) return null;
   const listPrice = parseCleanPrice(raw.price);
@@ -164,8 +212,8 @@ export function mapApiProductToStorefront(raw) {
     (typeof raw.vendor === 'string' ? raw.vendor : '') ||
     '';
 
-  const name = raw.title || raw.name || '';
-  const copy = ensureRichCopy(name, raw.description, raw.content);
+  const name = cleanProductName(raw.title || raw.name || '');
+  const copy = ensureRichCopy(name, sanitizeProductHtml(raw.description), sanitizeProductHtml(raw.content));
 
   const formattedWeight = formatProductWeight(raw.weight);
   const weightKgNumber = typeof raw.weight === 'number'

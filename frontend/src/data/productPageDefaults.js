@@ -10,7 +10,8 @@ export const PRODUCT_PAGE_DEFAULTS = {
     enabled: true,
     title: 'Handcrafted by artisans in Jaipur, Rajasthan.',
     points: [
-      '100% Genuine Makrana Marble / Terracotta Clay',
+      // {material} = the product's own Material attribute (line hidden when the product has none)
+      '{material}',
       'Carefully packaged in heavy-duty break-proof carton',
       'Ships within 24–48 hours direct from master artisans',
     ],

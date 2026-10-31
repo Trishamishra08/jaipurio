@@ -5,8 +5,10 @@ import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
+import { usePageSeo } from '../../utils/seo';
 
 const Wishlist = () => {
+  usePageSeo({ title: 'My Wishlist', noindex: true });
   const { wishlist, wishlistAddedAt, setWishlist } = useShop();
   const [wishProducts, setWishProducts] = useState([]);
   const [loading, setLoading] = useState(true);

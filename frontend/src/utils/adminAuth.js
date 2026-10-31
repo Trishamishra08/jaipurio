@@ -27,9 +27,26 @@ export function getAdminToken() {
   return localStorage.getItem(TOKEN_KEY) || '';
 }
 
+// Reads the JWT payload (no signature check — the server does that on every API call).
+function readTokenPayload(token) {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+/** True only for an unexpired admin token issued by the backend. */
 export function isAdminAuthenticated() {
   try {
-    return localStorage.getItem(AUTH_KEY) === '1' && Boolean(getAdminToken()) && Boolean(getAdminUser());
+    if (localStorage.getItem(AUTH_KEY) !== '1' || !getAdminUser()) return false;
+    const payload = readTokenPayload(getAdminToken());
+    if (!payload || payload.role !== 'admin') return false;
+    if (payload.exp && payload.exp * 1000 <= Date.now()) return false;
+    return true;
   } catch {
     return false;
   }
@@ -79,9 +96,9 @@ export function logoutAdmin() {
 export function pushActivityLog({ actor, message, ip }) {
   const entry = {
     id: `log-${Date.now()}`,
-    actor: actor || 'Admin Final',
+    actor: actor || 'Admin',
     message,
-    ip: ip || '103.21.244.12',
+    ip: ip || '',
     createdAt: new Date().toISOString(),
   };
   const logs = getActivityLogs();
@@ -96,15 +113,7 @@ export function getActivityLogs() {
   } catch {
     /* ignore */
   }
-  return [
-    {
-      id: 'log-1',
-      actor: 'Admin Final',
-      message: 'Admin Final logged in to the system',
-      ip: '103.21.244.12',
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
+  return [];
 }
 
 export function getAdminTheme() {

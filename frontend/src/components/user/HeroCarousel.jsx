@@ -113,9 +113,9 @@ const HeroCarousel = () => {
                 </p>
               )}
               {slides[active].title && (
-                <h1 className="font-heading text-[20px] sm:text-[26px] md:text-[34px] lg:text-[40px] xl:text-[46px] font-bold text-[#8B2E3A] leading-[1.12] mt-1">
+                <h2 className="font-heading text-[20px] sm:text-[26px] md:text-[34px] lg:text-[40px] xl:text-[46px] font-bold text-[#8B2E3A] leading-[1.12] mt-1">
                   {slides[active].title}
-                </h1>
+                </h2>
               )}
               {slides[active].subtitle && (
                 <p className="font-body text-[10px] sm:text-xs md:text-sm lg:text-base text-[#4A3A2F] mt-1.5 sm:mt-2 leading-snug">

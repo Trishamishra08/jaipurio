@@ -2,10 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import JharokhaBand from './JharokhaBand';
+import { usePageSeo } from '../../utils/seo';
 
 const PAGE_SIZE = 12;
 
 const BlogSection = () => {
+  usePageSeo({
+    title: 'Jaipurio Blog: Rajasthani Craft Guides, Care Tips & Gifting Ideas',
+    description: 'Read guides on marble idols, terracotta and mitti pottery, Rajasthani jewellery and home decor: how they are made, how to care for them and what to gift.',
+    path: '/blog',
+  });
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
   const category = searchParams.get('category') || '';
@@ -76,7 +82,7 @@ const BlogSection = () => {
           <>
             <div className="blog-grid">
               {blogs.map((blog) => (
-                <Link key={blog._id || blog.id} to={`/blog/${blog._id || blog.id}`} className="blog-card">
+                <Link key={blog._id || blog.id} to={`/blog/${blog.slug || blog._id || blog.id}`} className="blog-card">
                   <div className="blog-media"><img src={blog.image} alt={blog.title} loading="lazy" decoding="async" /></div>
                   <div className="blog-card-body">
                     <div className="blog-meta">{blog.category || 'Journal'} · {blog.readTime || '5 min'}</div>

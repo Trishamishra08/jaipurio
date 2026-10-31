@@ -151,10 +151,12 @@ const sendRegisterOtp = async (req, res, next) => {
       throw new Error('Please provide a mobile number');
     }
 
+    // Same response whether or not the number is registered (no account enumeration).
+    // If it is already registered, /register just signs the owner in after the OTP.
     let user = await User.findOne({ mobile });
-    if (user && user.name !== 'New Customer') {
-      res.status(400);
-      throw new Error('Account already exists. Please Sign In.');
+    if (user?.isBlocked) {
+      res.status(403);
+      throw new Error('Your account has been blocked by the admin.');
     }
 
     if (!user) {
@@ -212,10 +214,13 @@ const register = async (req, res, next) => {
       throw new Error('Invalid or expired OTP');
     }
 
-    // Update user details
-    user.name = name;
-    user.gender = gender;
-    user.email = email;
+    // Only a pending sign-up gets the submitted details; an existing account
+    // is just signed in (the OTP proves the number belongs to them).
+    if (user.name === 'New Customer') {
+      user.name = name;
+      user.gender = gender;
+      user.email = email;
+    }
     user.isActive = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
@@ -230,7 +235,7 @@ const register = async (req, res, next) => {
         email: user.email,
         mobile: user.mobile,
         role: user.role,
-        token: generateToken(user._id)
+        token: generateToken(user._id, user.role)
       }
     });
   } catch (error) {
@@ -265,9 +270,11 @@ const sendOtp = async (req, res, next) => {
           user.isActive = true;
           await user.save();
         }
-      } else {
-        res.status(404);
-        throw new Error('User not found. Please register first.');
+      } else if (!user) {
+        // Unknown number: create a pending sign-up and send the OTP anyway, so the
+        // response never reveals whether a number is registered. After the OTP is
+        // verified, /verify-otp tells the app to finish registration.
+        user = await User.create({ name: 'New Customer', mobile, role: 'user', isActive: false });
       }
     }
 
@@ -296,7 +303,7 @@ const sendOtp = async (req, res, next) => {
 
     res.status(200).json({ 
       success: true, 
-      message: 'OTP sent successfully',
+      message: 'OTP sent to your mobile number',
       ...(isDev && { devOtp: otp, devNote: 'OTP visible in dev mode only' })
     });
   } catch (error) {
@@ -324,6 +331,16 @@ const verifyOtp = async (req, res, next) => {
     if (user.isBlocked) {
       res.status(403);
       throw new Error('Your account has been blocked by the admin.');
+    }
+
+    // Verified number with no finished account yet: keep the OTP valid so the
+    // registration form can submit it, and ask the app to collect name/email.
+    if (user.name === 'New Customer') {
+      return res.status(200).json({
+        success: true,
+        needsRegistration: true,
+        message: 'Number verified. Please complete your details to create your account.',
+      });
     }
 
     user.otp = undefined;

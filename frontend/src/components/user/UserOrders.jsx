@@ -4,6 +4,7 @@ import { Package, RefreshCw, Star, XCircle } from 'lucide-react';
 import api from '../../utils/api';
 import { useShop } from '../../context/ShopContext';
 import { getCustomerToken } from '../../utils/customerAuth';
+import { usePageSeo } from '../../utils/seo';
 
 const STEPS = ['Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
 
@@ -121,6 +122,7 @@ const OrderCard = ({ order }) => {
 
 /** My Orders: the signed-in customer's real orders from the server. */
 const UserOrders = () => {
+  usePageSeo({ title: 'My Orders', noindex: true });
   const { isAuthenticated } = useShop();
   const [orders, setOrders] = useState([]);
   const [state, setState] = useState('loading');

@@ -43,9 +43,9 @@ const Preview = ({ v }) => (
       {v.showEmailForm && <div className="mt-3 h-8 rounded border border-slate-300 bg-slate-50 text-[11px] text-slate-400 px-2 flex items-center">Email address</div>}
       {v.showEmailForm && <div className="mt-2 h-8 rounded bg-[#F5B82E] text-[12px] font-bold flex items-center justify-center">{v.submitText || 'Subscribe'}</div>}
       {v.buttonText && v.buttonLink && <div className="mt-2 h-8 rounded bg-[#F5B82E] text-[12px] font-bold flex items-center justify-center">{v.buttonText}</div>}
-      {v.showStoreButtons && (v.playStoreUrl || v.appStoreUrl) && (
+      {v.showStoreButtons && (
         <div className="mt-2 flex gap-1.5">
-          {v.playStoreUrl && <span className="flex-1 rounded bg-black text-white text-[10px] font-bold py-1.5 text-center">Google Play</span>}
+          <span className="flex-1 rounded bg-black text-white text-[10px] font-bold py-1.5 text-center">Google Play</span>
           {v.appStoreUrl && <span className="flex-1 rounded bg-black text-white text-[10px] font-bold py-1.5 text-center">App Store</span>}
         </div>
       )}
@@ -125,7 +125,7 @@ const VariantCard = ({ variant, v, onChange, coupons, onPickImage }) => {
               <Toggle label="Show app store buttons (“Download our app”)" checked={v.showStoreButtons} onChange={(x) => set('showStoreButtons', x)} />
               {v.showStoreButtons && (
                 <div className="grid sm:grid-cols-2 gap-x-3">
-                  <Field label="Google Play link" value={v.playStoreUrl} onChange={(x) => set('playStoreUrl', x)} placeholder="https://play.google.com/store/apps/…" />
+                  <Field label="Google Play link" value={v.playStoreUrl} onChange={(x) => set('playStoreUrl', x)} placeholder="https://play.google.com/store/apps/details?id=…" hint="Empty = button opens a Play Store search for “Jaipurio”." />
                   <Field label="App Store link" value={v.appStoreUrl} onChange={(x) => set('appStoreUrl', x)} placeholder="https://apps.apple.com/…" />
                 </div>
               )}

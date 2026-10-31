@@ -116,14 +116,7 @@ const Categories = () => {
   return (
     <section className="w-full bg-white pt-2.5 pb-2 md:pt-1.5 md:pb-1.5">
       <div className="site-container">
-        {/* Mobile heading */}
-        <div className="md:hidden">
-          <SectionHeading title={cfg.title} to="/shop" />
-        </div>
-        {/* Desktop heading */}
-        <div className="hidden md:block">
-          <SectionHeading title={cfg.title} to="/shop" compact />
-        </div>
+        <SectionHeading title={cfg.title} to="/shop" compact="md" />
 
         {/* Mobile — horizontal scroll */}
         <div

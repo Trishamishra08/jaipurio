@@ -16,6 +16,7 @@ import {
 import { useShop } from '../../context/ShopContext';
 import { useMobileMenu } from '../../utils/useMobileMenu';
 import { useCategoryTree } from '../../utils/useCategoryTree';
+import { freeShippingText, useShippingSettings } from '../../utils/useShippingSettings';
 import { CATEGORIES_TOKEN, isExternalUrl, resolveMenuUrl } from '../../utils/menuUrl';
 
 const DESKTOP_NAV = [
@@ -146,6 +147,8 @@ const Navbar = () => {
   const [desktopSearch, setDesktopSearch] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const { cartCount, wishlistCount, setIsCartDrawerOpen, deliveryLocation } = useShop();
+  // Promo text follows the real delivery rule the checkout charges (Admin → Logistics).
+  const shippingPromo = freeShippingText(useShippingSettings());
   const menuItems = useMobileMenu();
   const { categories: menuCategories } = useCategoryTree();
   const navigate = useNavigate();
@@ -244,7 +247,7 @@ const Navbar = () => {
     <header className="sticky top-0 z-50">
       {/* Promo bar — all screens */}
       <div className="relative z-[60] bg-[#C45C6A] text-[#FFF0EE] py-1 px-3 text-center text-[10px] sm:text-xs tracking-wider font-dm">
-        <span className="font-medium">Free Shipping on Orders Above ₹499 | 100% Pure Mitti</span>
+        <span className="font-medium">{[shippingPromo, '100% Handcrafted in India'].filter(Boolean).join(' | ')}</span>
       </div>
 
       {/* ─── MOBILE APP HEADER (unchanged behaviour) ─── */}

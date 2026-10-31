@@ -5,6 +5,7 @@ import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { registerFCMToken } from '../../services/pushNotificationService';
 import api from '../../utils/api';
+import { usePageSeo } from '../../utils/seo';
 
 
 const finishLogin = (token, navigate) => {
@@ -18,6 +19,11 @@ const finishLogin = (token, navigate) => {
 };
 
 const VendorLogin = () => {
+  usePageSeo({
+    title: 'Seller Login | Sell on Jaipurio',
+    description: 'Sign in to your Jaipurio seller dashboard to manage products, orders, shipments and payouts.',
+    path: '/vendor/login',
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

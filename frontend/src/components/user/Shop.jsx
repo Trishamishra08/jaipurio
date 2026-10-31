@@ -5,6 +5,7 @@ import { SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../utils/api';
 import { useCategoryTree } from '../../utils/useCategoryTree';
 import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
+import { usePageSeo } from '../../utils/seo';
 
 const SORT_MAP = {
   popular: 'popular',
@@ -31,6 +32,26 @@ const Shop = () => {
   const pageParam = Math.max(1, parseInt(searchParams.get('page'), 10) || 1);
 
   const selectedCategory = categoryParam === 'More' ? '' : categoryParam;
+
+  // Each category gets its own title/description/canonical; search and filtered
+  // views (offers, price, sort, page>1 of a search) are noindex.
+  const seoSubject = selectedCategory || brandName || '';
+  usePageSeo({
+    title: seoSubject
+      ? `Buy Handcrafted ${seoSubject} Online`
+      : offersOnly
+        ? "Today's Offers on Handcrafted Products"
+        : 'Shop Handcrafted Rajasthani Products Online',
+    description: seoSubject
+      ? `Shop authentic handcrafted ${seoSubject.toLowerCase()} from Jaipur artisans on Jaipurio. Genuine products, secure payments and pan-India delivery.`
+      : 'Browse the full Jaipurio catalogue: marble idols, terracotta and mitti pottery, home decor, jewellery and gifts handcrafted by Rajasthani artisans.',
+    path: selectedCategory
+      ? `/shop?category=${encodeURIComponent(selectedCategory)}`
+      : brandParam
+        ? `/shop?brand=${encodeURIComponent(brandParam)}`
+        : '/shop',
+    noindex: Boolean(searchParam || offersOnly || maxPrice || searchParams.get('sort')),
+  });
 
   const [products, setProducts] = useState([]);
   const [total, setTotal] = useState(0);

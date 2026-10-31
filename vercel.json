@@ -6,7 +6,14 @@
     { "source": "/robots.txt", "destination": "https://jaipurio-ysbo.onrender.com/robots.txt" },
     { "source": "/sitemap.xml", "destination": "https://jaipurio-ysbo.onrender.com/sitemap.xml" },
     { "source": "/sitemap-:name.xml", "destination": "https://jaipurio-ysbo.onrender.com/sitemap-:name.xml" },
+    { "source": "/llms.txt", "destination": "https://jaipurio-ysbo.onrender.com/llms.txt" },
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    }
   ],
   "build": {
     "env": {

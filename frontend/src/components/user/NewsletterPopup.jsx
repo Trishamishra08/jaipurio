@@ -6,6 +6,7 @@ import { usePopupSettings } from '../../utils/usePopupSettings';
 import { isInApp } from '../../utils/appContext';
 import { isExternalUrl } from '../../utils/menuUrl';
 import { mediaUrl } from '../../data/cloudinaryMedia';
+import { PLAY_STORE_FALLBACK } from '../../data/popupDefaults';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Shown at most once per page load, even when the layout remounts (e.g. after logging in).
@@ -131,7 +132,8 @@ const NewsletterPopup = () => {
 
   if (!open || !v) return null;
 
-  const storeButtons = variant === 'web' && v.showStoreButtons && (v.playStoreUrl || v.appStoreUrl);
+  const storeButtons = variant === 'web' && v.showStoreButtons !== false;
+  const playStoreUrl = v.playStoreUrl || PLAY_STORE_FALLBACK;
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 font-mulish" role="dialog" aria-modal="true" aria-labelledby="site-popup-title">
@@ -180,13 +182,26 @@ const NewsletterPopup = () => {
 
           {storeButtons && (
             <div className="mt-5 flex flex-wrap gap-2.5">
-              {v.playStoreUrl && (
-                <a href={v.playStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
-                  Get it on Google Play
-                </a>
-              )}
+              <a
+                href={playStoreUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Get the Jaipurio app on Google Play"
+                className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2.5 rounded-lg bg-black hover:bg-[#222] text-white px-4 py-2 transition-colors"
+              >
+                <svg viewBox="0 0 512 512" className="w-6 h-6 shrink-0" aria-hidden="true">
+                  <path fill="#34A853" d="M48 59.5v393c0 9 4.7 16.9 11.8 21.3L284 256 59.8 38.2C52.7 42.6 48 50.5 48 59.5z" />
+                  <path fill="#FBBC04" d="M371.6 168.6 284 256l87.6 87.4 98.6-56.1c19.7-11.2 19.7-39.4 0-50.6l-98.6-68.1z" />
+                  <path fill="#EA4335" d="M284 256 59.8 473.8c7.9 4.9 18.2 5.4 27 .4l284.8-130.8L284 256z" />
+                  <path fill="#4285F4" d="M371.6 168.6 86.8 37.8c-8.8-5-19.1-4.5-27-.4L284 256l87.6-87.4z" />
+                </svg>
+                <span className="text-left leading-tight">
+                  <span className="block text-[10px] uppercase tracking-wide opacity-80">Get it on</span>
+                  <span className="block text-[16px] font-semibold">Google Play</span>
+                </span>
+              </a>
               {v.appStoreUrl && (
-                <a href={v.appStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[130px] text-center rounded-md bg-black text-white text-[13px] font-bold py-2.5">
+                <a href={v.appStoreUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-[160px] inline-flex items-center justify-center rounded-lg bg-black hover:bg-[#222] text-white text-[13px] font-bold px-4 py-3 transition-colors">
                   Download on the App Store
                 </a>
               )}

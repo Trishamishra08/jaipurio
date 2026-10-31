@@ -6,7 +6,7 @@ import SectionHeading from './SectionHeading';
 import { useCategoryTree } from '../../utils/useCategoryTree';
 import { useMixedProducts } from '../../utils/useMixedProducts';
 import api from '../../utils/api';
-import { mapApiProductToStorefront } from '../../utils/storefrontProduct';
+import { mapApiProductToStorefront, productPath } from '../../utils/storefrontProduct';
 import ThumbImg from '../shared/ThumbImg';
 import PagedCarousel from '../shared/PagedCarousel';
 import { useHomeSections } from '../../utils/useHomeSections';
@@ -94,7 +94,7 @@ const OccasionSection = ({ cfg }) => {
         items.map(async (it) => {
           if (it.mode === 'product') {
             const p = picked.get(String(it.productId));
-            return p ? { label: it.label, img: p.image, link: `/product/${p._id}` } : null;
+            return p ? { label: it.label, img: p.image, link: productPath(p) } : null;
           }
           if (!it.category) return null;
           try {
@@ -264,7 +264,7 @@ const HomeProductSection = ({ cfg, variant = 'rail', alt = false, fallback = [],
   const list = source
     .filter(Boolean)
     .slice(0, limit)
-    .map((p) => ({ ...p, to: `/product/${p._id}` }));
+    .map((p) => ({ ...p, to: productPath(p) }));
   if (!list.length) return null;
   // For rating-ranked sections the seller's name replaces the brand line, so the ranking is visible.
   const withTag = (p) => ({ ...p, brand: byRating && p.reviews > 0 && p.sellerName ? p.sellerName : p.brand, tag: tagFor ? tagFor(p) : undefined });
@@ -514,7 +514,7 @@ const HomeAfterCategory = () => {
   // "tag" (e.g. "Best Seller" on the Best Sellers rail) is still assigned
   // per-section, since that labels the shelf, not a false product claim.
   const items = useMemo(
-    () => products.slice(0, 8).map((p) => ({ ...p, to: `/product/${p._id}` })),
+    () => products.slice(0, 8).map((p) => ({ ...p, to: productPath(p) })),
     [products]
   );
   const home = useHomeSections();
@@ -711,7 +711,7 @@ const HomeAfterCategory = () => {
                     return (
                       <Link
                         key={p._id || p.name}
-                        to={`/product/${p._id}`}
+                        to={productPath(p)}
                         className="group/item min-w-0 flex flex-col"
                         aria-label={p.name}
                       >
@@ -866,7 +866,7 @@ const HomeAfterCategory = () => {
                     {e.tiles.slice(0, 4).map(({ category, product }) => (
                       <Link
                         key={product._id}
-                        to={`/product/${product._id}`}
+                        to={productPath(product)}
                         className="relative aspect-square bg-white overflow-hidden group/tile"
                         aria-label={`${product.name} — ${category}`}
                       >
@@ -932,7 +932,7 @@ const HomeAfterCategory = () => {
                     {d.items.map((p) => (
                       <Link
                         key={p._id}
-                        to={`/product/${p._id}`}
+                        to={productPath(p)}
                         className="aspect-square rounded-lg overflow-hidden bg-white border border-[#F1ECE4]"
                       >
                         <ThumbImg

@@ -7,6 +7,7 @@ import { payWithCashfree, savePendingCashfree, takePendingCashfree } from '../..
 import { ensureCustomerAuth, getCustomerToken } from '../../utils/customerAuth';
 import { getActiveReferralCode } from '../../utils/referralTracking';
 import { CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { usePageSeo } from '../../utils/seo';
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
@@ -27,24 +28,63 @@ const Field = ({ label, error, className = '', ...props }) => (
   </div>
 );
 
+// What the customer typed at checkout survives the trip to /login and back
+// (and a page refresh), so logging in never wipes the address.
+const DRAFT_KEY = 'jaipurio_checkout_draft';
+const readDraft = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null') || {};
+  } catch {
+    return {};
+  }
+};
+const writeDraft = (draft) => {
+  try {
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    /* storage blocked — the form just starts empty */
+  }
+};
+const clearDraft = () => {
+  try {
+    sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
 const Checkout = () => {
+  usePageSeo({ title: 'Checkout', noindex: true });
   const { cart, cartTotal, clearCart, user, isAuthenticated } = useShop();
   const location = useLocation();
   const navigate = useNavigate();
-  const appliedCoupon = location.state?.appliedCoupon || null;
+  const [draft] = useState(readDraft);
+  const appliedCoupon = location.state?.appliedCoupon || draft.appliedCoupon || null;
   const signedIn = isAuthenticated && !!getCustomerToken();
 
   const [step, setStep] = useState(1);
   // Pre-filled from the customer's own account only — never sample data.
-  const [address, setAddress] = useState(() => ({
-    fullName: signedIn ? user?.name || '' : '',
-    phone: signedIn ? String(user?.mobile || user?.phone || '').replace(/\D/g, '').slice(-10) : '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
-    email: signedIn ? user?.email || '' : '',
-  }));
+  const [address, setAddress] = useState(() => {
+    const saved = draft.address || {};
+    return {
+      fullName: saved.fullName || (signedIn ? user?.name || '' : ''),
+      phone: saved.phone || (signedIn ? String(user?.mobile || user?.phone || '').replace(/\D/g, '').slice(-10) : ''),
+      street: saved.street || '',
+      city: saved.city || '',
+      state: saved.state || '',
+      pincode: saved.pincode || '',
+      email: saved.email || (signedIn ? user?.email || '' : ''),
+    };
+  });
+  useEffect(() => {
+    writeDraft({ address, appliedCoupon });
+  }, [address, appliedCoupon]);
+
+  // Send the customer to the OTP login and bring them straight back here.
+  const goToLogin = () => {
+    writeDraft({ address, appliedCoupon });
+    navigate('/login', { state: { from: '/checkout' } });
+  };
   const [addressErrors, setAddressErrors] = useState({});
 
   const [paymentMethod, setPaymentMethod] = useState('online');
@@ -171,12 +211,17 @@ const Checkout = () => {
 
   const goToPayment = () => {
     if (!validateAddress()) return;
+    if (!signedIn) {
+      goToLogin();
+      return;
+    }
     setStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const persistSuccess = (serverOrder) => {
     clearCart();
+    clearDraft();
     setConfirmedOrder({
       ref: String(serverOrder?.orderNumber || serverOrder?.orderId || serverOrder?._id || ''),
       total: serverOrder?.totalPrice ?? grandTotal,
@@ -211,7 +256,7 @@ const Checkout = () => {
     const token = await ensureCustomerAuth();
     if (!token) {
       setOrderError('Please log in to complete your order.');
-      navigate('/login', { state: { from: '/checkout' } });
+      goToLogin();
       return;
     }
 
@@ -412,11 +457,14 @@ const Checkout = () => {
         </ol>
 
         {!signedIn && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#EADFD3] bg-white px-4 py-3 text-[13px] text-gray-700">
-            <span>Log in to place your order and track it later.</span>
-            <Link to="/login" state={{ from: '/checkout' }} className="font-semibold text-[#6F241D] underline">
-              Log in
-            </Link>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-[#6F241D]/20 bg-[#FCF8F2] px-4 py-3">
+            <div className="text-[13px] text-gray-700">
+              <p className="font-semibold text-[#2B1E1A]">Log in with your mobile number to check out</p>
+              <p className="text-[12px] text-gray-500">Quick OTP login, no password. Your address and bag are kept.</p>
+            </div>
+            <button type="button" onClick={goToLogin} className="rounded-full bg-[#6F241D] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#873A24]">
+              Log in / Sign up
+            </button>
           </div>
         )}
 
@@ -443,7 +491,7 @@ const Checkout = () => {
 
                 <div className="pt-2 flex justify-end">
                   <button type="button" onClick={goToPayment} className={primaryBtn}>
-                    Continue to payment
+                    {signedIn ? 'Continue to payment' : 'Log in & continue'}
                   </button>
                 </div>
               </div>

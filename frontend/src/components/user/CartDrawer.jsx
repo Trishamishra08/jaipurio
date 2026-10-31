@@ -113,25 +113,26 @@ const CartDrawer = () => {
                         <Trash2 size={14} strokeWidth={2.2} />
                       </button>
 
-                      <div className="flex items-center border border-[#D9D0C4] rounded-full bg-white px-1 py-0.5">
+                      <div className="flex items-center border border-[#D9D0C4] rounded-full bg-white">
                         <button
                           type="button"
                           onClick={(e) => handleQty(e, item, -1)}
-                          className="p-0.5 text-[#6F241D]"
-                          aria-label="Decrease quantity"
+                          disabled={item.quantity <= 1}
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-[#6F241D] hover:bg-[#F5EDE4] disabled:opacity-35 disabled:cursor-not-allowed"
+                          aria-label={`Decrease quantity of ${item.name}`}
                         >
-                          <Minus size={11} />
+                          <Minus size={14} strokeWidth={2.4} />
                         </button>
-                        <span className="px-1.5 font-dm text-[11px] font-bold text-[#3F261B] min-w-[1rem] text-center">
+                        <span className="px-1 font-dm text-[13px] font-bold text-[#3F261B] min-w-[1.5rem] text-center" aria-live="polite">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={(e) => handleQty(e, item, 1)}
-                          className="p-0.5 text-[#6F241D]"
-                          aria-label="Increase quantity"
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-[#6F241D] hover:bg-[#F5EDE4]"
+                          aria-label={`Increase quantity of ${item.name}`}
                         >
-                          <Plus size={11} />
+                          <Plus size={14} strokeWidth={2.4} />
                         </button>
                       </div>
                     </div>

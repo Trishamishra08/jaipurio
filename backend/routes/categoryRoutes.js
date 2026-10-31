@@ -9,14 +9,16 @@ const {
 
 const router = express.Router();
 const { cachePublic } = require('../utils/cache');
+const { protect, authorize } = require('../middlewares/authMiddleware');
+const adminOnly = [protect, authorize('admin')];
 
 router.route('/')
-  .post(createCategory)
+  .post(...adminOnly, createCategory)
   .get(cachePublic('categories', 300), getCategories);
 
 router.route('/:id')
   .get(getCategoryById) // Get single category
-  .put(updateCategory)  // Edit category
-  .delete(deleteCategory); // Delete category
+  .put(...adminOnly, updateCategory)  // Edit category
+  .delete(...adminOnly, deleteCategory); // Delete category
 
 module.exports = router;
