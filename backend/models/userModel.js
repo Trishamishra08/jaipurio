@@ -74,9 +74,16 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Legacy token list — superseded by the DeviceToken collection (kept for migration).
   fcmTokens: {
     type: [String],
     default: []
+  },
+  // Push/inbox preferences. Transactional categories (orders, payments, account…)
+  // are always delivered; 'muted' only affects optional ones, 'promotions' is opt-in.
+  notificationPrefs: {
+    promotions: { type: Boolean, default: false },
+    muted: { type: [String], default: [] }
   }
 }, {
   timestamps: true

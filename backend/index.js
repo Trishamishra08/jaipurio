@@ -99,6 +99,8 @@ const testimonialRoutes = require('./routes/testimonialRoutes');
 app.use('/api/testimonials', testimonialRoutes);
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
+// Alias used by the mobile-app spec: POST /api/v1/fcm-tokens/save { token, platform }
+app.post('/api/v1/fcm-tokens/save', require('./middlewares/authMiddleware').protect, require('./controllers/notificationController').saveDevice);
 const consultationRoutes = require('./routes/consultationRoutes');
 app.use('/api/consultations', consultationRoutes);
 const supportTicketRoutes = require('./routes/supportTicketRoutes');
@@ -204,7 +206,12 @@ Disallow: /*?*filter=
 
 Sitemap: https://jaipurio.in/sitemap.xml`;
 const squash = (s) => String(s || '').replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
-const isLegacyDefaultRobots = (text) => squash(text) === squash(LEGACY_DEFAULT_ROBOTS);
+// The previous built-in default also blocked /login and /register, which kept
+// Google from seeing their noindex tag (so the bare URLs stayed in results).
+const withoutAuthBlocks = (text) => squash(text).replace(/^Disallow: \/(login|register)\n/gm, '');
+const isLegacyDefaultRobots = (text, currentDefault) =>
+  squash(text) === squash(LEGACY_DEFAULT_ROBOTS) ||
+  (squash(text) !== squash(currentDefault) && withoutAuthBlocks(text) === squash(currentDefault));
 app.get('/robots.txt', async (req, res) => {
   if (!isIndexableRequest(req)) {
     res.set('X-Robots-Tag', 'noindex, nofollow');
@@ -219,7 +226,7 @@ app.get('/robots.txt', async (req, res) => {
     // private-area blocks never applied to Google) was saved to the database
     // untouched on many installs. Serve the corrected default in its place;
     // anything an admin actually edited is served as written.
-    if (isLegacyDefaultRobots(content)) content = currentDefault;
+    if (isLegacyDefaultRobots(content, currentDefault)) content = currentDefault;
     // Point the Sitemap line at this site's own sitemap (never another domain's).
     content = content.replace(/^Sitemap:.*$/gim, '').trimEnd() + `\n\nSitemap: ${SITE_URL}/sitemap.xml\n`;
     res.type('text/plain').send(content);

@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProfileSidebar from './ProfileSidebar';
+import PushPermissionPrompt from '../shared/PushPermissionPrompt';
+import { notificationsChanged } from '../../utils/useUnreadCount';
 import { Bell, CheckCircle, Info, AlertTriangle, AlertCircle, Check } from 'lucide-react';
 import api from '../../utils/api';
 
@@ -11,6 +14,7 @@ const TYPE_CONFIG = {
 };
 
 const Notifications = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,10 +34,18 @@ const Notifications = () => {
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
+  // A push that arrives while this page is open shows up without a reload.
+  useEffect(() => {
+    const reload = () => api.get('/notifications/me').then((res) => res.data.success && setNotifications(res.data.data.notifications)).catch(() => {});
+    window.addEventListener('jaipurio:notification', reload);
+    return () => window.removeEventListener('jaipurio:notification', reload);
+  }, []);
+
   const handleMarkAsRead = async (id) => {
     try {
       await api.patch(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      notificationsChanged();
     } catch {}
   };
 
@@ -41,7 +53,13 @@ const Notifications = () => {
     try {
       await api.patch('/notifications/mark-all-read');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      notificationsChanged();
     } catch {}
+  };
+
+  const openNotification = (notif) => {
+    if (!notif.isRead) handleMarkAsRead(notif._id);
+    if (notif.link) navigate(notif.link);
   };
 
   const timeAgo = (date) => {
@@ -77,6 +95,13 @@ const Notifications = () => {
             )}
           </div>
 
+          <PushPermissionPrompt
+            role="user"
+            title="Get notified on this device"
+            text="Order confirmations, shipping and delivery updates, even when the site is closed."
+            showBlocked
+          />
+
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
             {loading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-3">
@@ -91,7 +116,7 @@ const Notifications = () => {
                   return (
                     <div
                       key={notif._id}
-                      onClick={() => !notif.isRead && handleMarkAsRead(notif._id)}
+                      onClick={() => openNotification(notif)}
                       className={`flex items-start gap-4 px-5 py-4 cursor-pointer transition-all ${
                         notif.isRead
                           ? 'bg-white hover:bg-gray-50/60'

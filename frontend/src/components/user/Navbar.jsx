@@ -17,6 +17,7 @@ import { useShop } from '../../context/ShopContext';
 import { useMobileMenu } from '../../utils/useMobileMenu';
 import { useCategoryTree } from '../../utils/useCategoryTree';
 import { freeShippingText, useShippingSettings } from '../../utils/useShippingSettings';
+import { useUnreadCount } from '../../utils/useUnreadCount';
 import { CATEGORIES_TOKEN, isExternalUrl, resolveMenuUrl } from '../../utils/menuUrl';
 
 const DESKTOP_NAV = [
@@ -146,7 +147,13 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [desktopSearch, setDesktopSearch] = useState('');
   const [scrolled, setScrolled] = useState(false);
-  const { cartCount, wishlistCount, setIsCartDrawerOpen, deliveryLocation } = useShop();
+  const { cartCount, wishlistCount, setIsCartDrawerOpen, deliveryLocation, isAuthenticated } = useShop();
+  const [unreadNotifications] = useUnreadCount('user', { enabled: Boolean(isAuthenticated) });
+  const bellBadge = unreadNotifications > 0 && (
+    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#C45C6A] text-white text-[9px] font-extrabold flex items-center justify-center border border-white">
+      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+    </span>
+  );
   // Promo text follows the real delivery rule the checkout charges (Admin → Logistics).
   const shippingPromo = freeShippingText(useShippingSettings());
   const menuItems = useMobileMenu();
@@ -213,10 +220,11 @@ const Navbar = () => {
       </Link>
       <Link
         to="/notifications"
-        className="p-1.5 hover:text-[#A94E2C] transition-colors"
-        aria-label="Notifications"
+        className="p-1.5 hover:text-[#A94E2C] transition-colors relative"
+        aria-label={unreadNotifications > 0 ? `Notifications (${unreadNotifications} unread)` : 'Notifications'}
       >
         <Bell size={20} strokeWidth={2.2} />
+        {bellBadge}
       </Link>
       <Link
         to="/profile"
@@ -312,10 +320,11 @@ const Navbar = () => {
                   </button>
                   <Link
                     to="/notifications"
-                    className="p-1.5 hover:text-[#A94E2C] transition-colors hidden xs:flex items-center"
-                    aria-label="Notifications"
+                    className="p-1.5 hover:text-[#A94E2C] transition-colors hidden xs:flex items-center relative"
+                    aria-label={unreadNotifications > 0 ? `Notifications (${unreadNotifications} unread)` : 'Notifications'}
                   >
                     <Bell size={20} strokeWidth={2.2} />
+                    {bellBadge}
                   </Link>
                   <button
                     type="button"

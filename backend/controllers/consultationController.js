@@ -1,4 +1,5 @@
 const Consultation = require('../models/consultationModel');
+const { notify } = require('../services/notify');
 
 // @desc    Create a consultation request
 // @route   POST /api/consultations
@@ -21,6 +22,13 @@ const createConsultation = async (req, res, next) => {
       concern
     });
 
+    notify({
+      event: 'admin.consultation_new',
+      to: { admins: true },
+      data: { name: consultation.name, phone: consultation.phone },
+      relatedId: consultation._id,
+      relatedModel: 'Consultation',
+    });
     res.status(201).json({
       success: true,
       data: consultation

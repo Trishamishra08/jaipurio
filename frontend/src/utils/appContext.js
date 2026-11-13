@@ -4,6 +4,24 @@ const APP_FLAG = 'jp_in_app';
 const SOCIAL_BROWSER = /FBAN|FBAV|Instagram|Line\/|Twitter|Snapchat|LinkedInApp/i;
 
 /**
+ * True only inside the Jaipurio native app wrapper (user agent "JaipurioApp" or
+ * the ?source=app flag) — NOT for an installed web app/PWA or a generic WebView.
+ * The native app registers its own push token, so the website must not.
+ */
+export const isNativeApp = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('source') || params.get('app');
+    if (v === 'app' || v === '1') sessionStorage.setItem(APP_FLAG, '1');
+    if (sessionStorage.getItem(APP_FLAG)) return true;
+  } catch {
+    /* storage blocked */
+  }
+  return /JaipurioApp/i.test(navigator.userAgent || '');
+};
+
+/**
  * True when the storefront is running inside the Jaipurio mobile app rather
  * than a normal browser. Most reliable: the app opens the site with
  * `?source=app` (remembered for the visit) or adds "JaipurioApp" to its user

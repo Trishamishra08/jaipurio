@@ -17,7 +17,6 @@ export const CLOUDINARY_IMAGES = {
   "/splash.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786927/jaipurio/splash.webp",
   "/login_hero_1.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786931/jaipurio/login_hero_1.jpg",
   "/login_hero_2.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786936/jaipurio/login_hero_2.jpg",
-  "/favicon.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786937/jaipurio/favicon.webp",
   "/logo.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786938/jaipurio/logo.webp",
   "/admin_logo.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786940/jaipurio/admin_logo.webp"
 };

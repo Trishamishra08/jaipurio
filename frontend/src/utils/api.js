@@ -33,8 +33,9 @@ api.interceptors.request.use(
             token = localStorage.getItem('customer_token');
         }
 
-        // Attach token if available
-        if (token) {
+        // Attach token if available (an explicit Authorization header wins — used when
+        // acting for a specific role, e.g. removing a push device while logging out).
+        if (token && !config.headers.Authorization) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         

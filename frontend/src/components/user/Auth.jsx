@@ -4,9 +4,10 @@ import { FiLock, FiCheckCircle, FiEye, FiEyeOff } from 'react-icons/fi';
 import { Smartphone } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { registerFCMToken } from '../../services/pushNotificationService';
+import { syncPush } from '../../services/pushNotificationService';
 import api from '../../utils/api';
 import AuthFrame from './AuthFrame';
+import { usePageSeo } from '../../utils/seo';
 
 
 const resolveRedirect = (from, fallback = '/home') => {
@@ -21,6 +22,7 @@ const resolveRedirect = (from, fallback = '/home') => {
 };
 
 const Auth = () => {
+  usePageSeo({ title: 'Sign In', noindex: true });
   const { isAuthenticated, setIsAuthenticated, setUser } = useShop();
   const navigate = useNavigate();
   const location = useLocation();
@@ -133,7 +135,7 @@ const Auth = () => {
         if (res.data.success) {
           const { token, ...userData } = res.data.data;
           localStorage.setItem('admin_token', token);
-          registerFCMToken(true).catch(console.error);
+          syncPush('admin', { force: true });
           persistLogin(userData);
           showNotification('Login Successful! Welcome to jaipurio.');
           setTimeout(() => navigate(resolveRedirect(location.state?.from, '/admin')), 800);
@@ -155,7 +157,7 @@ const Auth = () => {
         if (res.data.success) {
           const { token, ...userData } = res.data.data;
           localStorage.setItem('customer_token', token);
-          registerFCMToken(true).catch(console.error);
+          syncPush('user', { force: true });
           persistLogin(userData);
           showNotification('Login Successful! Welcome to jaipurio.');
           setTimeout(() => navigate(resolveRedirect(location.state?.from, '/home')), 800);

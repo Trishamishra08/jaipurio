@@ -2,6 +2,7 @@ const Affiliate = require('../models/affiliateModel');
 const AffiliateEarning = require('../models/affiliateEarningModel');
 const AffiliatePayout = require('../models/affiliatePayoutModel');
 const Order = require('../models/orderModel');
+const { notify } = require('../services/notify');
 const { nextPayoutNumber } = require('../utils/marketplace');
 const { PAYOUT_STATUS } = require('../constants/flow');
 
@@ -24,6 +25,7 @@ const applyAffiliate = async (req, res) => {
       name: body.name || req.user.name,
       email: body.email || req.user.email,
     });
+    notify({ event: 'admin.affiliate_applied', to: { admins: true }, data: { name: affiliate.name }, relatedId: affiliate._id, relatedModel: 'Affiliate' });
     res.status(201).json({ success: true, data: affiliate });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -160,6 +162,7 @@ const requestAffiliatePayout = async (req, res) => {
       earningIds: earnings.map((e) => e._id),
     });
 
+    notify({ event: 'admin.affiliate_payout_requested', to: { admins: true }, data: { name: affiliate.name, amount }, relatedId: payout._id, relatedModel: 'AffiliatePayout' });
     res.status(201).json({ success: true, data: serializeAffiliatePayout(payout) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -235,6 +238,7 @@ const advanceAffiliatePayout = async (req, res) => {
     if (!payout) return res.status(404).json({ success: false, message: 'Payout not found' });
 
     const flow = ['Pending', 'Processing', 'Completed'];
+    const previousStatus = payout.status;
     let next = body.status && PAYOUT_STATUS.includes(body.status) ? body.status : null;
     if (!next) {
       const idx = flow.indexOf(payout.status);
@@ -254,6 +258,13 @@ const advanceAffiliatePayout = async (req, res) => {
     if (body.note) payout.settlementNote = body.note;
     if (body.transactionId) payout.transactionId = body.transactionId;
     await payout.save();
+    if (payout.status !== previousStatus && payout.affiliate) {
+      const aff = await Affiliate.findById(payout.affiliate).select('user').lean();
+      const label = { Completed: 'paid', Processing: 'being processed', Refused: 'refused' }[payout.status];
+      if (aff?.user && label) {
+        notify({ event: 'affiliate.payout', to: { userId: aff.user }, data: { amount: payout.amount, status: label }, relatedId: payout._id, relatedModel: 'AffiliatePayout' });
+      }
+    }
 
     res.status(200).json({ success: true, data: serializeAffiliatePayout(payout) });
   } catch (error) {

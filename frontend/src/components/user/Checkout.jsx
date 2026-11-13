@@ -7,6 +7,7 @@ import { payWithCashfree, savePendingCashfree, takePendingCashfree } from '../..
 import { ensureCustomerAuth, getCustomerToken } from '../../utils/customerAuth';
 import { getActiveReferralCode } from '../../utils/referralTracking';
 import { CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import PushPermissionPrompt from '../shared/PushPermissionPrompt';
 import { usePageSeo } from '../../utils/seo';
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -353,6 +354,13 @@ const Checkout = () => {
           <p className="text-[13px] text-gray-600 mt-2 mb-6">
             Thank you for your order. You can track it any time from My Orders.
           </p>
+
+          <PushPermissionPrompt
+            role="user"
+            title="Get updates for this order?"
+            text="We'll notify you when it ships and is delivered."
+            className="mb-5 text-left"
+          />
 
           <div className="border border-[#EADFD3] rounded-xl p-4 text-left space-y-2.5 mb-6 text-[13px] text-[#2B1E1A]">
             {confirmedOrder?.ref && (

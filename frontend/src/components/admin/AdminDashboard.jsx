@@ -6,6 +6,7 @@ import AdminPageHeader, { ManageWidgetsButton } from './AdminPageHeader';
 import { getWidgetPrefs, relativeTime, setWidgetPrefs } from '../../utils/adminAuth';
 import { fetchAdminDashboardStats } from '../../utils/adminApi';
 import { blogsList } from '../../utils/blogsApi';
+import PushPermissionPrompt from '../shared/PushPermissionPrompt';
 
 const STAT_CARDS = [
   { key: 'orders', label: 'Orders', icon: ShoppingBag, tone: 'mint' },
@@ -68,6 +69,13 @@ const AdminDashboard = () => {
         title="Dashboard"
         hideAction
         extra={<ManageWidgetsButton onClick={() => setManageOpen(true)} />}
+      />
+
+      <PushPermissionPrompt
+        role="admin"
+        title="Get alerts for new orders and requests"
+        text="Turn on notifications to hear about new orders, seller sign-ups, returns, payouts and tickets right away."
+        className="mb-3"
       />
 
       {widgets.stats && (

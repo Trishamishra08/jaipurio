@@ -3,6 +3,22 @@ const Earning = require('../models/earningModel');
 const Vendor = require('../models/vendorModel');
 const { PAYOUT_STATUS } = require('../constants/flow');
 const { nextPayoutNumber, serializePayout } = require('../utils/marketplace');
+const { notify } = require('../services/notify');
+
+// Tell the seller when their payout changes state (admin changed it).
+const notifyPayoutStatus = (payout, previousStatus) => {
+  if (!payout?.vendor || payout.status === previousStatus) return;
+  const label = { Completed: 'paid', Settled: 'paid', Processing: 'being processed', Approved: 'approved', 'Sent to bank': 'sent to bank', Refused: 'refused', Rejected: 'refused', Canceled: 'cancelled' }[payout.status];
+  if (!label) return;
+  notify({
+    event: 'vendor.payout',
+    to: { vendorId: payout.vendor._id || payout.vendor },
+    data: { payoutRef: payout.payoutNumber, amount: payout.amount, status: label },
+    overrides: ['Completed', 'Settled'].includes(payout.status) ? { type: 'success' } : ['Refused', 'Rejected', 'Canceled'].includes(payout.status) ? { type: 'warning' } : {},
+    relatedId: payout._id,
+    relatedModel: 'Payout',
+  });
+};
 
 const WITHDRAWAL_FEE_RATE = Number(process.env.WITHDRAWAL_FEE_RATE || 0);
 
@@ -137,6 +153,13 @@ const requestPayout = async (req, res) => {
       earningIds: earnings.map((e) => e._id),
     });
 
+    notify({
+      event: 'admin.payout_requested',
+      to: { admins: true },
+      data: { vendorName: vendor.storeName || vendor.businessName || vendor.fullName, amount },
+      relatedId: payout._id,
+      relatedModel: 'Payout',
+    });
     res.status(201).json({ success: true, data: serializePayout(await payout.populate('vendor', 'storeName fullName businessName')) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -160,6 +183,7 @@ const updatePayout = async (req, res) => {
     if (body.settlementNote != null) payout.settlementNote = body.settlementNote;
     if (Array.isArray(body.proofImages)) payout.proofImages = body.proofImages;
 
+    const previousStatus = payout.status;
     if (body.status) {
       const next = toDbStatus(body.status);
       if (!PAYOUT_STATUS.includes(next)) {
@@ -177,6 +201,7 @@ const updatePayout = async (req, res) => {
     if (['Completed', 'Settled'].includes(payout.status)) payout.processedAt = new Date();
 
     await payout.save();
+    notifyPayoutStatus(payout, previousStatus);
     const refreshed = await findPayout(payout._id);
     res.status(200).json({ success: true, data: serializePayout(refreshed) });
   } catch (error) {
@@ -193,6 +218,7 @@ const advancePayout = async (req, res) => {
     if (!payout) return res.status(404).json({ success: false, message: 'Payout not found' });
 
     const flow = ['Pending', 'Pending approval', 'Processing', 'Completed'];
+    const previousStatus = payout.status;
     const current = toDbStatus(payout.status);
     let next = req.body.status ? toDbStatus(req.body.status) : null;
     if (!next) {
@@ -213,6 +239,7 @@ const advancePayout = async (req, res) => {
     payout.settlementNote = req.body.note || payout.settlementNote;
     if (req.body.transactionId) payout.transactionId = req.body.transactionId;
     await payout.save();
+    notifyPayoutStatus(payout, previousStatus);
     const refreshed = await findPayout(payout._id);
     res.status(200).json({ success: true, data: serializePayout(refreshed) });
   } catch (error) {

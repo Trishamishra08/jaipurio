@@ -108,6 +108,8 @@ import { BrandRedirect, CartRedirect, CategorySlugRedirect } from './components/
 
 import { captureReferralFromUrl } from './utils/referralTracking';
 import { isInApp } from './utils/appContext';
+import PushBootstrap from './components/shared/PushBootstrap';
+import PushToast from './components/shared/PushToast';
 import NotFound from './components/user/NotFound';
 import { useAffiliateSettings } from './utils/useAffiliateSettings';
 
@@ -153,6 +155,8 @@ function App() {
       <AdsenseInjector />
       <Router>
         <ReferralTracker />
+        <PushBootstrap />
+        <PushToast />
         <Routes>
           {/* App load → splash → login */}
           {/* Web visitors land straight on the real home page; the mobile app keeps its splash. */}

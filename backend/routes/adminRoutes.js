@@ -73,7 +73,9 @@ router.route('/testimonials/:id/toggle-approval').patch(protect, authorize('admi
 router.route('/testimonials/:id').patch(protect, authorize('admin'), updateTestimonial).delete(protect, authorize('admin'), deleteTestimonial);
 
 // Notifications routes (admin)
-const { getAdminNotifications, createNotification, deleteNotification } = require('../controllers/notificationController');
+const { getAdminNotifications, createNotification, deleteNotification, sendTestNotification, getPushStats } = require('../controllers/notificationController');
+router.post('/notifications/test', protect, authorize('admin'), sendTestNotification);
+router.get('/notifications/stats', protect, authorize('admin'), getPushStats);
 router.route('/notifications').get(protect, authorize('admin'), getAdminNotifications).post(protect, authorize('admin'), createNotification);
 router.route('/notifications/:id').delete(protect, authorize('admin'), deleteNotification);
 

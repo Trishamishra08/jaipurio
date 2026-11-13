@@ -3,6 +3,7 @@ const Earning = require('../models/earningModel');
 const Product = require('../models/productModel');
 const Vendor = require('../models/vendorModel');
 const AffiliateEarning = require('../models/affiliateEarningModel');
+const Affiliate = require('../models/affiliateModel');
 const { ORDER_STATUS, SHIPMENT_STATUS } = require('../constants/flow');
 const {
   serializeOrder,
@@ -10,7 +11,7 @@ const {
   returnWindowDate,
 } = require('../utils/marketplace');
 const { processShiprocketOrder } = require('./shipping.controller');
-const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
+const { notify, orderRef } = require('../services/notify');
 
 const canAccessOrder = (req, order) => {
   if (!order) return false;
@@ -63,6 +64,11 @@ const ensureEarnings = async (order) => {
         commissionAmount,
         status: 'Pending',
       });
+      Affiliate.findById(order.affiliate).select('user').lean().then((aff) => {
+        if (aff?.user && commissionAmount > 0) {
+          notify({ event: 'affiliate.commission', to: { userId: aff.user }, data: { amount: commissionAmount }, relatedId: order._id, relatedModel: 'Order' });
+        }
+      }).catch(() => {});
     }
   }
 
@@ -109,12 +115,7 @@ const acceptOrder = async (req, res) => {
       console.error('Shiprocket after vendor accept:', err.message);
     });
 
-    try {
-      await sendNotificationToUser(order.user, 'user', {
-        title: 'Order accepted',
-        body: `Vendor accepted order #${order.orderNumber || order._id}. Shipment created.`,
-      }, 'info');
-    } catch { /* ignore */ }
+    notify({ event: 'order.accepted', to: { userId: order.user }, data: { orderNumber: orderRef(order) }, relatedId: order._id, relatedModel: 'Order' });
 
     res.status(200).json({ success: true, data: serializeOrder(order) });
   } catch (error) {
@@ -129,6 +130,8 @@ const updateOrderTrack = async (req, res) => {
     if (!canAccessOrder(req, order)) return res.status(403).json({ success: false, message: 'Not authorized' });
 
     const { orderStatus, note } = req.body;
+    const wasStatus = order.orderStatus;
+    const wasDelivered = Boolean(order.isDelivered);
     if (note !== undefined) order.note = note;
     if (orderStatus) {
       if (!ORDER_STATUS.includes(orderStatus)) {
@@ -153,6 +156,16 @@ const updateOrderTrack = async (req, res) => {
     }
     await order.save();
     await releaseAvailableIfReady(order);
+    if (order.orderStatus !== wasStatus) {
+      const data = { orderNumber: orderRef(order), status: order.orderStatus };
+      if (order.orderStatus === 'Processing') {
+        notify({ event: 'order.accepted', to: { userId: order.user }, data, relatedId: order._id, relatedModel: 'Order' });
+      } else if (order.orderStatus === 'Completed' && !wasDelivered && !order.isDelivered) {
+        notify({ event: 'order.delivered', to: { userId: order.user }, data, relatedId: order._id, relatedModel: 'Order' });
+      } else if (order.orderStatus === 'Payment Confirmed') {
+        notify({ event: 'order.status', to: { userId: order.user }, data, relatedId: order._id, relatedModel: 'Order' });
+      }
+    }
     res.status(200).json({ success: true, data: serializeOrder(order) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -169,6 +182,7 @@ const updateShipmentTrack = async (req, res) => {
     }
 
     const { status, method, note } = req.body;
+    const wasShipment = order.shipment?.status;
     if (status && !SHIPMENT_STATUS.includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid shipment status' });
     }
@@ -190,6 +204,15 @@ const updateShipmentTrack = async (req, res) => {
       order.orderItems.forEach((item) => { item.status = 'Dispatched'; });
     }
     await order.save();
+    if (order.shipment.status !== wasShipment && ['Dispatched', 'Delivered'].includes(order.shipment.status)) {
+      notify({
+        event: order.shipment.status === 'Delivered' ? 'order.delivered' : 'order.shipped',
+        to: { userId: order.user },
+        data: { orderNumber: orderRef(order), awb: order.awbCode, courier: order.courierName },
+        relatedId: order._id,
+        relatedModel: 'Order',
+      });
+    }
     res.status(200).json({ success: true, data: serializeOrder(order) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -218,6 +241,7 @@ const releaseEarnings = async (req, res) => {
     const filter = req.user.role === 'vendor' ? { vendor: req.user._id, status: 'Pending' } : { status: 'Pending' };
     const earnings = await Earning.find(filter).populate('order');
     let moved = 0;
+    const released = new Map(); // vendorId → ₹ released now
     for (const earning of earnings) {
       const order = earning.order;
       if (!order || order.orderStatus !== 'Completed') continue;
@@ -227,7 +251,12 @@ const releaseEarnings = async (req, res) => {
         earning.availableAt = new Date();
         await earning.save();
         moved += 1;
+        const vid = String(earning.vendor);
+        released.set(vid, (released.get(vid) || 0) + Number(earning.netEarning || 0));
       }
+    }
+    for (const [vendorId, amount] of released) {
+      notify({ event: 'vendor.earnings_released', to: { vendorId }, data: { amount: amount || undefined } });
     }
     res.status(200).json({ success: true, message: `${moved} earning(s) moved to Available` });
   } catch (error) {

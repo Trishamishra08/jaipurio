@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { mediaUrl } from '../../data/cloudinaryMedia';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { registerFCMToken } from '../../services/pushNotificationService';
+import { syncPush } from '../../services/pushNotificationService';
 import api from '../../utils/api';
 import { usePageSeo } from '../../utils/seo';
 
@@ -11,7 +11,7 @@ import { usePageSeo } from '../../utils/seo';
 const finishLogin = (token, navigate) => {
   localStorage.setItem('vendor_token', token);
   localStorage.setItem('vendor_auth', 'true');
-  registerFCMToken(true).catch(() => {});
+  syncPush('vendor', { force: true }); // silent: re-registers if already allowed, or hands over to the native app
   if (window.showVendorToast) {
     window.showVendorToast('Logged in successfully!', 'success');
   }

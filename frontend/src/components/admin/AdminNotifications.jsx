@@ -5,6 +5,8 @@ import {
   FiAlertTriangle, FiAlertCircle, FiShoppingBag
 } from 'react-icons/fi';
 import api from '../../utils/api';
+import PushPermissionPrompt from '../shared/PushPermissionPrompt';
+import { getPushState } from '../../services/pushNotificationService';
 
 const TYPE_CONFIG = {
   info:    { icon: FiInfo,          color: 'text-blue-500',   bg: 'bg-blue-50',    border: 'border-blue-100'   },
@@ -19,7 +21,7 @@ const ROLE_BADGE = {
   user:   { label: 'Customers',    emoji: '🧑', cls: 'text-blue-700 bg-blue-50 border-blue-100'      },
 };
 
-const initialForm = { title: '', message: '', type: 'info', targetRole: 'all' };
+const initialForm = { title: '', message: '', type: 'info', targetRole: 'all', link: '', promotion: false };
 
 const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -28,6 +30,30 @@ const AdminNotifications = () => {
   const [form, setForm]             = useState(initialForm);
   const [mainTab, setMainTab]       = useState('send');    // 'send' | 'history'
   const [filterTab, setFilterTab]   = useState('all');     // 'all' | 'vendor' | 'user'
+  const [stats, setStats]           = useState(null);      // { pushEnabled, devices: [{ role, platform, count }] }
+  const [notice, setNotice]         = useState(null);      // { ok, text }
+  const [testing, setTesting]       = useState(false);
+
+  const loadStats = useCallback(() => {
+    api.get('/admins/notifications/stats').then((res) => setStats(res.data?.data || null)).catch(() => setStats(null));
+  }, []);
+  useEffect(() => { loadStats(); }, [loadStats]);
+
+  const sendTest = async () => {
+    setTesting(true);
+    setNotice(null);
+    try {
+      const res = await api.post('/admins/notifications/test');
+      setNotice({ ok: Boolean(res.data?.success), text: res.data?.message || 'Done.' });
+    } catch (err) {
+      setNotice({ ok: false, text: err?.parsedMessage || 'Could not send the test notification.' });
+    } finally {
+      setTesting(false);
+      loadStats();
+    }
+  };
+
+  const deviceCount = (role) => (stats?.devices || []).filter((d) => d.role === role).reduce((n, d) => n + d.count, 0);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -48,13 +74,21 @@ const AdminNotifications = () => {
     if (!form.title.trim() || !form.message.trim()) return;
     try {
       setSending(true);
-      await api.post('/admins/notifications', form);
+      const payload = { ...form, link: form.link.trim() };
+      if (!payload.link) delete payload.link;
+      const res = await api.post('/admins/notifications', payload);
+      setNotice(
+        res.data?.data?.pushEnabled
+          ? { ok: true, text: 'Sent: saved to inboxes and pushed to registered devices.' }
+          : { ok: true, text: 'Saved to inboxes. Push was not sent because Firebase is not configured on the server yet.' }
+      );
+      loadStats();
       setForm(initialForm);
       setMainTab('history');
       setFilterTab(form.targetRole === 'all' ? 'all' : form.targetRole);
       fetchNotifications();
-    } catch {
-      alert('Failed to send notification.');
+    } catch (err) {
+      alert(err?.parsedMessage || err?.response?.data?.message || 'Failed to send notification.');
     } finally {
       setSending(false);
     }
@@ -107,6 +141,39 @@ const AdminNotifications = () => {
           Refresh
         </button>
       </div>
+
+      {/* Push status for this browser and the whole site */}
+      <PushPermissionPrompt
+        role="admin"
+        title="Get admin alerts on this device"
+        text="New orders, seller sign-ups, returns, payout requests and support tickets, even when this tab is closed."
+        dismissible={false}
+        showBlocked
+        onEnabled={loadStats}
+      />
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-xs text-gray-600 shadow-sm">
+        <span className={`inline-flex items-center gap-1.5 font-semibold ${stats?.pushEnabled ? 'text-green-700' : 'text-orange-600'}`}>
+          <span className={`h-2 w-2 rounded-full ${stats?.pushEnabled ? 'bg-green-500' : 'bg-orange-400'}`} />
+          {stats == null ? 'Checking push status…' : stats.pushEnabled ? 'Push is on' : 'Push is off (Firebase credentials missing on the server)'}
+        </span>
+        {stats && (
+          <span>
+            Devices: <strong>{deviceCount('user')}</strong> customers · <strong>{deviceCount('vendor')}</strong> sellers · <strong>{deviceCount('admin')}</strong> admins
+          </span>
+        )}
+        <span>This browser: <strong>{{ enabled: 'registered', ready: 'allowed, not registered', default: 'not asked', denied: 'blocked', unsupported: 'unsupported', 'in-app': 'native app' }[getPushState('admin')]}</strong></span>
+        <button
+          type="button"
+          onClick={sendTest}
+          disabled={testing}
+          className="ml-auto rounded-lg border border-gray-200 px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+        >
+          {testing ? 'Sending…' : 'Send test to my devices'}
+        </button>
+      </div>
+      {notice && (
+        <p className={`rounded-lg px-3 py-2 text-xs ${notice.ok ? 'bg-green-50 text-green-800' : 'bg-orange-50 text-orange-800'}`}>{notice.text}</p>
+      )}
 
       {/* Main Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
@@ -182,6 +249,31 @@ const AdminNotifications = () => {
                   <option value="user">🧑 All Customers</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Opens (optional page)</label>
+                <input
+                  type="text"
+                  value={form.link}
+                  onChange={e => setForm({ ...form, link: e.target.value })}
+                  placeholder="/shop or /vendor/orders"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-400 transition-all"
+                />
+              </div>
+              <label className="flex items-end gap-2 pb-2 text-xs text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={form.promotion}
+                  onChange={e => setForm({ ...form, promotion: e.target.checked })}
+                  className="mb-0.5 h-4 w-4"
+                />
+                <span>
+                  Promotional message
+                  <span className="block text-[10px] text-gray-400">Only people who opted in to offers get the push</span>
+                </span>
+              </label>
             </div>
 
             {/* Live Preview */}

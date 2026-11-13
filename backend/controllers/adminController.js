@@ -8,7 +8,7 @@ const Product = require('../models/productModel');
 const ReturnRequest = require('../models/returnRequestModel');
 const Payout = require('../models/payoutModel');
 const Notification = require('../models/notificationModel');
-const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
+const { notify } = require('../services/notify');
 const { clearAllCatalogCache } = require('../utils/cache');
 const IncompleteOrder = require('../models/incompleteOrderModel');
 
@@ -255,20 +255,7 @@ const clearVendorPayout = async (req, res) => {
       { $set: { status: 'Cleared' } }
     );
 
-    // Trigger push notification to vendor
-    try {
-      await sendNotificationToUser(
-        vendorId,
-        'vendor',
-        {
-          title: 'Payout Cleared & Disbursed',
-          body: `Good news! Your pending payouts have been successfully cleared and disbursed by the admin.`
-        },
-        'success'
-      );
-    } catch (notifErr) {
-      console.error('FCM: Error sending payout clearance notification:', notifErr);
-    }
+    notify({ event: 'vendor.payout', to: { vendorId }, data: { status: 'cleared and disbursed' } });
 
     res.status(200).json({
       success: true,
@@ -326,6 +313,17 @@ const toggleReviewApproval = async (req, res) => {
     if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
     review.isApproved = !review.isApproved;
     await review.save();
+    // The seller hears about a review once it is live on their product.
+    if (review.isApproved && review.vendor) {
+      const product = await Product.findById(review.product).select('name title').lean().catch(() => null);
+      notify({
+        event: 'vendor.review_new',
+        to: { vendorId: review.vendor },
+        data: { rating: review.rating, productName: product?.title || product?.name, comment: review.comment },
+        relatedId: review._id,
+        relatedModel: 'Review',
+      });
+    }
     res.status(200).json({ success: true, message: 'Review status updated' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -359,16 +357,7 @@ const replyReview = async (req, res) => {
     await review.save();
 
     if (review.user) {
-      sendNotificationToUser(
-        review.user,
-        'user',
-        {
-          title: 'Reply to your feedback',
-          body: reply.length > 140 ? `${reply.slice(0, 140)}…` : reply,
-          data: { relatedId: review._id, relatedModel: 'Review' }
-        },
-        'info'
-      ).catch(() => {});
+      notify({ event: 'review.replied', to: { userId: review.user }, data: { reply }, relatedId: review._id, relatedModel: 'Review' });
     }
 
     const populated = await Review.findById(review._id)

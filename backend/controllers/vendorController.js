@@ -1,7 +1,7 @@
 const Vendor = require('../models/vendorModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
+const { notify } = require('../services/notify');
 
 const generateToken = (id) => {
   return jwt.sign({ id, role: 'vendor' }, process.env.JWT_ACCESS_SECRET || 'secret123', {
@@ -46,6 +46,13 @@ const registerVendor = async (req, res, next) => {
     });
 
     if (vendorReq) {
+      notify({
+        event: 'admin.vendor_registered',
+        to: { admins: true },
+        data: { storeName: vendorReq.storeName || vendorReq.businessName || vendorReq.fullName, city: vendorReq.city },
+        relatedId: vendorReq._id,
+        relatedModel: 'Vendor',
+      });
       res.status(201).json({
         success: true,
         message: 'Registration successful! Your application is pending admin approval.'
@@ -174,20 +181,7 @@ const approveVendor = async (req, res, next) => {
     vendor.commissionRate = (VENDOR_PLANS[vendor.plan] || VENDOR_PLANS.Starter).commissionRate;
     await vendor.save();
 
-    // Trigger push notification to vendor
-    try {
-      await sendNotificationToUser(
-        vendor._id,
-        'vendor',
-        {
-          title: 'Account Approved',
-          body: 'Congratulations! Your seller profile has been approved. You can now log in, upload products, and manage your store.'
-        },
-        'success'
-      );
-    } catch (notifErr) {
-      console.error('FCM: Error sending vendor approval notification:', notifErr);
-    }
+    notify({ event: 'vendor.approved', to: { vendorId: vendor._id }, relatedId: vendor._id, relatedModel: 'Vendor' });
 
     res.status(200).json({
       success: true,
@@ -212,19 +206,7 @@ const blockVendor = async (req, res, next) => {
     vendor.isBlocked = true;
     await vendor.save();
 
-    try {
-      await sendNotificationToUser(
-        vendor._id,
-        'vendor',
-        {
-          title: 'Account Suspended',
-          body: 'Your seller account has been temporarily suspended. Please contact support.'
-        },
-        'alert'
-      );
-    } catch (notifErr) {
-      console.error('FCM: Error sending vendor block notification:', notifErr);
-    }
+    notify({ event: 'vendor.suspended', to: { vendorId: vendor._id }, relatedId: vendor._id, relatedModel: 'Vendor' });
 
     res.status(200).json({
       success: true,
@@ -249,19 +231,7 @@ const unblockVendor = async (req, res, next) => {
     vendor.isBlocked = false;
     await vendor.save();
 
-    try {
-      await sendNotificationToUser(
-        vendor._id,
-        'vendor',
-        {
-          title: 'Account Reactivated',
-          body: 'Your seller account has been reactivated. You can now log in.'
-        },
-        'success'
-      );
-    } catch (notifErr) {
-      console.error('FCM: Error sending vendor unblock notification:', notifErr);
-    }
+    notify({ event: 'vendor.reactivated', to: { vendorId: vendor._id }, relatedId: vendor._id, relatedModel: 'Vendor' });
 
     res.status(200).json({
       success: true,

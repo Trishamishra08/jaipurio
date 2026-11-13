@@ -15,7 +15,7 @@
     "migrate:blogs": "node scripts/migrateOldBlogs.js",
     "migrate:blogs:dry": "node scripts/migrateOldBlogs.js --dry-run",
     "redis:start": "powershell -ExecutionPolicy Bypass -File ./scripts/start-redis.ps1",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

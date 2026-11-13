@@ -1,4 +1,5 @@
 const SupportTicket = require('../models/supportTicketModel');
+const { notify } = require('../services/notify');
 
 // @desc    Create a support ticket
 // @route   POST /api/tickets
@@ -25,21 +26,13 @@ const createTicket = async (req, res, next) => {
       data: ticket
     });
 
-    // Notify Admins
-    try {
-      const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
-      await sendNotificationToUser(
-        null,
-        'admin',
-        {
-          title: 'New Support Ticket',
-          body: `Ticket #${ticket._id} created by user.`
-        },
-        'info'
-      );
-    } catch (err) {
-      console.error('FCM Ticket Error:', err);
-    }
+    notify({
+      event: 'admin.ticket_new',
+      to: { admins: true },
+      data: { subject: ticket.subject, from: req.user.name || req.user.fullName },
+      relatedId: ticket._id,
+      relatedModel: 'SupportTicket',
+    });
   } catch (error) {
     next(error);
   }
@@ -101,20 +94,14 @@ const updateTicket = async (req, res, next) => {
       data: ticket
     });
 
-    // Notify User
-    try {
-      const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
-      await sendNotificationToUser(
-        ticket.user,
-        'user',
-        {
-          title: 'Support Ticket Updated',
-          body: `Your ticket #${ticket._id} status is now ${status}.`
-        },
-        'info'
-      );
-    } catch (err) {
-      console.error('FCM Ticket Update Error:', err);
+    if (ticket?.user && status) {
+      notify({
+        event: 'support.updated',
+        to: { userId: ticket.user },
+        data: { status, ticketRef: String(ticket._id).slice(-6).toUpperCase() },
+        relatedId: ticket._id,
+        relatedModel: 'SupportTicket',
+      });
     }
   } catch (error) {
     next(error);

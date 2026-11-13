@@ -1,7 +1,8 @@
 const Order = require('../models/orderModel');
 const Coupon = require('../models/couponModel');
 const Affiliate = require('../models/affiliateModel');
-const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
+const { notify, orderRef, orderVendorIds } = require('../services/notify');
+const { notifyOrderCreated } = require('../services/orderNotifications');
 const { computeOrderQuote } = require('../utils/pricing');
 const { nextOrderNumber, serializeOrder } = require('../utils/marketplace');
 const { canAccessOrder, ensureEarnings } = require('./orderFlowController');
@@ -154,33 +155,8 @@ const createOrder = async (req, res) => {
       referralCode
     });
 
-    // Trigger push notifications
-    try {
-      await sendNotificationToUser(
-        createdOrder.user,
-        'user',
-        {
-          title: 'Order Placed Successfully',
-          body: `Thank you! Your order #${createdOrder._id} of ₹${createdOrder.totalPrice} has been placed and is being processed.`
-        },
-        'success'
-      );
-
-      const uniqueVendors = [...new Set(createdOrder.orderItems.map(item => item.vendor?.toString()).filter(Boolean))];
-      for (const vendorId of uniqueVendors) {
-        await sendNotificationToUser(
-          vendorId,
-          'vendor',
-          {
-            title: 'New Order Received',
-            body: `You received a new order #${createdOrder._id}. Please review and prepare the items for delivery.`
-          },
-          'success'
-        );
-      }
-    } catch (notifErr) {
-      console.error('FCM: Error sending order creation notifications:', notifErr);
-    }
+    // Customer, sellers and admins are told about the new (COD) order.
+    notifyOrderCreated(createdOrder, { paid: false });
 
     res.status(201).json({
       success: true,
@@ -307,33 +283,8 @@ const completePaidOrder = async (req, res, { txn, paymentId, orderDetails, gatew
     { $set: { status: 'success', order: createdOrder._id, orderNumber: createdOrder.orderNumber, gatewayPaymentId: paymentId } }
   );
 
-  // Trigger push notifications
-  try {
-    await sendNotificationToUser(
-      createdOrder.user,
-      'user',
-      {
-        title: 'Order Paid & Placed Successfully',
-        body: `Thank you! Your payment of ₹${createdOrder.totalPrice} is verified and Order #${createdOrder._id} has been placed.`
-      },
-      'success'
-    );
-
-    const uniqueVendors = [...new Set(createdOrder.orderItems.map(item => item.vendor?.toString()).filter(Boolean))];
-    for (const vendorId of uniqueVendors) {
-      await sendNotificationToUser(
-        vendorId,
-        'vendor',
-        {
-          title: 'New Order Received',
-          body: `You received a new paid order #${createdOrder._id}. Please review and prepare the items for delivery.`
-        },
-        'success'
-      );
-    }
-  } catch (notifErr) {
-    console.error(`FCM: Error sending ${gatewayLabel} order notifications:`, notifErr);
-  }
+  // Customer, sellers and admins are told about the new paid order.
+  notifyOrderCreated(createdOrder, { paid: true });
 
   return res.status(200).json({
     success: true,
@@ -380,6 +331,8 @@ const verifyRazorpayOrder = async (req, res) => {
         { _id: txn._id, status: { $ne: 'success' } },
         { $set: { status: 'failed', gatewayPaymentId: razorpay_payment_id, errorMessage: 'Signature verification failed' } }
       );
+      notify({ event: 'payment.failed', to: { userId: req.user._id }, data: { total: txn.amount } });
+      notify({ event: 'admin.payment_issue', to: { admins: true }, data: { gateway: 'Razorpay', gatewayOrderId: razorpay_order_id, reason: 'Signature verification failed' } });
       return res.status(400).json({ success: false, message: "Invalid signature sent!" });
     }
 
@@ -470,6 +423,7 @@ const verifyCashfreeOrder = async (req, res) => {
         { _id: txn._id, status: 'initiated' },
         { $set: { ...(final ? { status: 'failed' } : {}), errorMessage: `Cashfree order status: ${result.status || 'not paid'}` } }
       );
+      if (final) notify({ event: 'payment.failed', to: { userId: req.user._id }, data: { total: txn.amount } });
       return res.status(400).json({ success: false, message: 'Payment was not completed. No money has been taken — please try again.' });
     }
     // What Cashfree collected must be what we asked for.
@@ -478,6 +432,7 @@ const verifyCashfreeOrder = async (req, res) => {
         { _id: txn._id, status: { $ne: 'success' } },
         { $set: { status: 'failed', gatewayPaymentId: result.paymentId, errorMessage: `Amount mismatch: Cashfree ${result.amount}, expected ${txn.amount}` } }
       );
+      notify({ event: 'admin.payment_issue', to: { admins: true }, data: { gateway: 'Cashfree', gatewayOrderId: orderId, reason: `Amount mismatch: collected ${result.amount}, expected ${txn.amount}` } });
       return res.status(400).json({ success: false, message: 'The paid amount does not match. Please contact support — your payment is safe.' });
     }
 
@@ -622,19 +577,14 @@ const updateOrderItemStatus = async (req, res) => {
 
     await order.save();
 
-    // Trigger push notification to user
-    try {
-      await sendNotificationToUser(
-        order.user,
-        'user',
-        {
-          title: 'Order Status Update',
-          body: `The status of your item "${item.name}" from Order #${order._id} has been updated to "${status}".`
-        },
-        'info'
-      );
-    } catch (notifErr) {
-      console.error('FCM: Error sending order item status notification:', notifErr);
+    if (status) {
+      notify({
+        event: 'order.item_status',
+        to: { userId: order.user },
+        data: { orderNumber: orderRef(order), itemName: item.name, status },
+        relatedId: order._id,
+        relatedModel: 'Order',
+      });
     }
 
     res.status(200).json({ success: true, message: 'Item status updated', data: order });
@@ -690,22 +640,13 @@ const requestReturn = async (req, res) => {
       console.error('Return request record:', rmaErr.message);
     }
 
-    // Trigger push notification to vendors
-    try {
-      const uniqueVendors = [...new Set(order.orderItems.map(item => item.vendor?.toString()).filter(Boolean))];
-      for (const vendorId of uniqueVendors) {
-        await sendNotificationToUser(
-          vendorId,
-          'vendor',
-          {
-            title: `${order.returnAction} Requested`,
-            body: `A customer has requested a ${order.returnAction.toLowerCase()} for Order #${order._id}. Reason: ${order.returnReason}`
-          },
-          'warning'
-        );
+    // Sellers who fulfilled the order and admins are told about the return.
+    {
+      const returnData = { orderNumber: orderRef(order), kind: order.returnAction, reason: order.returnReason };
+      for (const vendorId of orderVendorIds(order)) {
+        notify({ event: 'vendor.return_requested', to: { vendorId }, data: returnData, relatedId: order._id, relatedModel: 'Order' });
       }
-    } catch (notifErr) {
-      console.error('FCM: Error sending return request notification:', notifErr);
+      notify({ event: 'admin.return_requested', to: { admins: true }, data: returnData, relatedId: order._id, relatedModel: 'Order' });
     }
 
     res.status(200).json({ success: true, message: 'Return/Replacement requested successfully', data: order });
@@ -754,20 +695,13 @@ const adminUpdateReturn = async (req, res) => {
     order.returnStatus = returnStatus;
     await order.save();
 
-    // Trigger push notification to user
-    try {
-      await sendNotificationToUser(
-        order.user,
-        'user',
-        {
-          title: 'Return Status Update',
-          body: `Your return/replacement status for Order #${order._id} has been updated to "${returnStatus}".`
-        },
-        'info'
-      );
-    } catch (notifErr) {
-      console.error('FCM: Error sending return status update notification:', notifErr);
-    }
+    notify({
+      event: 'return.updated',
+      to: { userId: order.user },
+      data: { orderNumber: orderRef(order), kind: order.returnAction || 'return', status: returnStatus },
+      relatedId: order._id,
+      relatedModel: 'Order',
+    });
 
     res.status(200).json({ success: true, message: `Return status updated to ${returnStatus}`, data: order });
   } catch (error) {

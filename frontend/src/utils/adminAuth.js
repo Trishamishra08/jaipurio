@@ -1,5 +1,6 @@
 import api from './api';
 import { loginAdminApi } from './adminApi';
+import { disablePush } from '../services/pushNotificationService';
 
 const AUTH_KEY = 'jaipurio_admin_auth';
 const USER_KEY = 'jaipurio_admin_user';
@@ -88,6 +89,7 @@ export function setAdminUser(user) {
 }
 
 export function logoutAdmin() {
+  disablePush('admin'); // reads the admin login first, so this device stops getting admin alerts
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(TOKEN_KEY);

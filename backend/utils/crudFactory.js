@@ -18,6 +18,7 @@ const createCrudController = (Model, options = {}) => {
     searchFields = ['name', 'title', 'code', 'slug'],
     defaultSort = { updatedAt: -1 },
     beforeSave,
+    afterUpdate,
     mapListItem,
   } = options;
 
@@ -99,11 +100,19 @@ const createCrudController = (Model, options = {}) => {
         if (!payload.slug && payload.seo.general.slug) payload.slug = payload.seo.general.slug;
       }
       if (typeof beforeSave === 'function') payload = await beforeSave(payload, req, 'update');
+      const previous = typeof afterUpdate === 'function' ? await Model.findById(req.params.id).lean() : null;
       const doc = await Model.findByIdAndUpdate(req.params.id, payload, {
         new: true,
         runValidators: true,
       });
       if (!doc) return res.status(404).json({ success: false, message: 'Not found' });
+      if (typeof afterUpdate === 'function') {
+        try {
+          await afterUpdate(doc, previous, req);
+        } catch (hookErr) {
+          console.error('afterUpdate hook failed:', hookErr.message);
+        }
+      }
       res.json({ success: true, data: serializeDoc(doc) });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });

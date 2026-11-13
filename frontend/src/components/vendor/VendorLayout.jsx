@@ -10,23 +10,19 @@ import {
 } from 'lucide-react';
 import '../admin/admin.css';
 import api from '../../utils/api';
+import { disablePush } from '../../services/pushNotificationService';
+import { notificationsChanged, useUnreadCount } from '../../utils/useUnreadCount';
+import PushPermissionPrompt from '../shared/PushPermissionPrompt';
 
 const VendorLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
 
   const handleSignOut = async () => {
-    try {
-      const fcmToken = localStorage.getItem('fcm_token_web');
-      if (fcmToken) {
-        await api.post('/notifications/remove-fcm-token', { token: fcmToken });
-      }
-    } catch (err) {
-      console.error('Failed to remove FCM token on vendor logout:', err);
-    }
+    // Remove this device from the seller's push list while the login is still valid.
+    await disablePush('vendor');
     localStorage.removeItem('vendor_auth');
     localStorage.removeItem('vendor_token');
-    localStorage.removeItem('fcm_token_web');
     if (window.showVendorToast) {
       window.showVendorToast('Logged out successfully!', 'success');
     }
@@ -34,12 +30,8 @@ const VendorLayout = () => {
   };
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
-  const [vendorNotifications, setVendorNotifications] = useState([
-    { _id: 'n1', title: 'New paid order', message: 'Order #00000375 — Payment Confirmed. Accept to create shipment.', isRead: false, createdAt: Date.now() - 8 * 60000 },
-    { _id: 'n2', title: 'Return request', message: 'RMA-1001 needs vendor review.', isRead: false, createdAt: Date.now() - 45 * 60000 },
-    { _id: 'n3', title: 'Low stock', message: 'Marble Ganesh Chowki is Out of Stock.', isRead: true, createdAt: Date.now() - 6 * 3600000 },
-  ]);
-  const [unreadCount, setUnreadCount] = useState(2);
+  const [vendorNotifications, setVendorNotifications] = useState([]);
+  const [unreadCount] = useUnreadCount('vendor');
 
   const fetchVendorNotifications = useCallback(async () => {
     try {
@@ -47,7 +39,6 @@ const VendorLayout = () => {
       const res = await api.get('/notifications/me');
       if (res.data.success) {
         setVendorNotifications(res.data.data.notifications);
-        setUnreadCount(res.data.data.notifications.filter(n => !n.isRead).length);
       }
     } catch (err) { /* silently fail */ }
   }, []);
@@ -56,7 +47,7 @@ const VendorLayout = () => {
     try {
       await api.patch('/notifications/mark-all-read');
       setVendorNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      notificationsChanged();
     } catch (err) { /* silently fail */ }
   };
 
@@ -86,7 +77,12 @@ const VendorLayout = () => {
     if (!showNotifications) return undefined;
     fetchVendorNotifications();
     const interval = setInterval(fetchVendorNotifications, 60000);
-    return () => clearInterval(interval);
+    // a push arriving while the dropdown is open refreshes it too
+    window.addEventListener('jaipurio:notification', fetchVendorNotifications);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('jaipurio:notification', fetchVendorNotifications);
+    };
   }, [showNotifications, fetchVendorNotifications]);
 
   useEffect(() => {
@@ -319,7 +315,11 @@ const VendorLayout = () => {
                       <div 
                         key={n._id} 
                         className={`p-3 border-b border-gray-50 hover:bg-gray-50/50 cursor-pointer transition-colors last:border-0 ${!n.isRead ? 'bg-blue-50/30' : ''}`}
-                        onClick={() => { navigate('/vendor/notifications'); setShowNotifications(false); }}
+                        onClick={() => {
+                          if (!n.isRead) api.patch(`/notifications/${n._id}/read`).then(notificationsChanged).catch(() => {});
+                          navigate(n.link && n.link.startsWith('/vendor') ? n.link : '/vendor/notifications');
+                          setShowNotifications(false);
+                        }}
                       >
                         <div className="flex items-start gap-2">
                           <p className={`text-[11px] font-bold flex-1 ${!n.isRead ? 'text-gray-800' : 'text-gray-600'}`}>{n.title}</p>
@@ -400,6 +400,12 @@ const VendorLayout = () => {
 
         {/* Content Area */}
         <div className="p-4 md:p-5 lg:p-6 min-h-[calc(100vh-56px)]">
+          <PushPermissionPrompt
+            role="vendor"
+            title="Get new orders the moment they arrive"
+            text="Turn on notifications to hear about new orders, returns, payouts and product approvals, even when this tab is closed."
+            className="mb-4"
+          />
           <Outlet />
         </div>
       </main>

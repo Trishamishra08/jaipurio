@@ -44,6 +44,9 @@ const settingsSchema = new mongoose.Schema({
     // One shared group: a crawler obeys only the most specific group naming it,
     // so the private-area rules must sit in the same group as Googlebot/Bingbot
     // (separate "User-agent: Googlebot / Allow: /" groups bypassed them).
+    // /login and /register are deliberately NOT disallowed: they send
+    // "noindex" instead, and Google can only see that if it may crawl them.
+    // A blocked URL can still be indexed from links (as "Login" was).
     default: `# SEARCH ENGINES + AI SEARCH BOTS — WELCOME (private areas blocked)
 User-agent: Googlebot
 User-agent: Bingbot
@@ -61,8 +64,6 @@ Disallow: /profile
 Disallow: /orders
 Disallow: /wishlist
 Disallow: /notifications
-Disallow: /login
-Disallow: /register
 Disallow: /*?*sort=
 Disallow: /*?*filter=
 Disallow: /*?*offers=

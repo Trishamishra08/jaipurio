@@ -1,4 +1,5 @@
 const Contact = require('../models/contactModel');
+const { notify } = require('../services/notify');
 const { sendMail } = require('../utils/mailer');
 
 // @desc    Public contact form submission
@@ -20,6 +21,13 @@ const submitContact = async (req, res) => {
       fields: fields || {},
       source: req.get('referer') || '',
       ip: req.ip || '',
+    });
+    notify({
+      event: 'admin.contact_new',
+      to: { admins: true },
+      data: { name: doc.name, subject: doc.subject, message: doc.message, contactId: String(doc._id) },
+      relatedId: doc._id,
+      relatedModel: 'Contact',
     });
     res.status(201).json({ success: true, data: { id: String(doc._id) } });
   } catch (error) {

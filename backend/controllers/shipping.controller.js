@@ -1,4 +1,5 @@
 const Order = require('../models/orderModel');
+const { notify, orderRef } = require('../services/notify');
 const shiprocketService = require('../services/shiprocket.service');
 
 // Generate a random string for order_id required by Shiprocket (has to be unique)
@@ -283,6 +284,8 @@ const shiprocketWebhook = async (req, res, next) => {
 
       const order = await Order.findOne(query);
       if (order) {
+        const previousShipping = String(order.shippingStatus || '').toUpperCase();
+        const wasDelivered = Boolean(order.isDelivered);
         order.shippingStatus = current_status || 'Updated';
         
         // Optionally map Shiprocket status IDs to your internal statuses
@@ -297,6 +300,17 @@ const shiprocketWebhook = async (req, res, next) => {
 
         await order.save();
         console.log(`Order ${order._id} shipping status updated to: ${order.shippingStatus}`);
+
+        // Tell the customer about real changes only (Shiprocket repeats webhooks).
+        const now = String(order.shippingStatus || '').toUpperCase();
+        if (now && now !== previousShipping) {
+          const data = { orderNumber: orderRef(order), awb: order.awbCode || awb, courier: order.courierName };
+          let event = null;
+          if (order.isDelivered && !wasDelivered) event = 'order.delivered';
+          else if (/OUT FOR DELIVERY/.test(now)) event = 'order.out_for_delivery';
+          else if (/^SHIPPED$|PICKED UP|IN TRANSIT/.test(now) && !/IN TRANSIT|PICKED UP/.test(previousShipping) && !/^SHIPPED$/.test(previousShipping)) event = 'order.shipped';
+          if (event) notify({ event, to: { userId: order.user }, data, relatedId: order._id, relatedModel: 'Order' });
+        }
       }
     }
   } catch (error) {

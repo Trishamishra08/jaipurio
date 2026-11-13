@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { CATEGORIES } = require('../services/notificationEvents');
 
 const notificationSchema = new mongoose.Schema({
   title: {
@@ -24,6 +25,16 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     default: null  // null means broadcast to all of the targetRole
   },
+  // Event key from services/notificationEvents.js (e.g. 'order.shipped'); '' for manual broadcasts.
+  event: { type: String, default: '' },
+  category: {
+    type: String,
+    enum: CATEGORIES,
+    default: 'general'
+  },
+  // Relative URL the notification opens (e.g. /orders, /vendor/orders).
+  link: { type: String, default: '' },
+  data: { type: mongoose.Schema.Types.Mixed, default: undefined },
   isRead: {
     type: Boolean,
     default: false
@@ -34,7 +45,6 @@ const notificationSchema = new mongoose.Schema({
   },
   relatedModel: {
     type: String,
-    enum: ['Order', 'Vendor', 'Product', 'User', 'Review', 'SupportTicket', null],
     default: null
   },
   readBy: [{
@@ -43,5 +53,7 @@ const notificationSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+notificationSchema.index({ targetRole: 1, targetId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

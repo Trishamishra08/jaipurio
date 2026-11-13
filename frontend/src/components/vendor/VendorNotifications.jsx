@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import VendorPage from './VendorPage';
 import api from '../../utils/api';
+import { notificationsChanged } from '../../utils/useUnreadCount';
 
 const formatWhen = (createdAt) => {
   if (!createdAt) return '';
@@ -13,6 +15,7 @@ const formatWhen = (createdAt) => {
 };
 
 const VendorNotifications = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -34,10 +37,18 @@ const VendorNotifications = () => {
     load();
   }, [load]);
 
+  // A push arriving while this page is open appears without a reload.
+  useEffect(() => {
+    const reload = () => api.get('/notifications/me').then((res) => setItems(res.data?.data?.notifications || [])).catch(() => {});
+    window.addEventListener('jaipurio:notification', reload);
+    return () => window.removeEventListener('jaipurio:notification', reload);
+  }, []);
+
   const markAllRead = async () => {
     try {
       await api.patch('/notifications/mark-all-read');
       setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      notificationsChanged();
     } catch {
       /* keep current state on failure */
     }
@@ -47,6 +58,7 @@ const VendorNotifications = () => {
     try {
       await api.patch(`/notifications/${id}/read`);
       setItems((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
+      notificationsChanged();
     } catch {
       /* keep current state on failure */
     }
@@ -75,7 +87,10 @@ const VendorNotifications = () => {
             <article
               key={item._id}
               className={`px-4 py-3 cursor-pointer ${!item.isRead ? 'bg-[#f8eee6]' : ''}`}
-              onClick={() => !item.isRead && markOneRead(item._id)}
+              onClick={() => {
+                if (!item.isRead) markOneRead(item._id);
+                if (item.link && item.link.startsWith('/vendor')) navigate(item.link);
+              }}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-semibold">{item.title}</p>

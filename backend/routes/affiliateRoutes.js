@@ -30,6 +30,22 @@ router.put('/payouts/:id/advance', protect, authorize('admin'), requirePermissio
 router.patch('/:id/referral', protect, authorize('admin'), requirePermission('manage_affiliates'), updateAffiliateReferral);
 
 // Existing admin CRUD (list/approve/reject applications) — unchanged.
-router.use('/', createAdminCrudRouter(Affiliate, { searchFields: ['name', 'email'] }));
+router.use('/', createAdminCrudRouter(Affiliate, {
+  searchFields: ['name', 'email'],
+  // Tell the customer when their application is approved or rejected.
+  afterUpdate: async (doc, previous) => {
+    if (!doc.user || !previous || doc.status === previous.status) return;
+    if (['Approved', 'Rejected'].includes(doc.status)) {
+      require('../services/notify').notify({
+        event: 'affiliate.status',
+        to: { userId: doc.user },
+        data: { status: doc.status },
+        overrides: doc.status === 'Approved' ? { type: 'success' } : { type: 'warning' },
+        relatedId: doc._id,
+        relatedModel: 'Affiliate',
+      });
+    }
+  },
+}));
 
 module.exports = router;

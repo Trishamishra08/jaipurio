@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { mapApiProductToStorefront } from '../utils/storefrontProduct';
 import { isLegacyDemoSession } from '../utils/customerAuth';
 import { captureReferralFromUrl } from '../utils/referralTracking';
+import { disablePush } from '../services/pushNotificationService';
 
 const ShopContext = createContext();
 
@@ -345,6 +346,7 @@ export const ShopProvider = ({ children, loadCatalog = true }) => {
         deleteProduct,
         updateProduct,
         logout: () => {
+          disablePush('user'); // remove this device while the login token is still valid
           localStorage.removeItem('jaipurio_auth');
           localStorage.removeItem('jaipurio_user');
           localStorage.removeItem('customer_token');

@@ -16,6 +16,7 @@ import {
 import { adminNav, isNavItemActive, isChildNavActive } from '../../../data/adminNav';
 import api from '../../../utils/api';
 import { getAdminUser, logoutAdmin } from '../../../utils/adminAuth';
+import { notificationsChanged, useUnreadCount } from '../../../utils/useUnreadCount';
 
 /** Default destinations for common breadcrumb labels (last crumb stays plain text). */
 const DEFAULT_CRUMB_LINKS = {
@@ -75,9 +76,13 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
   const [notifications, setNotifications] = useState([]);
   const [pendingCounts, setPendingCounts] = useState({ pendingActions: 0, pendingOrders: 0, unreadNotifications: 0 });
   const [unreadContacts, setUnreadContacts] = useState(0);
+  // Live count from the same inbox the dropdown shows (respects the admin's role permissions).
+  const [unreadNotifications] = useUnreadCount('admin');
 
   const profileRef = useRef(null);
   const notifRef = useRef(null);
+  const notifOpenRef = useRef(false);
+  useEffect(() => { notifOpenRef.current = notifOpen; }, [notifOpen]);
 
   useEffect(() => {
     const parent = adminNav.find(
@@ -100,6 +105,19 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
       if (typeof res.data?.total === 'number') setUnreadContacts(res.data.total);
     }).catch(() => {});
   };
+
+  useEffect(() => {
+    // a push arriving refreshes the dashboard-style badges and an open dropdown
+    const onPush = () => {
+      loadBadges();
+      if (notifOpenRef.current) {
+        api.get('/notifications/me').then((res) => setNotifications(res.data?.data?.notifications || [])).catch(() => {});
+      }
+    };
+    window.addEventListener('jaipurio:notification', onPush);
+    return () => window.removeEventListener('jaipurio:notification', onPush);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadBadges();
@@ -135,9 +153,17 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
     try {
       await api.patch(`/notifications/${id}/read`);
       setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
-      setPendingCounts((prev) => ({ ...prev, unreadNotifications: Math.max(0, prev.unreadNotifications - 1) }));
+      notificationsChanged();
     } catch {
       /* ignore */
+    }
+  };
+
+  const openNotification = (n) => {
+    if (!n.isRead) markNotificationRead(n._id);
+    if (n.link && n.link.startsWith('/admin')) {
+      setNotifOpen(false);
+      navigate(n.link);
     }
   };
 
@@ -145,7 +171,7 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
     try {
       await api.patch('/notifications/mark-all-read');
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setPendingCounts((prev) => ({ ...prev, unreadNotifications: 0 }));
+      notificationsChanged();
     } catch {
       /* ignore */
     }
@@ -214,9 +240,9 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
               title="Notifications"
             >
               <FiBell size={15} />
-              {pendingCounts.unreadNotifications > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-[9px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">
-                  {pendingCounts.unreadNotifications}
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-500 text-[9px] font-bold text-white min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </span>
               )}
             </button>
@@ -238,7 +264,7 @@ export const EcommerceLayout = ({ children, breadcrumb = [] }) => {
                       <button
                         key={n._id}
                         type="button"
-                        onClick={() => !n.isRead && markNotificationRead(n._id)}
+                        onClick={() => openNotification(n)}
                         className={`w-full text-left px-3 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition ${n.isRead ? '' : 'bg-blue-50/40'}`}
                       >
                         <div className="flex items-start justify-between gap-2">

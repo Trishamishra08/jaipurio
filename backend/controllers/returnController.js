@@ -4,7 +4,7 @@ const Earning = require('../models/earningModel');
 const { RETURN_STATUS } = require('../constants/flow');
 const { nextRmaNumber, serializeReturn } = require('../utils/marketplace');
 const { canAccessOrder } = require('./orderFlowController');
-const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
+const { notify, orderRef } = require('../services/notify');
 
 const listReturns = async (req, res) => {
   try {
@@ -44,14 +44,11 @@ const createReturn = async (req, res) => {
     order.returnAction = 'Refund';
     await order.save();
 
+    const returnData = { orderNumber: orderRef(order), rma: item.rmaNumber, kind: 'Refund', reason: req.body.reason };
     if (vendorId) {
-      try {
-        await sendNotificationToUser(vendorId, 'vendor', {
-          title: 'Return request',
-          body: `${item.rmaNumber} needs vendor review.`,
-        }, 'warning');
-      } catch { /* ignore */ }
+      notify({ event: 'vendor.return_requested', to: { vendorId }, data: returnData, relatedId: item._id, relatedModel: 'ReturnRequest' });
     }
+    notify({ event: 'admin.return_requested', to: { admins: true }, data: returnData, relatedId: item._id, relatedModel: 'ReturnRequest' });
 
     res.status(201).json({ success: true, data: serializeReturn(item) });
   } catch (error) {
@@ -74,6 +71,15 @@ const advanceReturn = async (req, res) => {
 
     if (nextStatus === 'Payment status: Refunded') {
       await Order.findByIdAndUpdate(item.order, { paymentStatus: 'Refunded', returnStatus: 'Returned' });
+    }
+    if (item.user) {
+      const order = await Order.findById(item.order).select('orderNumber totalPrice');
+      const data = { orderNumber: orderRef(order || {}), kind: 'return', status: nextStatus.replace(/^Payment status:s*/, '') };
+      if (nextStatus === 'Payment status: Refunded') {
+        notify({ event: 'refund.processed', to: { userId: item.user }, data: { orderNumber: data.orderNumber, amount: order?.totalPrice }, relatedId: item._id, relatedModel: 'ReturnRequest' });
+      } else if (nextStatus !== 'Commission reversed') {
+        notify({ event: 'return.updated', to: { userId: item.user }, data, relatedId: item._id, relatedModel: 'ReturnRequest' });
+      }
     }
     if (nextStatus === 'Commission reversed') {
       await Earning.updateMany(
@@ -99,6 +105,10 @@ const rejectReturn = async (req, res) => {
     item.adminNote = req.body.note || '';
     await item.save();
     await Order.findByIdAndUpdate(item.order, { returnStatus: 'Return Rejected' });
+    if (item.user) {
+      const order = await Order.findById(item.order).select('orderNumber');
+      notify({ event: 'return.updated', to: { userId: item.user }, data: { orderNumber: orderRef(order || {}), kind: 'return', status: 'rejected' }, relatedId: item._id, relatedModel: 'ReturnRequest' });
+    }
     res.status(200).json({ success: true, data: serializeReturn(item) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

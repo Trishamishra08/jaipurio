@@ -162,7 +162,7 @@ const DEFAULT_THEME_DATA = {
   logoMain: '/jaipurio_logo.png',
   logoDark: '/jaipurio_logo_bg.png',
   logoMobile: '/jaipurio_logo.png',
-  favicon: '/favicon.png',
+  favicon: '/favicon-48.png',
   logoHeight: '45',
   logoMaxWidth: '180',
 

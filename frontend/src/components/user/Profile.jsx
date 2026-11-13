@@ -12,6 +12,8 @@ import {
   Users,
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
+import { disablePush } from '../../services/pushNotificationService';
+import PushPermissionPrompt from '../shared/PushPermissionPrompt';
 import { usePageSeo } from '../../utils/seo';
 
 /**
@@ -53,6 +55,7 @@ const Profile = () => {
     .toUpperCase();
 
   const handleLogout = () => {
+    disablePush('user'); // remove this device while the login token is still valid
     try {
       localStorage.removeItem('jaipurio_auth');
       localStorage.removeItem('jaipurio_user');
@@ -92,6 +95,15 @@ const Profile = () => {
             </div>
           </div>
         </div>
+
+        <PushPermissionPrompt
+          role="user"
+          title="Get order updates on this device"
+          text="We'll tell you when your order is confirmed, shipped and delivered."
+          dismissible={false}
+          showBlocked
+          className="mb-3"
+        />
 
         <div className="bg-white border border-[#E8E2D9] rounded-xl overflow-hidden shadow-sm mb-3">
           <div className="px-3.5 py-2 border-b border-[#EFEAE3]">

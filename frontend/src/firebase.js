@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, deleteToken } from 'firebase/messaging';
 import { getDatabase } from 'firebase/database';
 
 /*
@@ -19,6 +19,9 @@ const firebaseConfig = {
 
 const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
+// Web Push certificate key pair (Firebase console → Cloud Messaging → Web configuration).
+const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
+
 let app = null;
 let messaging = null;
 let db = null;
@@ -26,8 +29,13 @@ let db = null;
 if (isFirebaseConfigured) {
   try {
     app = initializeApp(firebaseConfig);
-    messaging = getMessaging(app);
     db = getDatabase(app);
+    // Messaging needs service workers + Push API; it throws on unsupported browsers (e.g. iOS Safari outside a Home Screen app).
+    try {
+      messaging = getMessaging(app);
+    } catch (err) {
+      console.info('Push messaging unavailable in this browser:', err.message);
+    }
   } catch (err) {
     console.warn('Firebase init skipped:', err.message);
   }
@@ -35,4 +43,4 @@ if (isFirebaseConfigured) {
   console.info('Firebase disabled — add Jaipurio VITE_FIREBASE_* env vars when ready.');
 }
 
-export { messaging, getToken, onMessage, db, isFirebaseConfigured };
+export { messaging, getToken, onMessage, deleteToken, db, isFirebaseConfigured, vapidKey, firebaseConfig };

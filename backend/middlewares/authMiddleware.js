@@ -27,6 +27,8 @@ const protect = async (req, res, next) => {
         res.status(401);
         throw new Error('Not authorized, user not found');
       }
+      // Which kind of session this is (used e.g. to file push devices per role).
+      req.authRole = decoded.role === 'vendor' ? 'vendor' : req.user.role === 'admin' ? 'admin' : 'user';
 
       next();
     } catch (error) {

@@ -5,8 +5,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useShop } from '../../context/ShopContext';
 import api from '../../utils/api';
 import AuthFrame from './AuthFrame';
+import { usePageSeo } from '../../utils/seo';
 
 const Register = () => {
+  usePageSeo({ title: 'Create Account', noindex: true });
   const location = useLocation();
   // Login sends people here after verifying a number that has no account yet,
   // passing the verified number and OTP so they only add their details.

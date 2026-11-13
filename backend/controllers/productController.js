@@ -1,4 +1,5 @@
 const Product = require('../models/productModel');
+const { notify } = require('../services/notify');
 const Inventory = require('../models/inventoryModel');
 const Category = require('../models/categoryModel');
 const Review = require('../models/reviewModel');
@@ -721,20 +722,13 @@ const createProduct = async (req, res) => {
     res.status(201).json({ success: true, data: productWithStock });
 
     if (req.user.role === 'vendor' && product.lifecycle === 'Pending Approval') {
-      try {
-        const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
-        await sendNotificationToUser(
-          null,
-          'admin',
-          {
-            title: 'New Product Pending Approval',
-            body: `Vendor has submitted a new product "${product.name}" for review.`
-          },
-          'info'
-        );
-      } catch (err) {
-        console.error('FCM Product Creation Error:', err);
-      }
+      notify({
+        event: 'admin.product_pending',
+        to: { admins: true },
+        data: { productName: product.title || product.name, sku: product.sku, vendorName: req.user.storeName || req.user.fullName, productId: String(product._id) },
+        relatedId: product._id,
+        relatedModel: 'Product',
+      });
     }
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -816,26 +810,15 @@ const updateProductStatus = async (req, res) => {
     res.status(200).json({ success: true, data });
 
     if (product.vendor) {
-      try {
-        const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
-        let title = 'Product Status Updated';
-        let type = 'info';
-        if (lifecycle === 'Published') {
-          title = 'Product Approved';
-          type = 'success';
-        } else if (lifecycle === 'Rejected') {
-          title = 'Product Rejected';
-          type = 'alert';
-        }
-        await sendNotificationToUser(
-          product.vendor,
-          'vendor',
-          { title, body: `Your product "${product.name}" is now ${lifecycle}.` },
-          type
-        );
-      } catch (err) {
-        console.error('FCM Product Status Error:', err);
-      }
+      const statusWord = lifecycle === 'Published' ? 'approved and live' : lifecycle === 'Rejected' ? 'rejected' : String(lifecycle).toLowerCase();
+      notify({
+        event: 'vendor.product_status',
+        to: { vendorId: product.vendor },
+        data: { productName: product.title || product.name, status: statusWord, note: lifecycle === 'Rejected' ? product.rejectReason : '' },
+        overrides: lifecycle === 'Rejected' ? { type: 'alert' } : lifecycle === 'Published' ? { type: 'success' } : {},
+        relatedId: product._id,
+        relatedModel: 'Product',
+      });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -859,20 +842,13 @@ const submitProduct = async (req, res) => {
     invalidateCatalog('products').catch(() => {});
     res.status(200).json({ success: true, data: await injectStock(product) });
 
-    try {
-      const { sendNotificationToUser } = require('../utils/pushNotificationHelper');
-      await sendNotificationToUser(
-        null,
-        'admin',
-        {
-          title: 'Product Pending Approval',
-          body: `Vendor submitted "${product.title || product.name}" (${product.sku}) for review.`,
-        },
-        'info'
-      );
-    } catch (err) {
-      console.error('FCM Product Submit Error:', err);
-    }
+    notify({
+      event: 'admin.product_pending',
+      to: { admins: true },
+      data: { productName: product.title || product.name, sku: product.sku, vendorName: req.user.storeName || req.user.fullName, productId: String(product._id) },
+      relatedId: product._id,
+      relatedModel: 'Product',
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

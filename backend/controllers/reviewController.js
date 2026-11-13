@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { notify } = require('../services/notify');
 const Review = require('../models/reviewModel');
 const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
@@ -117,6 +118,14 @@ const createReview = async (req, res) => {
       rating,
       comment,
       isApproved: false, // shown on the store only after an admin approves it
+    });
+
+    notify({
+      event: 'admin.review_new',
+      to: { admins: true },
+      data: { rating, productName: await Product.findById(productId).select('name title').then((p) => p?.title || p?.name).catch(() => ''), comment },
+      relatedId: review._id,
+      relatedModel: 'Review',
     });
 
     res.status(201).json({

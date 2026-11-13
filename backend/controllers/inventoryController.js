@@ -1,4 +1,5 @@
 const Inventory = require('../models/inventoryModel');
+const { notify } = require('../services/notify');
 const Product = require('../models/productModel');
 const { invalidateCatalog } = require('../utils/cache');
 const { stockStatusFromQty, LOW_STOCK_THRESHOLD } = require('../constants/flow');
@@ -25,6 +26,7 @@ const updateStock = async (req, res) => {
     const qty = Number(stock);
     const track = trackQuantity !== undefined ? Boolean(trackQuantity) : product.trackQuantity;
     const status = stockStatusFromQty(qty, track);
+    const previousStock = (await Inventory.findOne({ product: productId }).select('stock').lean())?.stock;
 
     const inventory = await Inventory.findOneAndUpdate(
       { product: productId },
@@ -46,6 +48,16 @@ const updateStock = async (req, res) => {
     await product.save();
 
     invalidateCatalog('products').catch(() => {});
+    // An admin lowering a seller's stock to the low-stock level (or zero) tells the seller.
+    if (req.user.role === 'admin' && track && product.vendor && qty <= LOW_STOCK_THRESHOLD && (previousStock === undefined || previousStock > qty) && previousStock !== qty) {
+      notify({
+        event: 'vendor.stock_low',
+        to: { vendorId: product.vendor },
+        data: { productName: product.title || product.name, stock: qty },
+        relatedId: product._id,
+        relatedModel: 'Product',
+      });
+    }
     res.status(200).json({
       success: true,
       data: serializeProduct(product, inventory),
