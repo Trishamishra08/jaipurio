@@ -28,6 +28,11 @@ export default {
           dark: '#2B1E1A',
           cream: '#FCF8F2'
         },
+        // Admin panel buttons use bg-admin-dark / text-admin-dark. The colour was never
+        // defined, so those buttons rendered white text on a white card (invisible).
+        admin: {
+          dark: '#2b2622',
+        },
         brand: {
           light: '#F8F1E3',
           dark: '#4A3A2F',

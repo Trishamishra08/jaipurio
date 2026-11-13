@@ -88,7 +88,13 @@ const AdminVendors = () => {
                     <button className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all">
                         Export List
                     </button>
-                    <button className="bg-admin-dark text-white px-6 py-2.5 rounded-lg text-xs font-bold shadow-lg hover:bg-black transition-all">
+                    {/* No admin-side "create vendor" form exists: onboarding goes through the normal
+                        seller registration, then the request shows up here to approve. */}
+                    <button
+                        type="button"
+                        onClick={() => window.open('/vendor/register', '_blank', 'noopener')}
+                        className="bg-admin-dark text-white px-6 py-2.5 rounded-lg text-xs font-bold shadow-lg hover:bg-black transition-all"
+                    >
                         + Onboard Vendor
                     </button>
                 </div>
