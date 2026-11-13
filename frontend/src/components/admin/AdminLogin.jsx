@@ -11,7 +11,9 @@ const AdminLogin = () => {
     email: localStorage.getItem('jaipurio_admin_remember') || '',
     password: '',
     remember: Boolean(localStorage.getItem('jaipurio_admin_remember')),
+    totp: '',
   });
+  const [needsCode, setNeedsCode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -27,6 +29,7 @@ const AdminLogin = () => {
     setLoading(false);
     if (!result.ok) {
       setError(result.message);
+      if (result.requires2fa) setNeedsCode(true);
       return;
     }
     navigate(location.state?.from || '/admin', { replace: true });
@@ -65,6 +68,23 @@ const AdminLogin = () => {
               required
             />
           </label>
+
+          {needsCode && (
+            <label className="admin-field">
+              <span>Authentication code</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="6-digit code"
+                autoFocus
+                value={form.totp}
+                onChange={(e) => setForm((p) => ({ ...p, totp: e.target.value.replace(/\D/g, '') }))}
+                required
+              />
+            </label>
+          )}
 
           <label className="admin-remember">
             <input

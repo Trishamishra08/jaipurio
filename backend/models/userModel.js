@@ -70,6 +70,13 @@ const userSchema = new mongoose.Schema({
   otpExpiry: {
     type: Date
   },
+  // Optional TOTP two-factor for admin accounts (see utils/totp.js). The secret
+  // is never returned by default queries; login selects it explicitly.
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: { type: String, select: false },
+  twoFactorLastStep: { type: Number, default: 0, select: false },
+  twoFactorFails: { type: Number, default: 0, select: false },
+  twoFactorLockUntil: { type: Date, select: false },
   isBlocked: {
     type: Boolean,
     default: false

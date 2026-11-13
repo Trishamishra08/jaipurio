@@ -104,7 +104,8 @@ import AdminLogin from './components/admin/AdminLogin';
 import CmsPage from './components/user/CmsPage';
 import CityPage, { ShipsToIndex } from './components/user/CityPage';
 import ContactPage from './components/user/ContactPage';
-import { BrandRedirect, CartRedirect, CategorySlugRedirect } from './components/user/LegacyRedirects';
+import { BrandRedirect, CartRedirect, CategoryToCanonical } from './components/user/LegacyRedirects';
+import CategoryPage from './components/user/CategoryPage';
 
 import { captureReferralFromUrl } from './utils/referralTracking';
 import { isInApp } from './utils/appContext';
@@ -197,8 +198,8 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/privacy-policy" element={<CmsPage slug="privacy-policy" fallbacks={['cookie-policy']} />} />
             <Route path="/return-policy" element={<CmsPage slug="refund-policy" />} />
-            <Route path="/product-categories/:slug" element={<CategorySlugRedirect />} />
-            <Route path="/category/:slug" element={<CategorySlugRedirect />} />
+            <Route path="/product-categories/:slug" element={<CategoryPage />} />
+            <Route path="/category/:slug" element={<CategoryToCanonical />} />
             <Route path="/brands/:slug" element={<BrandRedirect />} />
             <Route path="/brand/:slug" element={<BrandRedirect />} />
             <Route path="/orders/tracking" element={<Navigate to="/orders" replace />} />

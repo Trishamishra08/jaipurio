@@ -5,6 +5,7 @@ const { sendSmsOtp } = require('../services/otpService');
 const LoginActivity = require('../models/loginActivityModel');
 const { extractClientIp } = require('../utils/geoip');
 const { deviceLabelFromUserAgent } = require('../utils/deviceLabel');
+const { generateSecret, verifyTotp, otpauthUrl } = require('../utils/totp');
 
 const logLoginAttempt = (req, email, user, status, reason = '') => {
   LoginActivity.create({
@@ -104,7 +105,9 @@ const login = async (req, res, next) => {
       throw new Error('Email and password are required');
     }
 
-    const user = await User.findOne({ email: emailNorm });
+    const user = await User.findOne({ email: emailNorm }).select(
+      '+twoFactorSecret +twoFactorLastStep +twoFactorFails +twoFactorLockUntil'
+    );
 
     if (!user) {
       logLoginAttempt(req, emailNorm, null, 'Blocked', 'No account with this email');
@@ -119,6 +122,46 @@ const login = async (req, res, next) => {
     }
 
     if (user && user.password && (await bcrypt.compare(password, user.password))) {
+      // Second factor — only for admins who turned it on. The password was
+      // right at this point, so asking for the code reveals nothing new.
+      if (user.role === 'admin' && user.twoFactorEnabled && user.twoFactorSecret) {
+        const code = String(req.body.totp || '').trim();
+        if (!code) {
+          return res.status(401).json({
+            success: false,
+            requires2fa: true,
+            message: 'Enter the 6-digit code from your authenticator app.',
+          });
+        }
+        if (user.twoFactorLockUntil && user.twoFactorLockUntil > new Date()) {
+          logLoginAttempt(req, emailNorm, user, 'Blocked', '2FA locked');
+          return res.status(429).json({
+            success: false,
+            requires2fa: true,
+            message: 'Too many wrong codes. Try again in a few minutes.',
+          });
+        }
+        const step = verifyTotp(user.twoFactorSecret, code);
+        // step must be newer than the last accepted one: a code works once.
+        if (step === null || step <= (user.twoFactorLastStep || 0)) {
+          user.twoFactorFails = (user.twoFactorFails || 0) + 1;
+          if (user.twoFactorFails >= 5) {
+            user.twoFactorLockUntil = new Date(Date.now() + 10 * 60 * 1000);
+            user.twoFactorFails = 0;
+          }
+          await user.save();
+          logLoginAttempt(req, emailNorm, user, 'Blocked', 'Wrong 2FA code');
+          return res.status(401).json({
+            success: false,
+            requires2fa: true,
+            message: 'Invalid authentication code.',
+          });
+        }
+        user.twoFactorLastStep = step;
+        user.twoFactorFails = 0;
+        user.twoFactorLockUntil = undefined;
+        await user.save();
+      }
       logLoginAttempt(req, emailNorm, user, 'Success');
       res.status(200).json({
         success: true,
@@ -617,7 +660,83 @@ const getLoginActivity = async (req, res, next) => {
   }
 };
 
+
+// ─── Admin two-factor (TOTP) ─────────────────────────────────────────────
+// @route   GET /api/users/2fa/status
+const twoFactorStatus = async (req, res) => {
+  res.json({ success: true, data: { enabled: !!req.user.twoFactorEnabled } });
+};
+
+// Starts setup: makes a fresh secret (not active yet) for the admin to scan.
+// @route   POST /api/users/2fa/setup
+const twoFactorSetup = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('+twoFactorSecret');
+    if (user.twoFactorEnabled) {
+      res.status(400);
+      throw new Error('Two-factor is already on. Turn it off first to set it up again.');
+    }
+    const secret = generateSecret();
+    user.twoFactorSecret = secret;
+    await user.save();
+    res.json({
+      success: true,
+      data: { secret, otpauthUrl: otpauthUrl({ secret, account: user.email || user.name }) },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Turns it on once the admin proves the app shows the right code.
+// @route   POST /api/users/2fa/enable
+const twoFactorEnable = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('+twoFactorSecret +twoFactorLastStep');
+    if (!user.twoFactorSecret) {
+      res.status(400);
+      throw new Error('Start setup first.');
+    }
+    const step = verifyTotp(user.twoFactorSecret, req.body.code);
+    if (step === null) {
+      res.status(400);
+      throw new Error('That code is not right. Check the app and try again.');
+    }
+    user.twoFactorEnabled = true;
+    user.twoFactorLastStep = step;
+    await user.save();
+    res.json({ success: true, message: 'Two-factor authentication is on.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Needs the password AND a current code, so a stolen session can't switch it off.
+// @route   POST /api/users/2fa/disable
+const twoFactorDisable = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('+twoFactorSecret +twoFactorLastStep');
+    const okPassword = user.password && (await bcrypt.compare(String(req.body.password || ''), user.password));
+    const step = verifyTotp(user.twoFactorSecret, req.body.code);
+    if (!okPassword || step === null || step <= (user.twoFactorLastStep || 0)) {
+      res.status(401);
+      throw new Error('Password or code is incorrect.');
+    }
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorLastStep = 0;
+    await user.save();
+    res.json({ success: true, message: 'Two-factor authentication is off.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
+  twoFactorStatus,
+  twoFactorSetup,
+  twoFactorEnable,
+  twoFactorDisable,
   signup,
   login,
   sendRegisterOtp,

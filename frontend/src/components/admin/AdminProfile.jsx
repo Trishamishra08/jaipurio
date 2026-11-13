@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiUser, FiImage, FiLock, FiSettings, FiUploadCloud, FiX } from 'react-icons/fi';
+import { FiUser, FiImage, FiLock, FiSettings, FiUploadCloud, FiX, FiShield } from 'react-icons/fi';
+import TwoFactorPanel from './TwoFactorPanel';
 import api from '../../utils/api';
 import { uploadMediaFiles } from '../../utils/mediaApi';
 import { getAdminUser, setAdminUser } from '../../utils/adminAuth';
@@ -9,6 +10,7 @@ const TABS = [
   { id: 'profile', label: 'User profile', icon: FiUser },
   { id: 'avatar', label: 'Avatar', icon: FiImage },
   { id: 'password', label: 'Change password', icon: FiLock },
+  { id: 'security', label: 'Two-factor (2FA)', icon: FiShield },
   { id: 'preferences', label: 'Preferences', icon: FiSettings },
 ];
 
@@ -289,6 +291,8 @@ const AdminProfile = () => {
               </button>
             </form>
           )}
+
+          {tab === 'security' && <TwoFactorPanel />}
 
           {tab === 'preferences' && (
             <div className="max-w-md">

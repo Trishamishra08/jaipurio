@@ -35,11 +35,15 @@ function urlset(entries) {
 
 router.get('/sitemap-static.xml', async (req, res) => {
   const now = new Date();
+  // Only indexable pages, at their canonical URLs. The storefront home's
+  // canonical is /home (/ redirects there). Never list /login or /register:
+  // they are noindex, and a sitemap entry asks Google to index them.
   const pages = [
-    { loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'daily', lastmod: now },
+    { loc: `${SITE_URL}/home`, priority: '1.0', changefreq: 'daily', lastmod: now },
+    { loc: `${SITE_URL}/shop`, priority: '0.9', changefreq: 'daily', lastmod: now },
+    { loc: `${SITE_URL}/blog`, priority: '0.7', changefreq: 'weekly', lastmod: now },
     { loc: `${SITE_URL}/about-us`, priority: '0.5', changefreq: 'monthly', lastmod: now },
     { loc: `${SITE_URL}/contact`, priority: '0.5', changefreq: 'monthly', lastmod: now },
-    { loc: `${SITE_URL}/register`, priority: '0.4', changefreq: 'monthly', lastmod: now },
   ];
   res.type('application/xml').send(urlset(pages.map(urlEntry)));
 });

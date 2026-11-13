@@ -1,5 +1,5 @@
 const express = require('express');
-const { signup, login, sendRegisterOtp, register, sendOtp, verifyOtp, getMe, updateProfile, addAddress, updateAddress, deleteAddress, getUsers, getBlockedUsers, blockUser, unblockUser, updatePassword, getLoginActivity } = require('../controllers/userController');
+const { signup, login, sendRegisterOtp, register, sendOtp, verifyOtp, getMe, updateProfile, addAddress, updateAddress, deleteAddress, getUsers, getBlockedUsers, blockUser, unblockUser, updatePassword, getLoginActivity, twoFactorStatus, twoFactorSetup, twoFactorEnable, twoFactorDisable } = require('../controllers/userController');
 const { protect, authorize, requirePermission } = require('../middlewares/authMiddleware');
 const { otpMobileLimiter } = require('../middlewares/rateLimiter');
 
@@ -14,6 +14,12 @@ router.put('/:id/unblock', protect, authorize('admin'), requirePermission('manag
 
 router.post('/signup', signup);
 router.post('/login', login);
+
+// Admin two-factor (TOTP)
+router.get('/2fa/status', protect, authorize('admin'), twoFactorStatus);
+router.post('/2fa/setup', protect, authorize('admin'), twoFactorSetup);
+router.post('/2fa/enable', protect, authorize('admin'), twoFactorEnable);
+router.post('/2fa/disable', protect, authorize('admin'), twoFactorDisable);
 
 router.post('/send-register-otp', otpMobileLimiter, sendRegisterOtp);
 router.post('/register', register);

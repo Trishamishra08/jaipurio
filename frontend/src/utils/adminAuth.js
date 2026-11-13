@@ -53,9 +53,9 @@ export function isAdminAuthenticated() {
   }
 }
 
-export async function loginAdmin({ email, password, remember }) {
+export async function loginAdmin({ email, password, remember, totp }) {
   try {
-    const data = await loginAdminApi(email.trim(), password);
+    const data = await loginAdminApi(email.trim(), password, totp);
     const user = {
       name: data.name || ADMIN_DEMO.name,
       email: data.email,
@@ -77,6 +77,7 @@ export async function loginAdmin({ email, password, remember }) {
   } catch (err) {
     return {
       ok: false,
+      requires2fa: Boolean(err.response?.data?.requires2fa),
       message: err.response?.data?.message || err.message || 'Could not sign in. Check backend is running.',
     };
   }

@@ -18,9 +18,12 @@ const SORT_MAP = {
 
 const PAGE_SIZE = 100;
 
-const Shop = () => {
+// categoryOverride: set by /product-categories/<slug>, which renders the shop for
+// that category directly (a real, indexable URL) instead of redirecting.
+const Shop = ({ categoryOverride = '' }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const categoryParam = searchParams.get('category') || '';
+  const { categories } = useCategoryTree();
+  const categoryParam = searchParams.get('category') || categoryOverride || '';
   const searchParam = searchParams.get('search') || '';
   // ?offers=1 (from "Today's Offers"): only discounted products, biggest discount first.
   const offersOnly = searchParams.get('offers') === '1';
@@ -35,6 +38,7 @@ const Shop = () => {
 
   // Each category gets its own title/description/canonical; search and filtered
   // views (offers, price, sort, page>1 of a search) are noindex.
+  const categorySlug = selectedCategory ? categories.find((c) => c.name === selectedCategory)?.slug || '' : '';
   const seoSubject = selectedCategory || brandName || '';
   usePageSeo({
     title: seoSubject
@@ -46,7 +50,9 @@ const Shop = () => {
       ? `Shop authentic handcrafted ${seoSubject.toLowerCase()} from Jaipur artisans on Jaipurio. Genuine products, secure payments and pan-India delivery.`
       : 'Browse the full Jaipurio catalogue: marble idols, terracotta and mitti pottery, home decor, jewellery and gifts handcrafted by Rajasthani artisans.',
     path: selectedCategory
-      ? `/shop?category=${encodeURIComponent(selectedCategory)}`
+      ? categorySlug
+        ? `/product-categories/${categorySlug}`
+        : `/shop?category=${encodeURIComponent(selectedCategory)}`
       : brandParam
         ? `/shop?brand=${encodeURIComponent(brandParam)}`
         : '/shop',
@@ -63,7 +69,6 @@ const Shop = () => {
   // fetched from the database so a chip never filters to an empty result.
   // Row 1 shows the top-level categories; once one is picked, row 2 drills
   // into its sub-categories (or its siblings when it is already a leaf).
-  const { categories } = useCategoryTree();
   // Exact name first; an old/partial name (e.g. "Idols" from a banner link)
   // resolves to the broadest category containing it, like the API does.
   const selectedNode =

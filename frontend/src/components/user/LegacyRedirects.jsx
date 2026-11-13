@@ -36,6 +36,12 @@ export const CategorySlugRedirect = () => {
   return <Navigate to={resolved ? `/shop?category=${encodeURIComponent(resolved)}` : '/shop'} replace />;
 };
 
+/** /category/<slug> → the canonical /product-categories/<slug>. */
+export const CategoryToCanonical = () => {
+  const { slug = '' } = useParams();
+  return <Navigate to={`/product-categories/${encodeURIComponent(decodeURIComponent(slug))}`} replace />;
+};
+
 /** /brands/<slug> → products of that old brand (LeatherMart, Rangtara, Royalsuits…). */
 export const BrandRedirect = () => {
   const { slug = '' } = useParams();

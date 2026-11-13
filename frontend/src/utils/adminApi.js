@@ -12,8 +12,8 @@ export const fetchAdminDashboardStats = async () => {
   return unwrap(res);
 };
 
-export const loginAdminApi = async (email, password) => {
-  const res = await api.post('/users/login', { email, password });
+export const loginAdminApi = async (email, password, totp) => {
+  const res = await api.post('/users/login', { email, password, ...(totp ? { totp } : {}) });
   if (!res.data?.success) {
     throw new Error(res.data?.message || 'Login failed');
   }
