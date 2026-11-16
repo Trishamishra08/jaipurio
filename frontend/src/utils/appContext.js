@@ -44,3 +44,36 @@ export const isInApp = () => {
   if (/(iPhone|iPad|iPod)/.test(ua) && !/Safari/i.test(ua)) return true; // iOS WKWebView
   return !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
 };
+
+/**
+ * Inside the Jaipurio app the screen must not zoom (pinch or double-tap).
+ * The normal website stays zoomable for accessibility, so this runs only when
+ * isInApp() is true. Android WebView obeys the viewport tag; iOS WKWebView
+ * ignores it for pinch, so the gesture events are cancelled as well.
+ */
+export const lockAppZoom = () => {
+  if (typeof document === 'undefined' || !isInApp()) return;
+  try {
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover',
+      );
+    }
+    document.documentElement.style.touchAction = 'pan-x pan-y'; // no pinch, no double-tap zoom
+    const stop = (e) => e.preventDefault();
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) =>
+      document.addEventListener(t, stop, { passive: false }),
+    );
+    document.addEventListener(
+      'touchmove',
+      (e) => {
+        if (e.touches && e.touches.length > 1) e.preventDefault();
+      },
+      { passive: false },
+    );
+  } catch {
+    /* never block the app because of this */
+  }
+};
