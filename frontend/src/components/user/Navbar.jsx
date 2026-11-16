@@ -147,7 +147,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [desktopSearch, setDesktopSearch] = useState('');
   const [scrolled, setScrolled] = useState(false);
-  const { cartCount, wishlistCount, setIsCartDrawerOpen, deliveryLocation, isAuthenticated } = useShop();
+  const { cartCount, wishlistCount, setIsCartDrawerOpen, deliveryLocation, isAuthenticated, logout } = useShop();
   const [unreadNotifications] = useUnreadCount('user', { enabled: Boolean(isAuthenticated) });
   const bellBadge = unreadNotifications > 0 && (
     <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#C45C6A] text-white text-[9px] font-extrabold flex items-center justify-center border border-white">
@@ -390,13 +390,34 @@ const Navbar = () => {
             </button>
             <div className="flex items-center gap-3 xl:gap-4">
               <span className="hidden xl:inline text-[#9A8B7A]">100% Handmade · Pan India Delivery</span>
-              <Link to="/login" className="hover:text-[#6F241D] transition-colors">
-                Login
-              </Link>
-              <span className="text-[#C4B5A0]">|</span>
-              <Link to="/register" className="hover:text-[#6F241D] transition-colors">
-                Sign up
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link to="/profile" className="hover:text-[#6F241D] transition-colors">
+                    My Account
+                  </Link>
+                  <span className="text-[#C4B5A0]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      navigate('/home');
+                    }}
+                    className="hover:text-[#6F241D] transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="hover:text-[#6F241D] transition-colors">
+                    Login
+                  </Link>
+                  <span className="text-[#C4B5A0]">|</span>
+                  <Link to="/register" className="hover:text-[#6F241D] transition-colors">
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

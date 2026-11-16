@@ -4,6 +4,7 @@ const Product = require('../models/productModel');
 const Category = require('../models/categoryModel');
 const EcommerceBrand = require('../models/ecommerceBrandModel');
 const Blog = require('../models/blogModel');
+const { categoriesForSitemap } = require('../utils/sitemapCategories');
 
 const SITE_URL = (process.env.SITE_URL || 'https://jaipurio.in').replace(/\/$/, '');
 
@@ -75,9 +76,21 @@ router.get('/sitemap-products.xml', async (req, res) => {
 
 router.get('/sitemap-categories.xml', async (req, res) => {
   try {
-    const categories = await Category.find({}).select('slug updatedAt').lean();
+    // Only categories that have live products: the others redirect to a parent or /shop.
+    const live = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+    const [all, ids, names] = await Promise.all([
+      Category.find({ isActive: { $ne: false } }).select('title slug isActive updatedAt').lean(),
+      Product.distinct('categoryIds', live),
+      Product.distinct('category', {
+        $and: [
+          live,
+          { category: { $nin: ['', null] } },
+          { $or: [{ categoryIds: { $exists: false } }, { categoryIds: { $size: 0 } }] },
+        ],
+      }),
+    ]);
+    const categories = categoriesForSitemap(all, ids, names);
     const entries = categories
-      .filter((c) => c.slug)
       .map((c) =>
         urlEntry({
           loc: `${SITE_URL}/product-categories/${c.slug}`,

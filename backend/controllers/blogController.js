@@ -327,6 +327,23 @@ const getBlogById = async (req, res) => {
   }
 };
 
+// Used by nginx (auth_request) to give a missing /blog/<slug> page a real 404 status.
+// 204 = article exists, 403 = it does not (nginx maps 403 -> 404). Same lookup as
+// getBlogById, which is what the blog page itself calls.
+const blogExists = async (req, res) => {
+  try {
+    const raw = String(req.params.id || '').trim();
+    let query;
+    if (/^[0-9a-fA-F]{24}$/.test(raw)) query = { _id: raw };
+    else if (/^\d+$/.test(raw)) query = { $or: [{ legacyId: Number(raw) }, { slug: raw }] };
+    else query = { slug: raw };
+    const found = await Blog.exists(query);
+    res.sendStatus(found ? 204 : 403);
+  } catch (error) {
+    res.sendStatus(500);
+  }
+};
+
 const getBlogBySlug = async (req, res) => {
   try {
     const blog = await Blog.findOne({
@@ -664,6 +681,7 @@ module.exports = {
   getAdminBlogs,
   getBlogById,
   getBlogBySlug,
+  blogExists,
   getRelatedBlogs,
   createBlog,
   updateBlog,

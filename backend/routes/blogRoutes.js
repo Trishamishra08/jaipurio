@@ -5,6 +5,7 @@ const {
   getAdminBlogs,
   getBlogById,
   getBlogBySlug,
+  blogExists,
   getRelatedBlogs,
   createBlog,
   updateBlog,
@@ -28,6 +29,8 @@ const { cachePublic } = require('../utils/cache');
 router.route('/').get(cachePublic('blogs', 180), getBlogs).post(protect, authorize('admin'), createBlog);
 
 router.route('/admin').get(protect, authorize('admin'), getAdminBlogs);
+
+router.get('/exists/:id', blogExists);
 
 router.get('/slug/:slug', cachePublic('blogs', 180), getBlogBySlug);
 
