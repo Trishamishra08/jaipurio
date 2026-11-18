@@ -8,6 +8,16 @@ const { categoriesForSitemap } = require('../utils/sitemapCategories');
 
 const SITE_URL = (process.env.SITE_URL || 'https://jaipurio.in').replace(/\/$/, '');
 
+// Google's limit is 50,000 URLs / 50 MB per sitemap file.
+const MAX_URLS = 45000;
+
+// Same visibility rule the shop uses (getProducts / getProductById), so the sitemap
+// never lists a product the storefront would 404.
+const LIVE_PRODUCT = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+
+// A slug is only listed when it can sit in a URL path as-is (no spaces, slashes, ? or #).
+const usableSlug = (s) => typeof s === 'string' && s.length > 0 && !/[\s/?#]/.test(s);
+
 function escapeXml(s = '') {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -17,160 +27,124 @@ function escapeXml(s = '') {
     .replace(/'/g, '&apos;');
 }
 
-function urlEntry({ loc, lastmod, priority, changefreq }) {
-  return [
-    '  <url>',
-    `    <loc>${escapeXml(loc)}</loc>`,
-    lastmod ? `    <lastmod>${new Date(lastmod).toISOString().split('T')[0]}</lastmod>` : '',
-    changefreq ? `    <changefreq>${changefreq}</changefreq>` : '',
-    priority !== undefined ? `    <priority>${priority}</priority>` : '',
-    '  </url>',
-  ]
-    .filter(Boolean)
-    .join('\n');
+const day = (d) => {
+  const t = d ? new Date(d) : null;
+  return t && !Number.isNaN(t.getTime()) ? t.toISOString().split('T')[0] : '';
+};
+
+// Google ignores <changefreq> and <priority>, and only trusts <lastmod> when it is the
+// real last change. So each URL carries its loc and, when known, its true lastmod.
+function urlEntry({ loc, lastmod }) {
+  const d = day(lastmod);
+  return `  <url>\n    <loc>${escapeXml(loc)}</loc>${d ? `\n    <lastmod>${d}</lastmod>` : ''}\n  </url>`;
 }
 
 function urlset(entries) {
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>\n`;
 }
 
-router.get('/sitemap-static.xml', async (req, res) => {
-  const now = new Date();
-  // Only indexable pages, at their canonical URLs. The storefront home's
-  // canonical is /home (/ redirects there). Never list /login or /register:
-  // they are noindex, and a sitemap entry asks Google to index them.
-  const pages = [
-    { loc: `${SITE_URL}/home`, priority: '1.0', changefreq: 'daily', lastmod: now },
-    { loc: `${SITE_URL}/shop`, priority: '0.9', changefreq: 'daily', lastmod: now },
-    { loc: `${SITE_URL}/blog`, priority: '0.7', changefreq: 'weekly', lastmod: now },
-    { loc: `${SITE_URL}/about-us`, priority: '0.5', changefreq: 'monthly', lastmod: now },
-    { loc: `${SITE_URL}/contact`, priority: '0.5', changefreq: 'monthly', lastmod: now },
-  ];
-  res.type('application/xml').send(urlset(pages.map(urlEntry)));
-});
+function sendXml(res, xml) {
+  res
+    .status(200)
+    .set('Cache-Control', 'public, max-age=3600')
+    .type('application/xml')
+    .send(xml);
+}
 
-router.get('/sitemap-products.xml', async (req, res) => {
-  try {
-    const products = await Product.find({
-      $or: [{ lifecycle: 'Published' }, { status: 'approved' }],
-    })
-      .select('slug updatedAt')
-      .limit(45000)
-      .lean();
+/** Each section returns [{ loc, lastmod }] straight from the database. */
+const SECTIONS = {
+  // Fixed pages. No lastmod: these have no real "last changed" date, and a fake
+  // "today" on every fetch makes Google distrust lastmod for the whole site.
+  'sitemap-static.xml': async () =>
+    ['/home', '/shop', '/blog', '/about-us', '/contact'].map((p) => ({ loc: `${SITE_URL}${p}` })),
 
-    const entries = products
-      .filter((p) => p.slug)
-      .map((p) =>
-        urlEntry({
-          loc: `${SITE_URL}/products/${p.slug}`,
-          lastmod: p.updatedAt,
-          priority: '0.9',
-          changefreq: 'weekly',
-        })
-      );
-    res.type('application/xml').send(urlset(entries));
-  } catch (err) {
-    res.status(500).type('text/plain').send('Error generating product sitemap');
-  }
-});
+  'sitemap-products.xml': async () => {
+    const rows = await Product.find(LIVE_PRODUCT).select('slug updatedAt').limit(MAX_URLS).lean();
+    return rows
+      .filter((p) => usableSlug(p.slug))
+      .map((p) => ({ loc: `${SITE_URL}/products/${p.slug}`, lastmod: p.updatedAt }));
+  },
 
-router.get('/sitemap-categories.xml', async (req, res) => {
-  try {
-    // Only categories that have live products: the others redirect to a parent or /shop.
-    const live = { $or: [{ lifecycle: 'Published' }, { status: 'approved' }] };
+  // Only categories that have live products: the others redirect to a parent or /shop.
+  'sitemap-categories.xml': async () => {
     const [all, ids, names] = await Promise.all([
       Category.find({ isActive: { $ne: false } }).select('title slug isActive updatedAt').lean(),
-      Product.distinct('categoryIds', live),
+      Product.distinct('categoryIds', LIVE_PRODUCT),
       Product.distinct('category', {
         $and: [
-          live,
+          LIVE_PRODUCT,
           { category: { $nin: ['', null] } },
           { $or: [{ categoryIds: { $exists: false } }, { categoryIds: { $size: 0 } }] },
         ],
       }),
     ]);
-    const categories = categoriesForSitemap(all, ids, names);
-    const entries = categories
-      .map((c) =>
-        urlEntry({
-          loc: `${SITE_URL}/product-categories/${c.slug}`,
-          lastmod: c.updatedAt,
-          priority: '0.8',
-          changefreq: 'weekly',
-        })
-      );
-    res.type('application/xml').send(urlset(entries));
-  } catch (err) {
-    res.status(500).type('text/plain').send('Error generating category sitemap');
-  }
-});
+    return categoriesForSitemap(all, ids, names)
+      .filter((c) => usableSlug(c.slug))
+      .map((c) => ({ loc: `${SITE_URL}/product-categories/${c.slug}`, lastmod: c.updatedAt }));
+  },
 
-router.get('/sitemap-brands.xml', async (req, res) => {
-  try {
-    const brands = await EcommerceBrand.find({ status: 'Published' }).select('slug updatedAt').lean();
-    const entries = brands
-      .filter((b) => b.slug)
-      .map((b) =>
-        urlEntry({
-          loc: `${SITE_URL}/brands/${b.slug}`,
-          lastmod: b.updatedAt,
-          priority: '0.7',
-          changefreq: 'weekly',
-        })
-      );
-    res.type('application/xml').send(urlset(entries));
-  } catch (err) {
-    res.status(500).type('text/plain').send('Error generating brand sitemap');
-  }
-});
+  'sitemap-brands.xml': async () => {
+    const rows = await EcommerceBrand.find({ status: 'Published' }).select('slug updatedAt').lean();
+    return rows
+      .filter((b) => usableSlug(b.slug))
+      .map((b) => ({ loc: `${SITE_URL}/brands/${b.slug}`, lastmod: b.updatedAt }));
+  },
 
-router.get('/sitemap-blog.xml', async (req, res) => {
-  try {
-    const posts = await Blog.find({ status: 'Published' }).select('slug updatedAt').lean();
-    const entries = posts
-      .filter((b) => b.slug)
-      .map((b) =>
-        urlEntry({
-          loc: `${SITE_URL}/blog/${b.slug}`,
-          lastmod: b.updatedAt,
-          priority: '0.6',
-          changefreq: 'monthly',
-        })
-      );
-    res.type('application/xml').send(urlset(entries));
-  } catch (err) {
-    res.status(500).type('text/plain').send('Error generating blog sitemap');
-  }
-});
+  'sitemap-blog.xml': async () => {
+    const rows = await Blog.find({ status: 'Published' }).select('slug updatedAt').limit(MAX_URLS).lean();
+    return rows
+      .filter((b) => usableSlug(b.slug))
+      .map((b) => ({ loc: `${SITE_URL}/blog/${b.slug}`, lastmod: b.updatedAt }));
+  },
 
-// Published, indexable city / country pages (/shop/<slug>)
-router.get('/sitemap-cities.xml', async (req, res) => {
-  try {
+  // Published, indexable city / country pages (/shop/<slug>)
+  'sitemap-cities.xml': async () => {
     const CityPage = require('../models/cityPageModel');
     const rows = await CityPage.find({ status: 'Published', indexable: true }).select('slug updatedAt').lean();
-    const entries = rows.map((c) =>
-      urlEntry({ loc: `${SITE_URL}/shop/${c.slug}`, lastmod: c.updatedAt, priority: '0.7', changefreq: 'weekly' })
-    );
-    res.type('application/xml').send(urlset(entries));
-  } catch (err) {
-    res.status(500).type('text/plain').send('Error generating city sitemap');
-  }
+    return rows
+      .filter((c) => usableSlug(c.slug))
+      .map((c) => ({ loc: `${SITE_URL}/shop/${c.slug}`, lastmod: c.updatedAt }));
+  },
+};
+
+Object.entries(SECTIONS).forEach(([file, build]) => {
+  router.get(`/${file}`, async (req, res) => {
+    try {
+      sendXml(res, urlset((await build()).map(urlEntry)));
+    } catch (err) {
+      res.status(500).type('text/plain').send(`Error generating ${file}`);
+    }
+  });
 });
 
+// Index: lists only sitemaps that actually contain URLs (an empty one shows up in
+// Search Console as "No URLs"), each with the date of its newest entry.
 router.get('/sitemap.xml', async (req, res) => {
-  const now = new Date().toISOString().split('T')[0];
-  const sitemaps = [
-    'sitemap-static.xml',
-    'sitemap-products.xml',
-    'sitemap-categories.xml',
-    'sitemap-brands.xml',
-    'sitemap-blog.xml',
-    'sitemap-cities.xml',
-  ];
-  const body = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemaps
-    .map((s) => `  <sitemap>\n    <loc>${SITE_URL}/${s}</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>`)
-    .join('\n')}\n</sitemapindex>`;
-  res.type('application/xml').send(body);
+  try {
+    const parts = await Promise.all(
+      Object.entries(SECTIONS).map(async ([file, build]) => {
+        try {
+          const rows = await build();
+          const newest = rows.map((r) => day(r.lastmod)).filter(Boolean).sort().pop() || '';
+          return { file, count: rows.length, newest };
+        } catch {
+          return { file, count: 0, newest: '' };
+        }
+      })
+    );
+    const items = parts
+      .filter((p) => p.count > 0)
+      .map(
+        (p) =>
+          `  <sitemap>\n    <loc>${SITE_URL}/${p.file}</loc>${p.newest ? `\n    <lastmod>${p.newest}</lastmod>` : ''}\n  </sitemap>`
+      );
+    sendXml(
+      res,
+      `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items.join('\n')}\n</sitemapindex>\n`
+    );
+  } catch (err) {
+    res.status(500).type('text/plain').send('Error generating sitemap index');
+  }
 });
 
 module.exports = router;
