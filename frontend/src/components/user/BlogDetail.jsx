@@ -70,8 +70,15 @@ const BlogDetail = () => {
           setLoadState('error');
         }
       })
-      .catch(() => {
-        if (!cancelled) setLoadState('error');
+      .catch((err) => {
+        if (cancelled) return;
+        // The server found a clearly matching live article for an old slug: go there.
+        const suggestion = err?.response?.status === 404 ? err.response.data?.suggestion : null;
+        if (suggestion && suggestion !== id) {
+          navigate(`/blog/${suggestion}`, { replace: true });
+          return;
+        }
+        setLoadState('error');
       });
     return () => {
       cancelled = true;

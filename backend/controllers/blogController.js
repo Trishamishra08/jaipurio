@@ -4,6 +4,7 @@ const BlogTag = require('../models/blogTagModel');
 const UiBlock = require('../models/uiBlockModel');
 const { invalidateCatalog } = require('../utils/cache');
 const { normalizeSeo, slugify } = require('../utils/seoFields');
+const { suggestBlogSlug } = require('../utils/blogSuggest');
 
 const DEFAULT_UI_BLOCKS = [
   {
@@ -319,12 +320,24 @@ const getBlogById = async (req, res) => {
     }
     const blog = await Blog.findOne(query).lean();
     if (!blog) {
-      return res.status(404).json({ success: false, message: 'Blog not found' });
+      const suggestion = await suggestForMissing(raw);
+      return res.status(404).json({ success: false, message: 'Blog not found', ...(suggestion ? { suggestion } : {}) });
     }
     res.status(200).json({ success: true, data: { blog: serializeBlog(blog) } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+// Published articles (slug + title only), kept for a few minutes so a burst of
+// requests for missing slugs does not hit the database each time.
+let publishedCache = { at: 0, rows: [] };
+const suggestForMissing = async (raw) => {
+  if (/^[0-9a-fA-F]{24}$/.test(raw) || /^\d+$/.test(raw)) return null; // ids are never "old slugs"
+  if (Date.now() - publishedCache.at > 10 * 60 * 1000) {
+    publishedCache = { at: Date.now(), rows: await Blog.find({ status: 'Published' }).select('slug name title').lean() };
+  }
+  return suggestBlogSlug(raw, publishedCache.rows);
 };
 
 // Used by nginx (auth_request) to give a missing /blog/<slug> page a real 404 status.
@@ -338,7 +351,15 @@ const blogExists = async (req, res) => {
     else if (/^\d+$/.test(raw)) query = { $or: [{ legacyId: Number(raw) }, { slug: raw }] };
     else query = { slug: raw };
     const found = await Blog.exists(query);
-    res.sendStatus(found ? 204 : 403);
+    if (found) return res.sendStatus(204);
+    // Missing: a clearly matching article gets a redirect (nginx reads this header
+    // and answers 301); otherwise 403 -> nginx answers a real 404.
+    const target = await suggestForMissing(raw);
+    if (target) {
+      res.set('X-Blog-Redirect', `/blog/${target}`);
+      return res.sendStatus(204);
+    }
+    return res.sendStatus(403);
   } catch (error) {
     res.sendStatus(500);
   }
