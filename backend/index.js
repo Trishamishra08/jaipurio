@@ -267,6 +267,10 @@ app.get('/llms.txt', (req, res) => {
 const sitemapRoutes = require('./routes/sitemapRoutes');
 app.use('/', sitemapRoutes);
 
+// Storefront page HTML with each page's own title, canonical, H1 and text
+// (nginx serves it instead of the bare index.html; see utils/seoShell.js).
+app.use('/', require('./routes/seoShellRoutes'));
+
 // Root Route
 app.get('/', (req, res) => {
   res.send('API is running...');
