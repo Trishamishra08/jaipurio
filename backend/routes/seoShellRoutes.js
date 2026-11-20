@@ -198,6 +198,20 @@ async function pageFor(path, m) {
   return null;
 }
 
+/**
+ * Paths that only exist when a database record exists: a product, a category, or a
+ * single-segment CMS page. When the record is missing these get a real 404 (the shell
+ * still renders, so the React "not found" screen shows). App screens, fixed CMS routes
+ * with React fallbacks, and everything else keep 200.
+ */
+function isRecordPath(path) {
+  const clean = String(path || '/').split('?')[0].replace(/\/+$/, '') || '/';
+  const parts = clean.split('/').filter(Boolean);
+  if ((parts[0] === 'products' || parts[0] === 'product' || parts[0] === 'product-categories') && parts.length === 2) return true;
+  if (parts.length === 1 && !FIXED_CMS[clean] && !APP_SEGMENTS.has(parts[0])) return true;
+  return false;
+}
+
 let models = null;
 const MODELS = () =>
   models ||
@@ -217,16 +231,22 @@ router.get('/api/seo-shell', async (req, res) => {
     return res.status(502).type('text/plain').send('shell unavailable');
   }
   let html = shell;
+  let status = 200;
+  const path = String(req.get('x-shell-path') || req.query.path || '/');
   try {
     const models = MODELS();
-    const page = await pageFor(String(req.get('x-shell-path') || req.query.path || '/'), models);
+    const page = await pageFor(path, models);
     if (page) html = renderShell(shell, page, SITE_URL);
+    // A missing product/category/CMS page is a real 404, not a 200 "soft 404".
+    else if (isRecordPath(path)) status = 404;
   } catch {
+    // Database trouble: never turn a real page into a 404.
     html = shell;
   }
-  res.status(200).set('Cache-Control', 'no-cache').type('text/html').send(html);
+  res.status(status).set('Cache-Control', 'no-cache').type('text/html').send(html);
 });
 
 module.exports = router;
 module.exports.pageFor = pageFor;
 module.exports.getShell = getShell;
+module.exports.isRecordPath = isRecordPath;
