@@ -88,6 +88,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/admin/ai-keys', require('./routes/aiKeyRoutes'));
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/inventory', inventoryRoutes);
