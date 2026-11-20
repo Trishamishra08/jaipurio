@@ -13,6 +13,9 @@ const CREDENTIAL_NAMES = [
   'indexnow_key',
   'seo_intel_agent_token',
   'ga4_property_id',
+  'cloudflare_account_id',
+  'cloudflare_api_token',
+  'pollinations_api_key',
 ];
 
 const S = (props, required = []) => ({ type: 'object', properties: props, required, additionalProperties: false });

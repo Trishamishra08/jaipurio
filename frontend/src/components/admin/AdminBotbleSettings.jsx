@@ -18,6 +18,7 @@ import {
   Save
 } from 'lucide-react';
 import api from '../../utils/api';
+import AdminAiKeys from './AdminAiKeys';
 
 const COMMON_SETTINGS = [
   {
@@ -409,6 +410,7 @@ const AdminBotbleSettings = () => {
           </div>
         </div>
       )}
+      <AdminAiKeys />
     </div>
   );
 };
