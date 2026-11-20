@@ -36,6 +36,8 @@ const settingsSchema = new mongoose.Schema({
   popup: { type: mongoose.Schema.Types.Mixed, default: {} },
   menus: [{ name: String, location: String, items: String }],
   widgets: [{ name: String, sidebar: String }],
+  // Admin → Settings → Website Tracking. Empty = no Google Analytics tag on the storefront.
+  googleAnalyticsId: { type: String, default: '', trim: true },
   customCss: { type: String, default: '' },
   customJs: { type: String, default: '' },
   customHtml: { type: String, default: '' },

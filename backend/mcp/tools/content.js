@@ -12,6 +12,7 @@ const CREDENTIAL_NAMES = [
   'pagespeed_api_key',
   'indexnow_key',
   'seo_intel_agent_token',
+  'ga4_property_id',
 ];
 
 const S = (props, required = []) => ({ type: 'object', properties: props, required, additionalProperties: false });
@@ -356,8 +357,30 @@ const tools = [
     inputSchema: S({}),
     run: async () => {
       const Settings = require('../../models/settingsModel');
-      const s = await Settings.findOne().select('theme footer homePage productPage popup menus').lean();
+      const s = await Settings.findOne().select('theme footer homePage productPage popup menus googleAnalyticsId').lean();
       return s || {};
+    },
+  },
+  {
+    name: 'tracking_set',
+    ability: 'write',
+    description: 'Set the Google Analytics 4 Measurement ID used by the storefront (Admin > Settings > Website Tracking). Send an empty string to remove the tag. The tag only loads on the live domain.',
+    inputSchema: S({ googleAnalyticsId: { type: 'string', description: 'Like G-ABC123XYZ, or "" to turn off.' } }, ['googleAnalyticsId']),
+    run: async ({ googleAnalyticsId }) => {
+      const v = String(googleAnalyticsId || '').trim().toUpperCase();
+      if (v && (!/^G-[A-Z0-9]{6,12}$/.test(v) || /^G-X+$/.test(v))) throw new ToolError('Use a real GA4 Measurement ID like G-ABC123XYZ.');
+      const Settings = require('../../models/settingsModel');
+      let s = await Settings.findOne();
+      const before = s?.googleAnalyticsId || '';
+      if (!s) s = new Settings();
+      s.googleAnalyticsId = v;
+      await s.save();
+      try {
+        await require('../../utils/cache').invalidateCatalog('settings');
+      } catch {
+        /* cache is optional */
+      }
+      return { googleAnalyticsId: v, before };
     },
   },
   {

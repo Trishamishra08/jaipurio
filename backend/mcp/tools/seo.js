@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const { COLLECTIONS } = require('../collections');
 const { ToolError } = require('../errors');
 const { auditHtml, strip } = require('../htmlAudit');
-const { gsc, gscQuery, gscProperty, googleToken, pagespeed, crux, bing } = require('../google');
+const { gsc, gscQuery, gscProperty, googleToken, ga4Report, pagespeed, crux, bing } = require('../google');
 const { storeGet, storeSet, credentialGet, credentialSet } = require('../store');
 const { SITE_URL, isIndexableRequest } = require('../../utils/siteHost');
 
@@ -199,6 +199,32 @@ const tools = [
     description: 'Real-user Core Web Vitals (Chrome UX Report, p75) for a URL or the whole origin.',
     inputSchema: S({ path: { type: 'string', description: 'Leave empty for the whole origin.' }, formFactor: { type: 'string', enum: ['PHONE', 'DESKTOP'], default: 'PHONE' } }),
     run: async ({ path, formFactor }) => (path ? crux({ url: new URL(path, SITE_URL).toString(), formFactor }) : crux({ origin: SITE_URL, formFactor })),
+  },
+  {
+    name: 'ga4_report',
+    ability: 'read',
+    description: 'Google Analytics 4 numbers for jaipurio.in: visitors, sessions, views, engagement, by page, traffic source, city, device or date. Needs GA4 Viewer access for the service account.',
+    inputSchema: S({
+      view: { type: 'string', enum: ['overview', 'pages', 'sources', 'cities', 'devices', 'days', 'landing'], default: 'overview' },
+      days: { type: 'integer', minimum: 1, maximum: 365, default: 28 },
+      limit: { type: 'integer', minimum: 1, maximum: 200, default: 25 },
+    }),
+    run: async ({ view = 'overview', days = 28, limit = 25 }) => {
+      const base = ['activeUsers', 'sessions', 'screenPageViews', 'engagementRate'];
+      const map = {
+        overview: { dimensions: [], metrics: [...base, 'averageSessionDuration', 'newUsers'] },
+        pages: { dimensions: ['pagePath'], metrics: ['screenPageViews', 'activeUsers', 'engagementRate'], orderBy: 'screenPageViews' },
+        sources: { dimensions: ['sessionDefaultChannelGroup', 'sessionSource'], metrics: ['sessions', 'activeUsers', 'engagementRate'], orderBy: 'sessions' },
+        cities: { dimensions: ['country', 'city'], metrics: ['activeUsers', 'sessions'], orderBy: 'activeUsers' },
+        devices: { dimensions: ['deviceCategory'], metrics: base, orderBy: 'sessions' },
+        days: { dimensions: ['date'], metrics: ['activeUsers', 'sessions', 'screenPageViews'] },
+        landing: { dimensions: ['landingPage'], metrics: ['sessions', 'engagementRate', 'activeUsers'], orderBy: 'sessions' },
+      };
+      const r = await ga4Report({ ...map[view], days, limit });
+      if (view === 'days') r.rows.sort((a, b) => a.date.localeCompare(b.date));
+      if (!r.rowCount) r.note = 'No data for this range. Check the GA4 tag is live on jaipurio.in (tracking_set) and wait 24-48 hours.';
+      return { view, ...r };
+    },
   },
   {
     name: 'seo_gsc_status',

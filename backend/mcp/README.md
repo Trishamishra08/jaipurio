@@ -21,9 +21,11 @@ Lets Claude read and edit the Jaipurio admin through a custom connector in claud
 
 ## Tools
 
-Content (`tools/content.js`): site_info, find, get, create, update, publish, delete, seo_get, seo_set, redirect_check, media_bulk_alt, settings_get, mcp_audit_log, credentials_status, credential_set, credential_remove.
+Content (`tools/content.js`): site_info, find, get, create, update, publish, delete, seo_get, seo_set, redirect_check, media_bulk_alt, settings_get, tracking_set, mcp_audit_log, credentials_status, credential_set, credential_remove.
 
-SEO (`tools/seo.js`): seo_audit_page, seo_audit_site, seo_sitemap, seo_robots_get, seo_meta_issues, seo_pagespeed, seo_crux, seo_gsc_status, seo_gsc_performance, seo_gsc_opportunities, seo_cannibalization, seo_content_gaps, seo_gsc_inspect, seo_gsc_submit_sitemap, seo_bing_status, seo_bing_performance, seo_indexnow_submit, seo_keyword_map_list/add/assign/remove, seo_internal_links_suggest, seo_intel_log.
+SEO (`tools/seo.js`): ga4_report, seo_audit_page, seo_audit_site, seo_sitemap, seo_robots_get, seo_meta_issues, seo_pagespeed, seo_crux, seo_gsc_status, seo_gsc_performance, seo_gsc_opportunities, seo_cannibalization, seo_content_gaps, seo_gsc_inspect, seo_gsc_submit_sitemap, seo_bing_status, seo_bing_performance, seo_indexnow_submit, seo_keyword_map_list/add/assign/remove, seo_internal_links_suggest, seo_intel_log.
+
+GA4 (`ga4_report`) uses the same service account with Viewer access; property from `ga4_property_id` (default 294270069). The storefront GA4 tag reads `settings.googleAnalyticsId` and loads only on jaipurio.in.
 
 Search Console tools need `gsc_service_account_json` and `gsc_property` (default `sc-domain:jaipurio.in`). IndexNow only runs on the live host.
 

@@ -156,4 +156,29 @@ const bing = async (method, siteUrl) => {
   return r.d ?? r;
 };
 
-module.exports = { googleToken, gsc, gscQuery, gscProperty, pagespeed, crux, bing, httpJson, daysAgo };
+/** GA4 Data API report for the saved property (default: Jaipurio's "jaipur" property). */
+const ga4Report = async ({ dimensions = [], metrics = ['activeUsers'], days = 28, limit = 50, orderBy } = {}) => {
+  const prop = String((await credentialGet('ga4_property_id')) || '294270069').replace(/^properties\//, '');
+  const token = await googleToken('https://www.googleapis.com/auth/analytics.readonly');
+  const body = {
+    dateRanges: [{ startDate: `${days}daysAgo`, endDate: 'yesterday' }],
+    dimensions: dimensions.map((name) => ({ name })),
+    metrics: metrics.map((name) => ({ name })),
+    limit: Math.min(limit, 1000),
+  };
+  if (orderBy) body.orderBys = [{ metric: { metricName: orderBy }, desc: true }];
+  const r = await httpJson(`https://analyticsdata.googleapis.com/v1beta/properties/${encodeURIComponent(prop)}:runReport`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const rows = (r.rows || []).map((row) => {
+    const o = {};
+    dimensions.forEach((d, i) => (o[d] = row.dimensionValues[i].value));
+    metrics.forEach((m, i) => (o[m] = Number(row.metricValues[i].value)));
+    return o;
+  });
+  return { property: prop, days, rowCount: r.rowCount || 0, rows };
+};
+
+module.exports = { ga4Report, googleToken, gsc, gscQuery, gscProperty, pagespeed, crux, bing, httpJson, daysAgo };

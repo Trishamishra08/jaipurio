@@ -69,6 +69,17 @@ class FakeBlog {
 }
 stub('models/blogModel.js', FakeBlog);
 
+let settingsDoc = null;
+stub('models/settingsModel.js', class FakeSettings {
+  static async findOne() {
+    return settingsDoc;
+  }
+  async save() {
+    settingsDoc = this;
+  }
+});
+stub('utils/cache.js', { invalidateCatalog: async () => {} });
+
 const express = require('express');
 const { _reset } = require('../mcp/limits');
 const { verify } = require('../mcp/crypto');
@@ -316,4 +327,13 @@ test('connector kill switch', async () => {
   const r = await fetch(`${base}/api/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   delete process.env.MCP_ENABLED;
   assert.equal(r.status, 503);
+});
+
+test('tracking_set saves a real GA4 id and refuses placeholders', async () => {
+  const { access_token } = await connect(['read', 'write']);
+  const bad = await call(access_token, 'tracking_set', { googleAnalyticsId: 'G-XXXXXXXXXX' });
+  assert.equal(bad.isError, true);
+  const ok = await call(access_token, 'tracking_set', { googleAnalyticsId: 'g-efcwdl7y3k' });
+  assert.ok(!ok.isError, ok.content?.[0]?.text);
+  assert.equal(settingsDoc.googleAnalyticsId, 'G-EFCWDL7Y3K');
 });
