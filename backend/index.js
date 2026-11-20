@@ -79,6 +79,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(ipRateLimiter);
 
+// Claude connector (MCP + OAuth). Off with MCP_ENABLED=false. See backend/mcp/README.md.
+app.use(require('./mcp/routes'));
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
