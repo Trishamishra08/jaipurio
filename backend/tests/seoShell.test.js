@@ -115,3 +115,13 @@ test('paragraphs keep block breaks and stop at the size limit', () => {
   assert.deepEqual(paragraphs('<h2>One</h2><p>Two &amp; three</p><ul><li>Four</li></ul>'), ['One', 'Two & three', 'Four']);
   assert.deepEqual(paragraphs('<p>aaaa</p><p>bbbb</p>', 5), ['aaaa']);
 });
+
+test('missing records are real 404s; app screens and fixed pages are not', () => {
+  const { isRecordPath } = require('../routes/seoShellRoutes');
+  for (const p of ['/products/not-a-product', '/product/abc', '/product-categories/old-cat', '/cate-365-375', '/some-old-page/']) {
+    assert.equal(isRecordPath(p), true, p);
+  }
+  for (const p of ['/', '/home', '/shop', '/cart', '/checkout', '/profile', '/about', '/privacy-policy', '/return-policy', '/blog/x', '/shop/dubai', '/vendor/dashboard', '/product-categories']) {
+    assert.equal(isRecordPath(p), false, p);
+  }
+});
