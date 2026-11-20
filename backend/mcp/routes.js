@@ -127,14 +127,19 @@ const PERMS = {
   secrets: ['API keys', 'Save or remove API keys (Search Console, Bing, PageSpeed). Keys can never be read back.', false],
 };
 
-const page = (res, body, status = 200) =>
+// After Allow the form post is answered with a 303 to Claude's callback. Browsers apply the
+// page's form-action rule to that redirect too, so the client's own (already validated)
+// callback origin must be listed next to 'self' or the browser stops on this page.
+const page = (res, body, status = 200, redirectUri = null) =>
   res
     .status(status)
     .set({
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
       'X-Frame-Options': 'DENY',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+      'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'${
+        redirectUri ? ` ${new URL(redirectUri).origin}` : ''
+      }; frame-ancestors 'none'`,
       'X-Robots-Tag': 'noindex, nofollow',
     })
     .send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -179,7 +184,7 @@ router.get('/oauth/authorize', (req, res) => {
   if (!mcpEnabled()) return page(res, '<h1>Connector switched off</h1><p>The site owner has turned the Claude connector off.</p>', 503);
   const v = validateAuthParams(req.query || {});
   if (typeof v === 'string') return page(res, `<h1>Cannot connect</h1><p class="err">${escapeHtml(v)}</p>`, 400);
-  return page(res, authorizeForm(v));
+  return page(res, authorizeForm(v), 200, v.params.redirect_uri);
 });
 
 router.post('/oauth/authorize', async (req, res, next) => {
@@ -213,12 +218,12 @@ router.post('/oauth/authorize', async (req, res, next) => {
     const chosen = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((a) => GRANTABLE.includes(a));
     const ip = clientIp(req);
     if (rateLimited(`oauth-login:${ip}`, 10)) {
-      return page(res, authorizeForm(v, { error: 'Too many attempts. Wait a minute and try again.', email: p.email, chosen }), 429);
+      return page(res, authorizeForm(v, { error: 'Too many attempts. Wait a minute and try again.', email: p.email, chosen }), 429, v.params.redirect_uri);
     }
     const login = await checkAdminLogin(p.email, p.password, p.totp);
     if (login.error) {
       await audit({ user: String(p.email || '').slice(0, 120), tool: 'oauth_login', ip, ok: false, error: login.error });
-      return page(res, authorizeForm(v, { error: login.error, email: p.email, needs2fa: login.needs2fa, chosen }), 401);
+      return page(res, authorizeForm(v, { error: login.error, email: p.email, needs2fa: login.needs2fa, chosen }), 401, v.params.redirect_uri);
     }
     if (!chosen.includes('read') && chosen.length) chosen.unshift('read');
     if (!chosen.length) return back({ error: 'access_denied', error_description: 'No permission was granted.' });

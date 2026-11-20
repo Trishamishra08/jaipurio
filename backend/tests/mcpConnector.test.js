@@ -191,6 +191,15 @@ test('only claude.ai and localhost redirect URIs can register', async () => {
   assert.equal(r.status, 400);
 });
 
+test('sign-in page lets the browser follow the redirect back to Claude after Allow', async () => {
+  const clientId = await register();
+  const r = await fetch(`${base}/oauth/authorize?${new URLSearchParams(authParams(clientId))}`);
+  const csp = r.headers.get('content-security-policy');
+  const formAction = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('form-action'));
+  assert.ok(formAction.split(/\s+/).includes('https://claude.ai'), csp);
+  assert.ok(!formAction.includes('*'));
+});
+
 test('wrong password shows the form again, no code', async () => {
   const r = await approve(await register(), { password: 'nope' });
   assert.equal(r.status, 401);
