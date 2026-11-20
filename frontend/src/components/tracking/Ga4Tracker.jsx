@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import api from '../../utils/api';
+import { getSiteSettings } from '../../utils/siteSettings';
 import { gaAllowedHere, loadGa4, trackGaPageView } from '../../utils/ga4';
 
 /** Loads GA4 from the admin setting and sends a page_view on every route change. Renders nothing. */
@@ -11,12 +11,9 @@ const Ga4Tracker = () => {
   useEffect(() => {
     if (!gaAllowedHere()) return undefined;
     let cancelled = false;
-    api
-      .get('/settings')
-      .then((res) => {
-        if (!cancelled && loadGa4(res.data?.data?.settings?.googleAnalyticsId)) setReady(true);
-      })
-      .catch(() => {});
+    getSiteSettings().then((s) => {
+      if (!cancelled && loadGa4(s.googleAnalyticsId)) setReady(true);
+    });
     return () => {
       cancelled = true;
     };

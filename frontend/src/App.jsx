@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation }
 import { ShopProvider } from './context/ShopContext';
 import AdsenseInjector from './components/shared/AdsenseInjector';
 import Ga4Tracker from './components/tracking/Ga4Tracker';
+import MetaPixelTracker from './components/tracking/MetaPixelTracker';
+import CookieConsent from './components/tracking/CookieConsent';
 
 import SplashPage from './components/shared/SplashPage';
 import Navbar from './components/user/Navbar';
@@ -157,6 +159,8 @@ function App() {
       <AdsenseInjector />
       <Router>
         <Ga4Tracker />
+        <MetaPixelTracker />
+        <CookieConsent />
         <ReferralTracker />
         <PushBootstrap />
         <PushToast />

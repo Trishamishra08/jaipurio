@@ -336,4 +336,10 @@ test('tracking_set saves a real GA4 id and refuses placeholders', async () => {
   const ok = await call(access_token, 'tracking_set', { googleAnalyticsId: 'g-efcwdl7y3k' });
   assert.ok(!ok.isError, ok.content?.[0]?.text);
   assert.equal(settingsDoc.googleAnalyticsId, 'G-EFCWDL7Y3K');
+  const badPx = await call(access_token, 'tracking_set', { facebookPixelId: 'abc' });
+  assert.equal(badPx.isError, true);
+  const px = await call(access_token, 'tracking_set', { facebookPixelId: '1003264154124222' });
+  assert.ok(!px.isError, px.content?.[0]?.text);
+  assert.equal(settingsDoc.theme.facebookPixelId, '1003264154124222');
+  assert.equal(settingsDoc.googleAnalyticsId, 'G-EFCWDL7Y3K');
 });

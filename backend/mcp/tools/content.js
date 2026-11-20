@@ -364,23 +364,33 @@ const tools = [
   {
     name: 'tracking_set',
     ability: 'write',
-    description: 'Set the Google Analytics 4 Measurement ID used by the storefront (Admin > Settings > Website Tracking). Send an empty string to remove the tag. The tag only loads on the live domain.',
-    inputSchema: S({ googleAnalyticsId: { type: 'string', description: 'Like G-ABC123XYZ, or "" to turn off.' } }, ['googleAnalyticsId']),
-    run: async ({ googleAnalyticsId }) => {
-      const v = String(googleAnalyticsId || '').trim().toUpperCase();
-      if (v && (!/^G-[A-Z0-9]{6,12}$/.test(v) || /^G-X+$/.test(v))) throw new ToolError('Use a real GA4 Measurement ID like G-ABC123XYZ.');
+    description: 'Set storefront tracking IDs: googleAnalyticsId (GA4, Admin > Settings > Website Tracking) and/or facebookPixelId (Meta Pixel, Admin > Theme Options > Facebook). Send "" to remove. Tags load only on jaipurio.in; the Pixel only after cookie consent.',
+    inputSchema: S({
+      googleAnalyticsId: { type: 'string', description: 'Like G-ABC123XYZ, or "" to turn off.' },
+      facebookPixelId: { type: 'string', description: 'Numeric Meta Pixel ID, or "" to turn off.' },
+    }),
+    run: async ({ googleAnalyticsId, facebookPixelId }) => {
+      if (googleAnalyticsId === undefined && facebookPixelId === undefined) throw new ToolError('Send googleAnalyticsId and/or facebookPixelId.');
+      const ga = googleAnalyticsId === undefined ? undefined : String(googleAnalyticsId).trim().toUpperCase();
+      if (ga && (!/^G-[A-Z0-9]{6,12}$/.test(ga) || /^G-X+$/.test(ga))) throw new ToolError('Use a real GA4 Measurement ID like G-ABC123XYZ.');
+      const px = facebookPixelId === undefined ? undefined : String(facebookPixelId).trim();
+      if (px && !/^\d{10,20}$/.test(px)) throw new ToolError('A Meta Pixel ID is 10-20 digits.');
       const Settings = require('../../models/settingsModel');
       let s = await Settings.findOne();
-      const before = s?.googleAnalyticsId || '';
       if (!s) s = new Settings();
-      s.googleAnalyticsId = v;
+      const before = { googleAnalyticsId: s.googleAnalyticsId || '', facebookPixelId: s.theme?.facebookPixelId || '' };
+      if (ga !== undefined) s.googleAnalyticsId = ga;
+      if (px !== undefined) {
+        s.theme = { ...(s.theme || {}), facebookPixelId: px };
+        if (typeof s.markModified === 'function') s.markModified('theme');
+      }
       await s.save();
       try {
         await require('../../utils/cache').invalidateCatalog('settings');
       } catch {
         /* cache is optional */
       }
-      return { googleAnalyticsId: v, before };
+      return { googleAnalyticsId: s.googleAnalyticsId || '', facebookPixelId: s.theme?.facebookPixelId || '', before };
     },
   },
   {
