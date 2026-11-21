@@ -1,5 +1,13 @@
 const axios = require('axios');
 
+// Temporary: real SMS OTP is switched off. Every number logs in with STATIC_OTP
+// and no SMS is sent. Set SMS_OTP_ENABLED=true to turn real SMS back on.
+const STATIC_OTP = '989898';
+const isStaticOtpMode = (mobile) =>
+  process.env.SMS_OTP_ENABLED !== 'true' ||
+  process.env.USE_DEFAULT_OTP === 'true' ||
+  String(mobile) === '9999988888';
+
 /**
  * Build DLT-approved OTP message.
  * Template: Welcome to the ##var## powered by Appzeto.Your OTP for registration is ##var##.BGADEC
@@ -23,7 +31,7 @@ const sendSmsOtp = async (mobile, otp) => {
 
   // Mock only when explicitly enabled or for the test number. Checked before the
   // credentials so test mode works on a server without an SMS account.
-  if (process.env.USE_DEFAULT_OTP === 'true' || mobile === '9999988888') {
+  if (isStaticOtpMode(mobile)) {
     console.log(`[MOCK SMS] To: ${mobile} | OTP: ${otp} | Msg: ${buildOtpMessage(otp)}`);
     return { success: true, message: 'OTP sent (Mock)' };
   }
@@ -96,4 +104,6 @@ const sendSmsOtp = async (mobile, otp) => {
 module.exports = {
   sendSmsOtp,
   buildOtpMessage,
+  STATIC_OTP,
+  isStaticOtpMode,
 };

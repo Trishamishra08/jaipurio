@@ -142,7 +142,7 @@ const otpMobileLimiter = (req, res, next) => {
   const mobile = String(req.body?.mobile || '').replace(/\D/g, '');
   if (!mobile) return next();
   // Temporary OTP (no SMS is sent, nothing to protect): don't cap testers. Same rule as services/otpService.js.
-  if (process.env.USE_DEFAULT_OTP === 'true' || mobile === '9999988888') return next();
+  if (require('../services/otpService').isStaticOtpMode(mobile)) return next();
 
   const now = Date.now();
   const rec = otpMobileHits.get(mobile);

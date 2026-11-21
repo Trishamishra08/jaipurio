@@ -51,9 +51,8 @@ const Register = () => {
       if (response.data.success) {
         setOtpSent(true);
         setTimer(60);
-        if (response.data.devOtp) {
-          setForm((prev) => ({ ...prev, otp: response.data.devOtp }));
-          showNotification(`OTP sent! (Dev mode: ${response.data.devOtp})`, 'success');
+        if (response.data.staticOtp) {
+          showNotification(response.data.message, 'success');
         } else {
           showNotification('OTP sent successfully to your mobile number.', 'success');
         }

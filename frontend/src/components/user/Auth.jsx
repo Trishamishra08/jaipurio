@@ -91,9 +91,8 @@ const Auth = () => {
       if (res.data.success) {
         setOtpSent(true);
         setTimer(60);
-        if (res.data.devOtp) {
-          setForm((prev) => ({ ...prev, otp: res.data.devOtp }));
-          showNotification(`OTP sent! (Test mode: ${res.data.devOtp})`);
+        if (res.data.staticOtp) {
+          showNotification(res.data.message);
         } else {
           showNotification('OTP sent successfully to your mobile number.');
         }

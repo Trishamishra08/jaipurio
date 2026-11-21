@@ -1,7 +1,7 @@
 const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { sendSmsOtp } = require('../services/otpService');
+const { sendSmsOtp, STATIC_OTP, isStaticOtpMode } = require('../services/otpService');
 const LoginActivity = require('../models/loginActivityModel');
 const { extractClientIp } = require('../utils/geoip');
 const { deviceLabelFromUserAgent } = require('../utils/deviceLabel');
@@ -211,8 +211,8 @@ const sendRegisterOtp = async (req, res, next) => {
       });
     }
 
-    const isDev = process.env.USE_DEFAULT_OTP === 'true' || mobile === '9999988888';
-    const otp = isDev ? '989898' : Math.floor(100000 + Math.random() * 900000).toString();
+    const isDev = isStaticOtpMode(mobile);
+    const otp = isDev ? STATIC_OTP : Math.floor(100000 + Math.random() * 900000).toString();
     const expiryMinutes = Number(process.env.OTP_EXPIRY_MINUTES) || 10;
     const expiry = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
@@ -231,8 +231,8 @@ const sendRegisterOtp = async (req, res, next) => {
 
     res.status(200).json({ 
       success: true, 
-      message: 'OTP sent successfully',
-      ...(isDev && { devOtp: otp, devNote: 'OTP visible in dev mode only' })
+      message: isDev ? `Enter OTP ${STATIC_OTP} to continue` : 'OTP sent successfully',
+      ...(isDev && { staticOtp: true })
     });
   } catch (error) {
     next(error);
@@ -326,8 +326,8 @@ const sendOtp = async (req, res, next) => {
       throw new Error('Your account has been blocked by the admin.');
     }
 
-    const isDev = process.env.USE_DEFAULT_OTP === 'true' || mobile === '9999988888';
-    const otp = isDev ? '989898' : Math.floor(100000 + Math.random() * 900000).toString();
+    const isDev = isStaticOtpMode(mobile);
+    const otp = isDev ? STATIC_OTP : Math.floor(100000 + Math.random() * 900000).toString();
     const expiryMinutes = Number(process.env.OTP_EXPIRY_MINUTES) || 10;
     const expiry = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
@@ -346,8 +346,8 @@ const sendOtp = async (req, res, next) => {
 
     res.status(200).json({ 
       success: true, 
-      message: 'OTP sent to your mobile number',
-      ...(isDev && { devOtp: otp, devNote: 'OTP visible in dev mode only' })
+      message: isDev ? `Enter OTP ${STATIC_OTP} to continue` : 'OTP sent to your mobile number',
+      ...(isDev && { staticOtp: true })
     });
   } catch (error) {
     next(error);
