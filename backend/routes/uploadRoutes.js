@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { uploadBuffer } = require('../utils/minioStorage');
+const { realType } = require('../utils/fileSignature');
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ function checkFileType(file, cb) {
 
 const upload = multer({
   storage,
+  limits: { fileSize: 25 * 1024 * 1024, files: 10 },
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
@@ -31,6 +33,11 @@ const upload = multer({
 router.post('/', upload.array('documents', 10), async (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ message: 'No files uploaded' });
+  }
+  // This route is open to vendors before they have an account, so check the real bytes:
+  // only images, PDFs and videos pass; a script renamed to .jpg does not.
+  if (req.files.some((f) => !realType(f.buffer))) {
+    return res.status(400).json({ message: 'Sirf asli photo (JPG, PNG, WEBP, GIF), PDF ya video' });
   }
 
   try {
