@@ -32,7 +32,7 @@ const MIN_COVERAGE = 0.6;
  * @param {{slug:string, title?:string, name?:string}[]} blogs  published articles
  * @returns {string|null} slug of the best match, or null
  */
-const suggestBlogSlug = (missingSlug, blogs) => {
+const suggestBlogSlug = (missingSlug, blogs, { minCoverage = MIN_COVERAGE } = {}) => {
   const q = [...new Set(words(missingSlug))];
   if (q.length < MIN_WORDS) return null;
 
@@ -44,7 +44,7 @@ const suggestBlogSlug = (missingSlug, blogs) => {
     if (!b || !b.slug || b.slug === missingSlug) continue;
     const have = new Set([...words(b.slug), ...words(b.title || b.name)]);
     const hits = q.filter((w) => have.has(w)).length;
-    if (hits < MIN_WORDS || hits / q.length < MIN_COVERAGE) continue;
+    if (hits < MIN_WORDS || hits / q.length < minCoverage) continue;
     // prefer articles whose own slug is short and focused over long keyword-stuffed ones
     const score = hits / q.length + hits * 0.01 - words(b.slug).length * 0.001;
     if (score > bestScore + 1e-9) {
