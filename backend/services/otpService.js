@@ -1,10 +1,10 @@
 const axios = require('axios');
 
-// Temporary: real SMS OTP is switched off. Every number logs in with STATIC_OTP
-// and no SMS is sent. Set SMS_OTP_ENABLED=true to turn real SMS back on.
+// Fixed OTP only for the test number or when USE_DEFAULT_OTP=true is set on purpose.
+// Never the default: staging reads the live database, so a fixed OTP for every number
+// would let anyone sign in to any real account (22 Nov 2026).
 const STATIC_OTP = '989898';
 const isStaticOtpMode = (mobile) =>
-  process.env.SMS_OTP_ENABLED !== 'true' ||
   process.env.USE_DEFAULT_OTP === 'true' ||
   String(mobile) === '9999988888';
 
