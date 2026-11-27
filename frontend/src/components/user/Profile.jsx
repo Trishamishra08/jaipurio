@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import {
   User,
@@ -15,6 +15,20 @@ import { useShop } from '../../context/ShopContext';
 import { disablePush } from '../../services/pushNotificationService';
 import PushPermissionPrompt from '../shared/PushPermissionPrompt';
 import { usePageSeo } from '../../utils/seo';
+import api from '../../utils/api';
+
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/** The default saved address, or the first one, as a single line. */
+const addressText = (u) => {
+  const list = Array.isArray(u.addresses) ? u.addresses : [];
+  const a = list.find((x) => x?.isDefault) || list[0];
+  if (a) {
+    const line = a.addressLine || [a.address, a.city, a.state, a.pincode].filter(Boolean).join(', ');
+    if (line) return line;
+  }
+  return typeof u.address === 'string' && u.address ? u.address : '';
+};
 
 /**
  * Profile — shows registration-style details (name, gender, email, mobile, address).
@@ -23,6 +37,35 @@ const Profile = () => {
   usePageSeo({ title: 'My Profile', noindex: true });
   const { user, orders, wishlist, setUser, setIsAuthenticated, isAuthenticated } = useShop();
   const navigate = useNavigate();
+
+  // The details saved at login can be incomplete or out of date (for example,
+  // an email changed by the admin), so load the account from the server.
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    let cancelled = false;
+    api
+      .get('/users/profile')
+      .then((res) => {
+        const fresh = res.data?.data?.user;
+        if (cancelled || !fresh) return;
+        const { password, otp, otpExpiry, privateNotes, ...safe } = fresh;
+        setUser?.((prev) => {
+          const next = { ...(prev || {}), ...safe };
+          try {
+            localStorage.setItem('jaipurio_user', JSON.stringify(next));
+          } catch {
+            /* ignore */
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        /* keep showing the saved details */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, setUser]);
 
   const profile = useMemo(() => {
     const saved = user || {};
@@ -35,10 +78,10 @@ const Profile = () => {
     const u = { ...fromStorage, ...saved };
     return {
       name: u.name || 'Customer',
-      gender: u.gender || '—',
+      gender: capitalize(u.gender) || '—',
       email: u.email || '—',
       mobile: u.mobile || u.phone || '',
-      address: u.address || '—',
+      address: addressText(u) || '—',
     };
   }, [user]);
 

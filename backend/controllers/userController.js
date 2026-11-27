@@ -24,6 +24,20 @@ const generateToken = (id, role) => {
   });
 };
 
+// The customer details the app shows on the profile page. Never includes
+// password, OTP or admin-only fields such as private notes.
+const customerProfile = (user) => ({
+  _id: user.id,
+  name: user.name,
+  email: user.email || '',
+  gender: user.gender || '',
+  mobile: user.mobile,
+  dateOfBirth: user.dateOfBirth || null,
+  profile: user.profile || '',
+  addresses: user.addresses || [],
+  role: user.role,
+});
+
 // @desc    Register a new Admin or Vendor
 // @route   POST /api/users/signup
 // @access  Public
@@ -273,11 +287,7 @@ const register = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        _id: user.id,
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile,
-        role: user.role,
+        ...customerProfile(user),
         token: generateToken(user._id, user.role)
       }
     });
@@ -393,10 +403,7 @@ const verifyOtp = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        _id: user.id,
-        name: user.name,
-        mobile: user.mobile,
-        role: user.role,
+        ...customerProfile(user),
         token: generateToken(user._id, user.role)
       }
     });
@@ -482,9 +489,16 @@ const unblockUser = async (req, res, next) => {
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
+    // req.user comes without the password; also drop the OTP and its expiry.
+    const user = req.user?.toObject ? req.user.toObject() : { ...req.user };
+    delete user.otp;
+    delete user.otpExpiry;
+    delete user.fcmTokens;
+    // Private notes are written by admins about a customer and are admin-only.
+    if (user.role === 'user') delete user.privateNotes;
     res.status(200).json({
       success: true,
-      data: { user: req.user }
+      data: { user }
     });
   } catch (error) {
     next(error);

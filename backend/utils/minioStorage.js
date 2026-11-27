@@ -11,15 +11,41 @@ const sharp = require('sharp');
 const endpointHost = (process.env.S3_ENDPOINT || '').replace(/^https?:\/\//, '');
 const useSSL = (process.env.S3_ENDPOINT || '').startsWith('https://');
 
-const minioClient = new Minio.Client({
-  endPoint: endpointHost,
-  useSSL,
-  accessKey: process.env.S3_ACCESS_KEY,
-  secretKey: process.env.S3_SECRET_KEY,
-  region: process.env.S3_REGION || 'us-east-1',
-});
-
 const bucketName = process.env.S3_BUCKET;
+
+// Storage is optional at startup: without S3_ENDPOINT/S3_BUCKET the server
+// must still boot (a missing setting used to crash it on Render). Uploads
+// then fail with a clear message and image URLs are left as they are.
+const isConfigured = Boolean(endpointHost && bucketName);
+if (!isConfigured) {
+  console.warn('MinIO: S3_ENDPOINT / S3_BUCKET not set — media uploads disabled, image URLs left unchanged.');
+}
+
+let client = null;
+const getClient = () => {
+  if (!isConfigured) {
+    throw new Error('Media storage is not configured on this server (set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY).');
+  }
+  if (!client) {
+    client = new Minio.Client({
+      endPoint: endpointHost,
+      useSSL,
+      accessKey: process.env.S3_ACCESS_KEY,
+      secretKey: process.env.S3_SECRET_KEY,
+      region: process.env.S3_REGION || 'us-east-1',
+    });
+  }
+  return client;
+};
+// Same calls as before (minioClient.putObject(...)), but the client is only
+// created on first use.
+const minioClient = new Proxy({}, {
+  get: (_target, prop) => {
+    const c = getClient();
+    const value = c[prop];
+    return typeof value === 'function' ? value.bind(c) : value;
+  },
+});
 const PUBLIC_BASE_URL = `${useSSL ? 'https' : 'http'}://${endpointHost}/${bucketName}/`;
 
 /** Still available for callers that explicitly want a signed, time-limited link. Not used for normal display anymore. */
@@ -130,7 +156,7 @@ const uploadBuffer = async (file, folderPath = 'media') => {
 };
 
 const deleteObject = async (key) => {
-  if (!key) return;
+  if (!key || !isConfigured) return;
   await minioClient.removeObject(bucketName, key).catch(() => {});
 };
 
@@ -159,6 +185,7 @@ const LEGACY_HOST_PREFIX = 'https://jaipurio.in/storage/';
 const REWRITE_LEGACY = process.env.MEDIA_REWRITE_LEGACY !== 'false';
 
 const extractKey = (url) => {
+  if (!isConfigured) return null;
   if (REWRITE_LEGACY && url.startsWith(LEGACY_HOST_PREFIX)) return decodeURIComponent(url.slice(LEGACY_HOST_PREFIX.length));
   if (url.startsWith(PUBLIC_BASE_URL)) {
     const withoutQuery = url.split('?')[0];
@@ -242,6 +269,7 @@ const resolveProductImages = (products) => {
 module.exports = {
   minioClient,
   bucketName,
+  isConfigured,
   getPresignedUrl,
   getPublicUrl,
   objectExists,
