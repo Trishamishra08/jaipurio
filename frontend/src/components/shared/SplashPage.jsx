@@ -33,7 +33,7 @@ const seenThisVisit = () => {
  * Entry splash at "/" — camel video (skips its first 2s), then home or login.
  * Plays once per visit; tap anywhere or "Skip" to continue straight away.
  */
-const SplashVideo = () => {
+const SplashVideo = ({ onDone }) => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const timersRef = useRef([]);
@@ -52,7 +52,9 @@ const SplashVideo = () => {
     leftRef.current = true;
     clearTimers();
     document.body.style.overflow = '';
-    navigate(nextPath(), { replace: true });
+    // Opened on a page other than "/": just uncover that page. At "/": go home/login.
+    if (onDone) onDone();
+    else navigate(nextPath(), { replace: true });
   };
 
   const skip = () => {
@@ -204,6 +206,27 @@ const SplashVideo = () => {
       </div>
     </div>
   );
+};
+
+const BOT_UA = /(googlebot|bingbot|applebot|duckduckbot|yandexbot|baiduspider|slurp|lighthouse|pagespeed|headlesschrome|facebookexternalhit|whatsapp|twitterbot|linkedinbot|ahrefs|semrush)/i;
+
+/**
+ * Plays the splash over the FIRST page of a visit, wherever the visitor lands:
+ * the app on any page, the website on its home page. Not for admin/seller
+ * pages, search-engine bots, or product/category links opened from Google.
+ */
+export const SplashGate = () => {
+  const [done, setDone] = useState(false);
+  const [show] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (seenThisVisit()) return false;
+    if (BOT_UA.test(navigator.userAgent || '')) return false;
+    const p = window.location.pathname;
+    if (p === '/' || /^\/(admin|vendor)(\/|$)/.test(p)) return false; // "/" has its own splash route
+    return isInApp() || p === '/home';
+  });
+  if (!show || done) return null;
+  return <SplashVideo onDone={() => setDone(true)} />;
 };
 
 /** "/" entry: the splash once per visit; after that straight on. */

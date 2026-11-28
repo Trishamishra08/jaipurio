@@ -6,7 +6,7 @@ import Ga4Tracker from './components/tracking/Ga4Tracker';
 import MetaPixelTracker from './components/tracking/MetaPixelTracker';
 import CookieConsent from './components/tracking/CookieConsent';
 
-import SplashPage from './components/shared/SplashPage';
+import SplashPage, { SplashGate } from './components/shared/SplashPage';
 import Navbar from './components/user/Navbar';
 // The "Get the Jaipurio app" popup (NewsletterPopup) is switched off: Play Store review
 // rejected it as an interstitial covering the site, including the Privacy Policy.
@@ -164,6 +164,7 @@ function App() {
         <ReferralTracker />
         <PushBootstrap />
         <PushToast />
+        <SplashGate />
         <Routes>
           {/* Website and app both open with the camel video splash (once per visit), then home or login. */}
           <Route path="/" element={<SplashPage />} />
