@@ -20,8 +20,8 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId) {
     if (!data.title) return;
     self.registration.showNotification(data.title, {
       body: data.body || '',
-      icon: '/jaipurio_logo.png',
-      badge: '/favicon.png',
+      icon: '/favicon-192.png',
+      badge: '/notification-badge.png',
       tag: data.tag || undefined,
       data: { own: true, link: data.link || '/' },
     });

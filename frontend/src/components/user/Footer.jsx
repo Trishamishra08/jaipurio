@@ -281,7 +281,7 @@ const Footer = () => {
             {cfg.cta.enabled && (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <img src={mediaUrl('/jaipurio_logo.png')} alt="Jaipurio" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+                  <img src="/favicon-192.png" alt="Jaipurio" className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg object-contain shrink-0 ring-1 ring-white/20" />
                   <p className="font-playfair text-[13px] sm:text-[18px] leading-snug">{cfg.cta.text}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">

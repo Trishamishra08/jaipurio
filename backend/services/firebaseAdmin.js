@@ -97,8 +97,8 @@ const buildMessage = (p) => {
     data,
     webpush: {
       notification: {
-        icon: '/jaipurio_logo.png',
-        badge: '/favicon.png',
+        icon: '/favicon-192.png',
+        badge: '/notification-badge.png',
         ...(p.tag ? { tag: p.tag, renotify: true } : {}),
       },
       fcmOptions: { link: absolute(link) },

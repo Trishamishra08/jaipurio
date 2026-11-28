@@ -50,11 +50,11 @@ const AuthFrame = ({ children }) => {
 
         <div className="flex-1 relative z-20 -mt-6 md:mt-0 min-h-0">
           <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-40 md:hidden">
-            <div className="h-[48px] w-[176px] bg-white rounded-xl shadow-[0_8px_20px_rgba(111,36,29,0.16)] ring-1 ring-[#F3D5D0] overflow-hidden flex items-center justify-center">
+            <div className="h-[64px] px-3 bg-white rounded-xl shadow-[0_8px_20px_rgba(111,36,29,0.16)] ring-1 ring-[#F3D5D0] overflow-hidden flex items-center justify-center">
               <img
                 src={mediaUrl('/jaipurio_logo.png')}
                 alt="Jaipurio"
-                className="h-[250%] w-auto max-w-none object-cover object-center select-none"
+                className="h-[56px] w-auto object-contain select-none"
                 draggable={false}
               />
             </div>
@@ -63,11 +63,11 @@ const AuthFrame = ({ children }) => {
           <div className="h-full rounded-t-[32px] md:rounded-none bg-[#FFF8F5] shadow-[0_-10px_28px_rgba(196,92,106,0.12)] md:shadow-none overflow-y-auto">
             <div className="px-5 pt-8 pb-8 sm:px-8 md:px-10 md:pt-12 lg:pt-16 max-w-md mx-auto w-full">
               <div className="hidden md:flex mb-5">
-                <div className="h-[52px] w-[196px] bg-white rounded-xl shadow-sm ring-1 ring-[#F3D5D0] overflow-hidden flex items-center justify-center">
+                <div className="h-[72px] px-3 bg-white rounded-xl shadow-sm ring-1 ring-[#F3D5D0] overflow-hidden flex items-center justify-center">
                   <img
                     src={mediaUrl('/jaipurio_logo.png')}
                     alt="Jaipurio"
-                    className="h-[250%] w-auto max-w-none object-cover object-center"
+                    className="h-[62px] w-auto object-contain"
                   />
                 </div>
               </div>

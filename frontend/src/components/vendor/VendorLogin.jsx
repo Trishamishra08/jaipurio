@@ -90,8 +90,7 @@ const VendorLogin = () => {
               <img
                 src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
-                className="h-[72px] sm:h-20 md:h-24 -my-3 -ml-2 w-auto object-contain rounded-md shrink-0"
-                style={{ mixBlendMode: 'screen' }}
+                className="h-14 sm:h-16 md:h-20 w-auto object-contain rounded-xl bg-[#FFF8EE] px-2 py-1 shadow-md shrink-0"
               />
               <div className="flex flex-col">
                 <p className="text-[10px] md:text-xs font-medium tracking-widest text-white/90 uppercase">
@@ -117,7 +116,7 @@ const VendorLogin = () => {
               <img
                 src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
-                className="hidden md:block h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
+                className="hidden md:block h-16 md:h-20 w-auto mx-auto object-contain mb-3"
                 draggable={false}
               />
               <h2 className="text-2xl md:text-4xl font-playfair font-semibold text-[#6F241D]">Sign In</h2>

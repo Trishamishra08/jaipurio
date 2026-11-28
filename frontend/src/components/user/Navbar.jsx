@@ -305,7 +305,7 @@ const Navbar = () => {
                   <img
                     src={mediaUrl('/jaipurio_logo_trim.png')}
                     alt="Jaipurio"
-                    className="h-7 sm:h-8 w-auto object-contain"
+                    className="h-10 sm:h-11 w-auto object-contain"
                   />
                 </Link>
 
@@ -433,7 +433,7 @@ const Navbar = () => {
               <img
                 src={mediaUrl('/jaipurio_logo_header.png')}
                 alt="Jaipurio"
-                className="header-logo-img h-10 xl:h-11 w-auto min-w-[120px] object-contain object-left"
+                className="header-logo-img h-[52px] xl:h-[58px] w-auto object-contain object-left"
                 draggable={false}
               />
             </Link>
@@ -506,7 +506,7 @@ const Navbar = () => {
           <div className="relative w-[82%] max-w-xs bg-white h-full shadow-2xl flex flex-col z-10">
             <div className="px-4 py-2 bg-white border-b-2 border-[#C45C6A] flex items-center justify-between">
               <Link to="/home" onClick={() => setMobileMenuOpen(false)} aria-label="Jaipurio home">
-                <img src={mediaUrl('/jaipurio_logo_trim.png')} alt="Jaipurio" className="h-9 w-auto object-contain my-2" />
+                <img src={mediaUrl('/jaipurio_logo_trim.png')} alt="Jaipurio" className="h-12 w-auto object-contain my-1.5" />
               </Link>
               <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#6F241D]">
                 <X size={20} />

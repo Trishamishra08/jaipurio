@@ -151,14 +151,14 @@ const SplashVideo = () => {
     >
       <div className="relative w-full h-full max-w-md mx-auto sm:max-w-lg overflow-hidden bg-black">
         {!ready && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 bg-black">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 bg-[#FFF8EE]">
             <img
               src={LOGO_SRC}
               alt="jaipurio"
-              className="w-[80%] max-w-[320px] h-auto object-contain select-none"
+              className="w-[78%] max-w-[320px] h-auto object-contain select-none"
               draggable={false}
             />
-            <p className="font-brand text-sm italic text-white/70 mt-5 text-center">
+            <p className="font-brand text-sm italic text-[#6F241D]/80 mt-5 text-center">
               Mitti ki khushboo, Rajasthan ki pehchaan
             </p>
           </div>
@@ -185,8 +185,7 @@ const SplashVideo = () => {
             <img
               src={LOGO_SRC}
               alt="jaipurio"
-              className="w-[58%] max-w-[220px] h-auto object-contain select-none"
-              style={{ mixBlendMode: 'screen' }}
+              className="w-[46%] max-w-[190px] h-auto object-contain select-none rounded-2xl bg-[#FFF8EE]/90 px-3 py-2 shadow-lg"
               draggable={false}
             />
           </div>

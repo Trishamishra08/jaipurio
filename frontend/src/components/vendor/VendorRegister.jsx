@@ -385,8 +385,7 @@ const VendorRegister = () => {
               <img
                 src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
-                className="h-12 md:h-16 w-auto object-contain rounded-md shrink-0"
-                style={{ mixBlendMode: 'screen' }}
+                className="h-12 md:h-16 w-auto object-contain rounded-xl bg-[#FFF8EE] px-2 py-1 shadow-md shrink-0"
               />
               <div className="flex flex-col">
                 <p className="text-[10px] md:text-xs font-semibold tracking-widest text-white/90 mt-1">ARTISAN SELLER</p>
@@ -408,7 +407,7 @@ const VendorRegister = () => {
               <img
                 src={mediaUrl('/jaipurio_logo_bg.png')}
                 alt="jaipurio"
-                className="h-14 md:h-16 w-auto mx-auto object-contain mb-3 rounded-lg"
+                className="h-16 md:h-20 w-auto mx-auto object-contain mb-3"
                 draggable={false}
               />
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#6F241D]">Sign Up</h2>

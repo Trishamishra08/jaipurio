@@ -36,9 +36,11 @@ class TokenManager {
     try {
       const email = process.env.SHIPROCKET_EMAIL;
       const password = process.env.SHIPROCKET_PASSWORD;
-      const baseUrl = process.env.SHIPROCKET_BASE_URL;
+      // Same default as config/shiprocket.js: docker-compose passes an empty
+      // SHIPROCKET_BASE_URL when it is not set, which used to block every login.
+      const baseUrl = process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in/v1/external';
 
-      if (!email || !password || !baseUrl) {
+      if (!email || !password) {
         throw new Error('Shiprocket credentials are not configured in environment variables');
       }
 

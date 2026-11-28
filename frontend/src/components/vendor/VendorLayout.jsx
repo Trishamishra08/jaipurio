@@ -160,11 +160,14 @@ const VendorLayout = () => {
           sidebarOpen ? 'justify-between px-3' : 'justify-center px-0'
         }`}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <img
-              src={mediaUrl('/jaipurio_logo_sidebar.png')}
-              alt="jaipurio"
-              className={`object-contain shrink-0 ${sidebarOpen ? 'h-9 w-auto' : 'h-8 w-8'}`}
-            />
+            {/* Cream badge: the maroon logo would disappear on the maroon sidebar. */}
+            {sidebarOpen ? (
+              <span className="inline-flex items-center rounded-lg bg-[#FFF8EE] px-1.5 py-0.5 shrink-0">
+                <img src={mediaUrl('/jaipurio_logo_sidebar.png')} alt="jaipurio" className="h-10 w-auto object-contain" />
+              </span>
+            ) : (
+              <img src="/favicon-96.png" alt="jaipurio" className="h-9 w-9 rounded-lg object-contain shrink-0" />
+            )}
             <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${sidebarOpen ? 'opacity-100 max-w-[160px]' : 'opacity-0 max-w-0 hidden'}`}>
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/70">Artisan Panel</p>
             </div>

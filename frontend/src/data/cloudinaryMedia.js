@@ -10,15 +10,9 @@ export const CLOUDINARY_IMAGES = {
   "/jaipurio_banner_art.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786919/jaipurio/jaipurio_banner_art.jpg",
   "/jaipurio_banner_clean.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786920/jaipurio/jaipurio_banner_clean.jpg",
   "/jaipurio_home_banner.jpg": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786921/jaipurio/jaipurio_home_banner.jpg",
-  "/jaipurio_logo.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786923/jaipurio/jaipurio_logo.webp",
-  "/jaipurio_logo_bg.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786924/jaipurio/jaipurio_logo_bg.webp",
-  "/jaipurio_logo_header.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786925/jaipurio/jaipurio_logo_header.webp",
-  "/jaipurio_logo_sidebar.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786926/jaipurio/jaipurio_logo_sidebar.webp",
   "/splash.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786927/jaipurio/splash.webp",
   "/login_hero_1.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786931/jaipurio/login_hero_1.jpg",
   "/login_hero_2.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786936/jaipurio/login_hero_2.jpg",
-  "/logo.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786938/jaipurio/logo.webp",
-  "/admin_logo.png": "https://res.cloudinary.com/q3qtobyj/image/upload/f_webp,q_auto:good,c_limit,w_1600/v1788786940/jaipurio/admin_logo.webp"
 };
 
 export const CLOUDINARY_VIDEOS = {

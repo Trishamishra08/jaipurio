@@ -357,7 +357,7 @@ html {
   }
 
   .header-logo-img {
-    height: 2.375rem;
+    height: 3.25rem;
     width: auto;
     object-fit: contain;
     object-position: left center;
@@ -366,7 +366,7 @@ html {
 
   @media (min-width: 1280px) {
     .header-logo-img {
-      height: 2.625rem;
+      height: 3.625rem;
     }
   }
 
