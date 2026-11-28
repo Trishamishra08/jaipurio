@@ -8,7 +8,8 @@ import CookieConsent from './components/tracking/CookieConsent';
 
 import SplashPage from './components/shared/SplashPage';
 import Navbar from './components/user/Navbar';
-import NewsletterPopup from './components/user/NewsletterPopup';
+// The "Get the Jaipurio app" popup (NewsletterPopup) is switched off: Play Store review
+// rejected it as an interstitial covering the site, including the Privacy Policy.
 import Home from './components/user/Home';
 import Shop from './components/user/Shop';
 import ProductDetail from './components/user/ProductDetail';
@@ -136,7 +137,6 @@ const PublicLayout = () => {
     <div className="flex flex-col min-h-screen font-body bg-white">
       {!isLocationPage && <Navbar />}
       <CartDrawer />
-      {!isLocationPage && <NewsletterPopup />}
       <main className="flex-1">
         <Outlet />
       </main>

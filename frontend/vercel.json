@@ -1,11 +1,16 @@
 {
   "rewrites": [
+    { "source": "/privacy-policy", "destination": "/privacy-policy.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/privacy-policy(.html)?",
+      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
     }
   ]
 }
