@@ -79,6 +79,7 @@ export const FOOTER_DEFAULTS = {
         links: [
           { label: 'Terms Of Use', to: '/terms-of-use' },
           { label: 'Terms of Service', to: '/terms-conditions' },
+          { label: 'Privacy Policy', to: '/privacy-policy' },
           { label: 'Cookie Policy', to: '/cookie-policy' },
           { label: 'Affiliate', to: '/affiliate' },
         ],

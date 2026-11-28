@@ -315,8 +315,8 @@ const Register = () => {
                   />
                   <label htmlFor="agreed" className="font-body text-[10px] sm:text-xs text-[#6B5348] leading-tight">
                     I agree to the{' '}
-                    <span className="font-semibold text-[#6F241D]">Terms & Conditions</span> and{' '}
-                    <span className="font-semibold text-[#6F241D]">Privacy Policy</span>
+                    <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#6F241D] underline underline-offset-2">Terms & Conditions</a> and{' '}
+                    <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#6F241D] underline underline-offset-2">Privacy Policy</a>
                   </label>
                 </div>
 

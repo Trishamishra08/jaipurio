@@ -63,7 +63,7 @@ const Faqs = ({ items }) => {
  * `slug` can be passed in (fixed routes such as /about → about-us); `fallbacks`
  * are tried in order when the first page does not exist.
  */
-const CmsPage = ({ slug: fixedSlug, fallbacks = [] }) => {
+const CmsPage = ({ slug: fixedSlug, fallbacks = [], defaultPage = null }) => {
   const params = useParams();
   const navigate = useNavigate();
   const slug = (fixedSlug || params.slug || '').toLowerCase();
@@ -86,8 +86,10 @@ const CmsPage = ({ slug: fixedSlug, fallbacks = [] }) => {
     };
     tryNext([slug, ...fallbacks]).then((found) => {
       if (cancelled) return;
-      setPage(found);
-      setState(found ? 'ready' : 'missing');
+      // No published page in Admin → Pages: use the built-in text, if this route has one.
+      const shown = found || defaultPage;
+      setPage(shown);
+      setState(shown ? 'ready' : 'missing');
     });
     return () => {
       cancelled = true;

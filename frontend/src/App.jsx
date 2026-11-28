@@ -105,6 +105,7 @@ import AdminRoutes from './components/admin/AdminRoutes';
 import AdminAuthGuard from './components/admin/AdminAuthGuard';
 import AdminLogin from './components/admin/AdminLogin';
 import CmsPage from './components/user/CmsPage';
+import { DEFAULT_PRIVACY_POLICY } from './data/privacyPolicy';
 import CityPage, { ShipsToIndex } from './components/user/CityPage';
 import ContactPage from './components/user/ContactPage';
 import { BrandRedirect, CartRedirect, CategoryToCanonical } from './components/user/LegacyRedirects';
@@ -202,7 +203,7 @@ function App() {
             {/* Content pages (Admin → Pages) and the old jaipurio.in URLs, kept working */}
             <Route path="/about" element={<CmsPage slug="about-us" />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/privacy-policy" element={<CmsPage slug="privacy-policy" fallbacks={['cookie-policy']} />} />
+            <Route path="/privacy-policy" element={<CmsPage slug="privacy-policy" defaultPage={DEFAULT_PRIVACY_POLICY} />} />
             <Route path="/return-policy" element={<CmsPage slug="refund-policy" />} />
             <Route path="/product-categories/:slug" element={<CategoryPage />} />
             <Route path="/category/:slug" element={<CategoryToCanonical />} />

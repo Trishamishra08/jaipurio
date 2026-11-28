@@ -119,7 +119,7 @@ const AuthModal = () => {
                 
                 <p className="text-[10px] text-center text-gray-400 mt-6 leading-relaxed">
                   By continuing, I agree to the <br/>
-                  <a href="#" className="text-brand-pink font-bold hover:underline">Terms of Use</a> & <a href="#" className="text-brand-pink font-bold hover:underline">Privacy Policy</a>
+                  <a href="/terms-of-use" target="_blank" rel="noopener noreferrer" className="text-brand-pink font-bold hover:underline">Terms of Use</a> & <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-brand-pink font-bold hover:underline">Privacy Policy</a>
                 </p>
               </motion.form>
             ) : (

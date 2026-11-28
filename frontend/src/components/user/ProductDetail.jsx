@@ -391,7 +391,8 @@ const ProductDetail = () => {
   const [sizeIndex, setSizeIndex] = useState(0);
   const [finish, setFinish] = useState('');
   const [pack, setPack] = useState(1);
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(0);
+  const [qtyMsg, setQtyMsg] = useState('');
   const [pin, setPin] = useState('');
   const [pinMsg, setPinMsg] = useState('');
   const [toast, setToast] = useState(false);
@@ -402,7 +403,8 @@ const ProductDetail = () => {
     setImgIndex(0);
     setSizeIndex(0);
     setPack(1);
-    setQty(1);
+    setQty(0);
+    setQtyMsg('');
     setFinish(product?.material || 'Natural finish');
     setPinMsg('');
   }, [product?._id, product?.material]);
@@ -430,7 +432,15 @@ const ProductDetail = () => {
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const shareText = encodeURIComponent(`${product.name} ${shareUrl}`);
 
+  // Quantity starts at 0, so the shopper has to pick how many they want.
+  const needsQty = () => {
+    if (qty > 0) return false;
+    setQtyMsg('Please select a quantity (tap +).');
+    return true;
+  };
+
   const add = () => {
+    if (needsQty()) return;
     addToCart(product, qty * pack);
     setToast(true);
     setIsCartDrawerOpen?.(true);
@@ -438,6 +448,7 @@ const ProductDetail = () => {
   };
 
   const buyNow = () => {
+    if (needsQty()) return;
     addToCart(product, qty * pack);
     navigate('/checkout');
   };
@@ -849,7 +860,7 @@ const ProductDetail = () => {
                 <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shadow-xs">
                   <button
                     type="button"
-                    onClick={() => setQty((n) => Math.max(1, n - 1))}
+                    onClick={() => setQty((n) => Math.max(0, n - 1))}
                     className="w-8 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                   >
                     <Minus size={14} />
@@ -857,13 +868,14 @@ const ProductDetail = () => {
                   <span className="w-10 text-center text-xs font-bold text-gray-800">{qty}</span>
                   <button
                     type="button"
-                    onClick={() => setQty((n) => n + 1)}
+                    onClick={() => { setQty((n) => n + 1); setQtyMsg(''); }}
                     className="w-8 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                   >
                     <Plus size={14} />
                   </button>
                 </div>
               </div>
+              {qtyMsg && <p className="text-xs font-medium text-red-600 -mt-1">{qtyMsg}</p>}
 
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3 pt-1">
@@ -1330,10 +1342,15 @@ const ProductDetail = () => {
 
       {/* Mobile Sticky Action Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 shadow-lg flex items-center gap-3">
+        {qtyMsg && (
+          <p className="absolute bottom-full left-0 right-0 bg-red-50 border-t border-red-200 px-3 py-1.5 text-xs font-medium text-red-600">
+            {qtyMsg}
+          </p>
+        )}
         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white shrink-0">
           <button
             type="button"
-            onClick={() => setQty((n) => Math.max(1, n - 1))}
+            onClick={() => setQty((n) => Math.max(0, n - 1))}
             className="w-8 h-8 flex items-center justify-center text-gray-600"
           >
             <Minus size={13} />
@@ -1341,7 +1358,7 @@ const ProductDetail = () => {
           <span className="w-8 text-center text-xs font-bold">{qty}</span>
           <button
             type="button"
-            onClick={() => setQty((n) => n + 1)}
+            onClick={() => { setQty((n) => n + 1); setQtyMsg(''); }}
             className="w-8 h-8 flex items-center justify-center text-gray-600"
           >
             <Plus size={13} />

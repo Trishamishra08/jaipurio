@@ -83,30 +83,59 @@ const StoreBadge = ({ store, sub }) => (
   </div>
 );
 
-/** One heading link per top-level category, followed by its sub-categories — plain crawlable links. */
-const CategoryGroups = ({ groups }) => (
-  <div className="space-y-2.5 lg:columns-2 lg:gap-x-8 lg:space-y-0">
-    {groups.map(({ top, subs }) => (
-      <p key={top.id} className="font-body text-[11px] sm:text-[12px] leading-relaxed text-white/75 lg:break-inside-avoid lg:mb-3">
-        <Link to={shopLink(top.name)} className="font-bold text-white hover:text-[#E8C4A0] mr-1.5">
-          {top.name}:
+const CategoryGroup = ({ top, subs }) => (
+  <p className="font-body text-[11px] sm:text-[12px] leading-relaxed text-white/75 break-words">
+    <Link to={shopLink(top.name)} className="font-bold text-white hover:text-[#E8C4A0] mr-1.5">
+      {top.name}:
+    </Link>
+    {subs.map((c, i) => (
+      <React.Fragment key={c.id}>
+        <Link to={shopLink(c.name)} className="hover:text-white hover:underline">
+          {c.name}
         </Link>
-        {subs.map((c, i) => (
-          <React.Fragment key={c.id}>
-            <Link to={shopLink(c.name)} className="hover:text-white hover:underline">
-              {c.name}
-            </Link>
-            {i < subs.length - 1 && (
-              <span className="mx-1.5 text-white/30" aria-hidden="true">
-                |
-              </span>
-            )}
-          </React.Fragment>
-        ))}
-      </p>
+        {i < subs.length - 1 && (
+          <span className="mx-1.5 text-white/30" aria-hidden="true">
+            |
+          </span>
+        )}
+      </React.Fragment>
     ))}
-  </div>
+  </p>
 );
+
+/** Splits the groups into two stacks of about the same length (by number of links). */
+const splitInTwo = (groups) => {
+  const size = (g) => 1 + g.subs.length;
+  const total = groups.reduce((n, g) => n + size(g), 0);
+  const left = [];
+  let used = 0;
+  let i = 0;
+  while (i < groups.length && (left.length === 0 || used + size(groups[i]) / 2 <= total / 2)) {
+    used += size(groups[i]);
+    left.push(groups[i]);
+    i += 1;
+  }
+  return [left, groups.slice(i)];
+};
+
+/**
+ * One heading link per top-level category, followed by its sub-categories — plain crawlable links.
+ * Two explicit columns on large screens (CSS multi-column let long lines run into the next column).
+ */
+const CategoryGroups = ({ groups }) => {
+  const [left, right] = splitInTwo(groups);
+  return (
+    <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-8">
+      {[left, right].map((stack, s) => (
+        <div key={s} className="min-w-0 space-y-2.5 lg:space-y-3">
+          {stack.map(({ top, subs }) => (
+            <CategoryGroup key={top.id} top={top} subs={subs} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const Pills = ({ items }) => (
   <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -354,7 +383,7 @@ const Footer = () => {
                   {columns.map((col, i) => {
                     const isOpen = open === i;
                     return (
-                      <div key={col.key} className={`border-b border-white/10 md:border-0 ${col.groups ? 'md:col-span-3 lg:col-span-1' : ''}`}>
+                      <div key={col.key} className={`min-w-0 border-b border-white/10 md:border-0 ${col.groups ? 'md:col-span-3 lg:col-span-1' : ''}`}>
                         <button
                           type="button"
                           className="w-full flex items-center justify-between py-2.5 md:py-0 md:mb-2 md:pointer-events-none"
