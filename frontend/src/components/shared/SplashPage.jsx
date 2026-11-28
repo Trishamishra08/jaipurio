@@ -1,21 +1,44 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { mediaUrl } from '../../data/cloudinaryMedia';
+import { isInApp } from '../../utils/appContext';
 
 const VIDEO_SRC = mediaUrl('/splash.mp4');
 const LOGO_SRC = mediaUrl('/jaipurio_logo_bg.png');
 const SKIP_SEC = 2;
 const SPLASH_MS = 3500;
 const EXIT_MS = 500;
+const SEEN_KEY = 'jp_splash_seen';
+
+const isSignedIn = () => {
+  try {
+    return Boolean(localStorage.getItem('customer_token'));
+  } catch {
+    return false;
+  }
+};
+
+/** Signed in → home. The app sends a signed-out visitor to login; the website goes to home. */
+const nextPath = () => (isSignedIn() || !isInApp() ? '/home' : '/login');
+
+const seenThisVisit = () => {
+  try {
+    return sessionStorage.getItem(SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
 
 /**
- * App entry splash — camel video (skips first 2s), then /login
+ * Entry splash at "/" — camel video (skips its first 2s), then home or login.
+ * Plays once per visit; tap anywhere or "Skip" to continue straight away.
  */
-const SplashPage = () => {
+const SplashVideo = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const timersRef = useRef([]);
   const startedRef = useRef(false);
+  const leftRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [exiting, setExiting] = useState(false);
 
@@ -24,16 +47,28 @@ const SplashPage = () => {
     timersRef.current = [];
   };
 
+  const leave = () => {
+    if (leftRef.current) return;
+    leftRef.current = true;
+    clearTimers();
+    document.body.style.overflow = '';
+    navigate(nextPath(), { replace: true });
+  };
+
+  const skip = () => {
+    if (leftRef.current) return;
+    clearTimers();
+    setExiting(true);
+    timersRef.current.push(setTimeout(leave, EXIT_MS));
+  };
+
   const beginExitSequence = () => {
     if (startedRef.current) return;
     startedRef.current = true;
     setReady(true);
 
     const exitTimer = setTimeout(() => setExiting(true), SPLASH_MS);
-    const navTimer = setTimeout(() => {
-      document.body.style.overflow = '';
-      navigate('/login', { replace: true });
-    }, SPLASH_MS + EXIT_MS);
+    const navTimer = setTimeout(leave, SPLASH_MS + EXIT_MS);
     timersRef.current.push(exitTimer, navTimer);
   };
 
@@ -56,6 +91,11 @@ const SplashPage = () => {
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    try {
+      sessionStorage.setItem(SEEN_KEY, '1');
+    } catch {
+      /* storage blocked: the splash just plays again next time */
+    }
 
     const video = videoRef.current;
     if (!video) return undefined;
@@ -75,6 +115,9 @@ const SplashPage = () => {
     video.addEventListener('loadedmetadata', onLoadedMeta);
     video.addEventListener('canplay', onCanPlay);
     video.addEventListener('seeked', onSeeked);
+    // Frames are on screen: show the video now (play() can resolve much later).
+    const onPlaying = () => beginExitSequence();
+    video.addEventListener('playing', onPlaying);
 
     /* Already cached / instant */
     if (video.readyState >= 1) {
@@ -90,6 +133,7 @@ const SplashPage = () => {
       video.removeEventListener('loadedmetadata', onLoadedMeta);
       video.removeEventListener('canplay', onCanPlay);
       video.removeEventListener('seeked', onSeeked);
+      video.removeEventListener('playing', onPlaying);
       document.body.style.overflow = '';
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,6 +147,7 @@ const SplashPage = () => {
       role="dialog"
       aria-label="jaipurio splash"
       aria-busy={!exiting}
+      onClick={skip}
     >
       <div className="relative w-full h-full max-w-md mx-auto sm:max-w-lg overflow-hidden bg-black">
         {!ready && (
@@ -121,8 +166,8 @@ const SplashPage = () => {
 
         <video
           ref={videoRef}
-          className={`splash-art absolute inset-0 w-full h-full object-cover object-center select-none transition-opacity duration-300 ${
-            ready ? 'opacity-100' : 'opacity-0'
+          className={`absolute inset-0 w-full h-full object-cover object-center select-none transition-[opacity,transform] duration-500 ease-out ${
+            ready ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
           }`}
           src={`${VIDEO_SRC}#t=${SKIP_SEC}`}
           muted
@@ -146,9 +191,27 @@ const SplashPage = () => {
             />
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            skip();
+          }}
+          className="absolute bottom-6 right-4 z-30 rounded-full bg-black/45 px-4 py-1.5 text-xs font-semibold tracking-wide text-white backdrop-blur-sm border border-white/25"
+        >
+          Skip
+        </button>
       </div>
     </div>
   );
+};
+
+/** "/" entry: the splash once per visit; after that straight on. */
+const SplashPage = () => {
+  const [alreadySeen] = useState(seenThisVisit);
+  if (alreadySeen) return <Navigate to={nextPath()} replace />;
+  return <SplashVideo />;
 };
 
 export default SplashPage;

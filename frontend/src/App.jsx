@@ -113,7 +113,6 @@ import { BrandRedirect, CartRedirect, CategoryToCanonical } from './components/u
 import CategoryPage from './components/user/CategoryPage';
 
 import { captureReferralFromUrl } from './utils/referralTracking';
-import { isInApp } from './utils/appContext';
 import PushBootstrap from './components/shared/PushBootstrap';
 import PushToast from './components/shared/PushToast';
 import NotFound from './components/user/NotFound';
@@ -166,9 +165,8 @@ function App() {
         <PushBootstrap />
         <PushToast />
         <Routes>
-          {/* App load → splash → login */}
-          {/* Web visitors land straight on the real home page; the mobile app keeps its splash. */}
-          <Route path="/" element={isInApp() ? <SplashPage /> : <Navigate to="/home" replace />} />
+          {/* Website and app both open with the camel video splash (once per visit), then home or login. */}
+          <Route path="/" element={<SplashPage />} />
 
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Auth />} />
